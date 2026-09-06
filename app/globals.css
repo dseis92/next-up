@@ -1,26 +1,268 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* NextUp Design System */
+/* Mobile-first, premium consumer app aesthetic */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Brand Colors - Electric Lime Primary */
+  --brand: #a3e635;
+  --brand-foreground: #14532d;
+  --brand-hover: #84cc16;
+
+  /* Supporting Accent */
+  --accent: #fb923c;
+  --accent-foreground: #431407;
+
+  /* Light Mode Backgrounds - Warm off-white */
+  --background: #fafaf9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f5f5f4;
+
+  /* Foreground Colors */
+  --foreground: #0a0a0a;
+  --foreground-secondary: #404040;
+  --foreground-muted: #737373;
+
+  /* Borders */
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+
+  /* Semantic Colors */
+  --success: #22c55e;
+  --success-foreground: #14532d;
+  --warning: #f59e0b;
+  --warning-foreground: #78350f;
+  --danger: #ef4444;
+  --danger-foreground: #7f1d1d;
+  --info: #3b82f6;
+  --info-foreground: #1e3a8a;
+
+  /* Match Score Colors */
+  --match-high: #22c55e;
+  --match-medium: #a3e635;
+  --match-low: #94a3b8;
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Brand Colors - Adjusted for dark mode */
+    --brand: #a3e635;
+    --brand-foreground: #0a0a0a;
+    --brand-hover: #bef264;
+
+    /* Supporting Accent */
+    --accent: #fb923c;
+    --accent-foreground: #0a0a0a;
+
+    /* Dark Mode Backgrounds - Charcoal */
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --surface: #171717;
+    --surface-raised: #262626;
+    --surface-muted: #1c1c1c;
+
+    /* Foreground Colors */
+    --foreground: #fafafa;
+    --foreground-secondary: #d4d4d4;
+    --foreground-muted: #a3a3a3;
+
+    /* Borders */
+    --border: #262626;
+    --border-strong: #404040;
+
+    /* Semantic Colors */
+    --success: #22c55e;
+    --success-foreground: #0a0a0a;
+    --warning: #f59e0b;
+    --warning-foreground: #0a0a0a;
+    --danger: #ef4444;
+    --danger-foreground: #0a0a0a;
+    --info: #3b82f6;
+    --info-foreground: #0a0a0a;
+
+    /* Match Score Colors */
+    --match-high: #22c55e;
+    --match-medium: #a3e635;
+    --match-low: #71717a;
   }
 }
 
+@theme inline {
+  /* Map CSS variables to Tailwind theme */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-hover: var(--brand-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-match-high: var(--match-high);
+  --color-match-medium: var(--match-medium);
+  --color-match-low: var(--match-low);
+
+  /* Typography - Using system fonts optimized for readability */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* Spacing - Generous but efficient */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
+  min-height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Typography Hierarchy */
+.text-hero {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text-display {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.text-heading-lg {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.text-heading {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.text-metadata {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--foreground-secondary);
+}
+
+.text-small {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Safe Areas for Mobile */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--brand);
+  color: var(--brand-foreground);
 }
