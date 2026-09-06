@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/app-shell";
 import { JobDiscoveryCard } from "@/components/jobs/job-discovery-card";
@@ -12,43 +12,73 @@ import { Flame } from "lucide-react";
 export default function DiscoverPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [matches] = useState(mockJobMatches);
-  const [dailyProgress] = useState({ reviewed: 3, target: 5 });
+  const [dailyProgress, setDailyProgress] = useState({ reviewed: 0, target: 5 });
   const [streak] = useState(6);
 
   const currentMatch = matches[currentIndex];
   const hasMore = currentIndex < matches.length - 1;
 
+  useEffect(() => {
+    // Track daily progress
+    const today = new Date().toDateString();
+    const stored = localStorage.getItem("dailyProgress");
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (data.date === today) {
+        setDailyProgress({ reviewed: data.reviewed, target: 5 });
+      }
+    }
+  }, []);
+
+  const updateDailyProgress = () => {
+    const today = new Date().toDateString();
+    const newReviewed = Math.min(dailyProgress.reviewed + 1, dailyProgress.target);
+    setDailyProgress({ reviewed: newReviewed, target: 5 });
+    localStorage.setItem(
+      "dailyProgress",
+      JSON.stringify({ date: today, reviewed: newReviewed })
+    );
+  };
+
   const handleSave = () => {
-    console.log("Saved job:", currentMatch.job.title);
+    const saved = localStorage.getItem("savedJobs");
+    const savedIds = saved ? JSON.parse(saved) : [];
+
+    if (!savedIds.includes(currentMatch.job.id)) {
+      savedIds.push(currentMatch.job.id);
+      localStorage.setItem("savedJobs", JSON.stringify(savedIds));
+    }
+
+    updateDailyProgress();
     if (hasMore) {
       setCurrentIndex(currentIndex + 1);
     }
   };
 
   const handlePass = () => {
-    console.log("Passed on job:", currentMatch.job.title);
+    updateDailyProgress();
     if (hasMore) {
       setCurrentIndex(currentIndex + 1);
     }
   };
 
   const handleViewDetails = () => {
-    console.log("Viewing details for:", currentMatch.job.title);
+    updateDailyProgress();
   };
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-2xl px-4 py-8">
+      <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-heading-lg mb-2">Hey there!</h1>
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-heading-lg mb-1 md:mb-2">Hey there!</h1>
           <p className="text-foreground-secondary">
             {matches.length - currentIndex} fresh opportunities
           </p>
         </div>
 
         {/* Daily Progress */}
-        <div className="mb-6 rounded-[var(--radius-lg)] bg-surface p-4">
+        <div className="mb-4 rounded-[var(--radius-lg)] bg-surface p-3 md:mb-6 md:p-4">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-foreground">
@@ -71,7 +101,7 @@ export default function DiscoverPage() {
         </div>
 
         {/* Job Cards */}
-        <div className="relative">
+        <div className="relative min-h-[400px]">
           <AnimatePresence mode="wait">
             {currentMatch ? (
               <JobDiscoveryCard
@@ -98,7 +128,7 @@ export default function DiscoverPage() {
 
         {/* Progress indicator */}
         {matches.length > 0 && (
-          <div className="mt-6 text-center">
+          <div className="mt-4 text-center md:mt-6">
             <p className="text-sm text-foreground-muted">
               {currentIndex + 1} of {matches.length}
             </p>
