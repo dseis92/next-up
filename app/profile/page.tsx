@@ -190,7 +190,7 @@ export default function ProfilePage() {
           <Card className="mb-6 p-6">
             <div className="mb-4 flex items-center gap-2">
               <Target className="h-5 w-5 text-brand" />
-              <h2 className="text-heading">What I'm looking for</h2>
+              <h2 className="text-heading">What I&apos;m looking for</h2>
             </div>
             <div className="space-y-2">
               {profile.goals.map((goal, idx) => (

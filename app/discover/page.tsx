@@ -127,7 +127,7 @@ export default function DiscoverPage() {
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-foreground">
-                Today's momentum
+                Today&apos;s momentum
               </span>
               <Badge variant="brand" size="sm">
                 <Flame className="mr-1 h-3 w-3" />
@@ -162,7 +162,7 @@ export default function DiscoverPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="rounded-[var(--radius-lg)] bg-surface p-12 text-center"
               >
-                <h2 className="text-heading mb-2">You're all caught up!</h2>
+                <h2 className="text-heading mb-2">You&apos;re all caught up!</h2>
                 <p className="text-foreground-secondary">
                   Check back later for more opportunities.
                 </p>

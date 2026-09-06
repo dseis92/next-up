@@ -82,7 +82,7 @@ export default function SignupPage() {
           </div>
           <h1 className="text-heading-lg mb-2">Create your account</h1>
           <p className="text-foreground-secondary">
-            Find what's next in your career
+            Find what&apos;s next in your career
           </p>
         </div>
 

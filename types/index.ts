@@ -16,7 +16,7 @@ export interface UserProfile {
   avatar_url?: string;
   headline?: string;
   location?: string;
-  current_role?: string;
+  current_title?: string;
   years_experience?: number;
   about?: string;
   profile_strength: number;

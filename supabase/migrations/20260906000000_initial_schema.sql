@@ -35,7 +35,7 @@ CREATE POLICY "Users can insert own profile"
 CREATE TABLE onboarding_progress (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  current_role TEXT,
+  current_title TEXT,
   industry TEXT,
   years_experience INTEGER,
   employment_status TEXT,

@@ -59,14 +59,14 @@ export default function HomePage() {
                 className="text-hero mb-6 bg-gradient-to-br from-foreground to-foreground-secondary bg-clip-text text-transparent"
                 variants={slideUp}
               >
-                Find what's next.
+                Find what&apos;s next.
               </motion.h1>
 
               <motion.p
                 className="text-body-lg mb-8 max-w-xl text-foreground-secondary"
                 variants={slideUp}
               >
-                Stop digging through job boards. NextUp learns what you're good
+                Stop digging through job boards. NextUp learns what you&apos;re good
                 at, what you want, and what actually fits — then helps you move
                 from searching to hired.
               </motion.p>
@@ -232,7 +232,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-16 text-center">
             <h2 className="text-display mb-4">
-              Job searching that doesn't suck
+              Job searching that doesn&apos;t suck
             </h2>
             <p className="text-body-lg mx-auto max-w-2xl text-foreground-secondary">
               NextUp combines smart matching, AI assistance, and progress
@@ -286,7 +286,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-heading mb-2">Know why you match</h3>
               <p className="text-foreground-secondary">
-                Every opportunity shows exactly why you're a fit, what skills
+                Every opportunity shows exactly why you&apos;re a fit, what skills
                 you bring, and what gaps to address before applying.
               </p>
             </Card>
@@ -310,7 +310,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-heading mb-2">Explore careers</h3>
               <p className="text-foreground-secondary">
-                Not sure what's next? Discover career paths, understand
+                Not sure what&apos;s next? Discover career paths, understand
                 transitions, and see what opportunities fit your transferable
                 skills.
               </p>
@@ -326,7 +326,7 @@ export default function HomePage() {
             <div className="relative bg-gradient-to-br from-brand/5 to-accent/5 p-12 text-center">
               <h2 className="text-display mb-4">Your next move is out there</h2>
               <p className="text-body-lg mb-8 text-foreground-secondary">
-                Let's find it.
+                Let&apos;s find it.
               </p>
               <Link href="/discover">
                 <Button size="lg">
@@ -345,7 +345,7 @@ export default function HomePage() {
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <Logo size="sm" />
             <p className="text-sm text-foreground-muted">
-              © 2024 NextUp. Find what's next.
+              © 2024 NextUp. Find what&apos;s next.
             </p>
           </div>
         </div>

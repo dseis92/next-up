@@ -160,7 +160,7 @@ export async function getOnboardingData(): Promise<Partial<OnboardingData> | nul
 
   return {
     goals: goals?.map((g) => g.goal) || [],
-    currentTitle: onboarding.current_role,
+    currentTitle: onboarding.current_title,
     industry: onboarding.industry,
     yearsExperience: onboarding.years_experience,
     employmentStatus: onboarding.employment_status,
@@ -214,7 +214,7 @@ export async function saveOnboardingData(data: Partial<OnboardingData>): Promise
   const { error: onboardingError } = await supabase.from("onboarding_progress").upsert(
     {
       user_id: user.id,
-      current_role: data.currentTitle,
+      current_title: data.currentTitle,
       industry: data.industry,
       years_experience: data.yearsExperience,
       employment_status: data.employmentStatus,

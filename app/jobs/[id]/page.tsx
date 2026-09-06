@@ -233,7 +233,7 @@ export default function JobDetailPage() {
           <Card className="mb-6 p-6">
             <div className="mb-4 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <h2 className="text-heading">Why you're a strong match</h2>
+              <h2 className="text-heading">Why you&apos;re a strong match</h2>
             </div>
             <div className="mb-4 flex flex-wrap gap-2">
               {matched_skills.map((skill) => (

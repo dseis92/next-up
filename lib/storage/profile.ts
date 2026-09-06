@@ -135,7 +135,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   }
 
   const onboardingData = {
-    currentTitle: onboarding?.current_role,
+    currentTitle: onboarding?.current_title,
     location: onboarding?.location,
     yearsExperience: onboarding?.years_experience,
     industry: onboarding?.industry,

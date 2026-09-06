@@ -111,7 +111,7 @@ export default function ActivityPage() {
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-brand" />
-              <h2 className="text-heading">Today's missions</h2>
+              <h2 className="text-heading">Today&apos;s missions</h2>
             </div>
             <Badge variant="brand" size="sm">
               {totalCompleted}/{totalMissions}
@@ -207,7 +207,7 @@ export default function ActivityPage() {
             </div>
             <div className="rounded-lg bg-surface-muted p-3">
               <p className="text-sm text-foreground-secondary">
-                Your average match score is 89% — you're targeting roles that
+                Your average match score is 89% — you&apos;re targeting roles that
                 fit your profile well.
               </p>
             </div>

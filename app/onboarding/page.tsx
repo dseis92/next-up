@@ -195,7 +195,7 @@ function ExperienceStep({
       <div className="text-center">
         <h1 className="text-heading-lg mb-2">Work experience</h1>
         <p className="text-foreground-secondary">
-          We'll use your current role for now
+          We&apos;ll use your current role for now
         </p>
       </div>
 
@@ -266,7 +266,7 @@ function SkillsStep({
       <div className="text-center">
         <h1 className="text-heading-lg mb-2">What are your key skills?</h1>
         <p className="text-foreground-secondary">
-          Add the skills you're strongest in
+          Add the skills you&apos;re strongest in
         </p>
       </div>
 
@@ -431,7 +431,7 @@ function TargetRolesStep({
         onClick={() => onUpdate({ targetRoles: ["Not sure yet"] })}
         className="w-full rounded-lg border-2 border-dashed border-border p-4 text-sm text-foreground-muted transition-colors hover:border-brand hover:text-brand"
       >
-        I'm not sure yet
+        I&apos;m not sure yet
       </button>
     </div>
   );
@@ -448,7 +448,7 @@ function SalaryStep({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-heading-lg mb-2">What's your salary target?</h1>
+        <h1 className="text-heading-lg mb-2">What&apos;s your salary target?</h1>
         <p className="text-foreground-secondary">
           This helps us filter opportunities
         </p>
@@ -844,9 +844,9 @@ function ReviewStep({ data }: { data: Partial<OnboardingData> }) {
             <CheckCircle2 className="h-8 w-8" />
           </div>
         </div>
-        <h1 className="text-heading-lg mb-2">You're ready!</h1>
+        <h1 className="text-heading-lg mb-2">You&apos;re ready!</h1>
         <p className="text-foreground-secondary">
-          Here's what we know about you
+          Here&apos;s what we know about you
         </p>
       </div>
 
