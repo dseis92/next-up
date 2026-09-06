@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { getUserProfile, type UserProfile } from "@/lib/storage/profile";
 import {
   User,
   MapPin,
@@ -13,61 +16,33 @@ import {
   Award,
   Target,
   Settings,
+  DollarSign,
+  Globe,
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const profile = {
-    name: "Dylan",
-    currentRole: "Tower Foreman",
-    location: "Madison, WI",
-    yearsExperience: 8,
-    profileStrength: 82,
-  };
+  const router = useRouter();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  const skills = [
-    { name: "Leadership", proficiency: "expert" },
-    { name: "Field Operations", proficiency: "expert" },
-    { name: "Construction", proficiency: "strong" },
-    { name: "Safety Coordination", proficiency: "strong" },
-    { name: "Crew Management", proficiency: "expert" },
-    { name: "Telecommunications", proficiency: "strong" },
-    { name: "Project Documentation", proficiency: "comfortable" },
-    { name: "Fiber Optics", proficiency: "comfortable" },
-  ];
+  useEffect(() => {
+    const userProfile = getUserProfile();
+    setProfile(userProfile);
 
-  const experience = [
-    {
-      title: "Tower Foreman",
-      company: "Midwest Telecom",
-      period: "2020 - Present",
-      current: true,
-    },
-    {
-      title: "Lead Technician",
-      company: "Midwest Telecom",
-      period: "2017 - 2020",
-      current: false,
-    },
-    {
-      title: "Telecommunications Technician",
-      company: "Regional Communications",
-      period: "2015 - 2017",
-      current: false,
-    },
-  ];
+    // If no profile exists, redirect to onboarding
+    if (!userProfile || !userProfile.currentRole) {
+      router.push("/onboarding");
+    }
+  }, [router]);
 
-  const certifications = [
-    "OSHA 30-Hour Construction",
-    "Tower Climbing Safety",
-    "First Aid/CPR",
-  ];
-
-  const careerGoals = [
-    "Transition into project management",
-    "Reduce physical demands of work",
-    "Increase salary to $80K+",
-    "Leverage leadership experience",
-  ];
+  if (!profile) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading profile...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -79,13 +54,20 @@ export default function ProfilePage() {
             <div>
               <h1 className="text-heading-lg mb-1">{profile.name}</h1>
               <p className="text-foreground-secondary">{profile.currentRole}</p>
-              <div className="mt-1 flex items-center gap-2 text-sm text-foreground-muted">
-                <MapPin className="h-4 w-4" />
-                {profile.location}
-              </div>
+              {profile.location && (
+                <div className="mt-1 flex items-center gap-2 text-sm text-foreground-muted">
+                  <MapPin className="h-4 w-4" />
+                  {profile.location}
+                </div>
+              )}
             </div>
           </div>
-          <Button variant="secondary" size="sm" className="gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="gap-2"
+            onClick={() => router.push("/onboarding")}
+          >
             <Settings className="h-4 w-4" />
             Edit
           </Button>
@@ -110,134 +92,184 @@ export default function ProfilePage() {
             size="md"
             barClassName="bg-brand"
           />
-          <div className="mt-3 space-y-1 text-sm text-foreground-muted">
-            <p>• Add portfolio projects to reach 90%</p>
-            <p>• Complete career goals section to reach 95%</p>
-          </div>
+          {profile.profileStrength < 100 && (
+            <div className="mt-3 space-y-1 text-sm text-foreground-muted">
+              {profile.profileStrength < 90 && (
+                <p>• Complete onboarding to reach 90%</p>
+              )}
+              {!profile.about && <p>• Add an about section to increase strength</p>}
+            </div>
+          )}
         </Card>
 
         {/* About */}
-        <Card className="mb-6 p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <User className="h-5 w-5 text-brand" />
-            <h2 className="text-heading">About</h2>
-          </div>
-          <p className="text-foreground-secondary">
-            Experienced telecommunications professional with {profile.yearsExperience} years
-            in field operations and crew leadership. Proven track record in
-            managing construction projects, ensuring safety compliance, and
-            leading high-performing teams. Currently seeking opportunities to
-            transition into project management roles that leverage my leadership
-            experience while reducing physical demands.
-          </p>
-        </Card>
+        {profile.about && (
+          <Card className="mb-6 p-6">
+            <div className="mb-3 flex items-center gap-2">
+              <User className="h-5 w-5 text-brand" />
+              <h2 className="text-heading">About</h2>
+            </div>
+            <p className="text-foreground-secondary">{profile.about}</p>
+          </Card>
+        )}
 
-        {/* Experience */}
+        {/* Career Overview */}
         <Card className="mb-6 p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-brand" />
-            <h2 className="text-heading">Experience</h2>
-          </div>
-          <div className="space-y-4">
-            {experience.map((exp, idx) => (
-              <div key={idx} className="flex gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  <Briefcase className="h-5 w-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="mb-1 flex items-start justify-between">
-                    <h3 className="font-semibold text-foreground">
-                      {exp.title}
-                    </h3>
-                    {exp.current && (
-                      <Badge variant="brand" size="sm">
-                        Current
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-foreground-secondary">
-                    {exp.company}
-                  </p>
-                  <p className="text-sm text-foreground-muted">{exp.period}</p>
+          <h2 className="text-heading mb-4">Career overview</h2>
+          <div className="space-y-3">
+            {profile.currentRole && (
+              <div className="flex items-start gap-3">
+                <Briefcase className="h-5 w-5 text-brand" />
+                <div>
+                  <p className="text-sm text-foreground-muted">Current role</p>
+                  <p className="font-medium text-foreground">{profile.currentRole}</p>
                 </div>
               </div>
-            ))}
+            )}
+            {profile.industry && (
+              <div className="flex items-start gap-3">
+                <Globe className="h-5 w-5 text-brand" />
+                <div>
+                  <p className="text-sm text-foreground-muted">Industry</p>
+                  <p className="font-medium text-foreground">{profile.industry}</p>
+                </div>
+              </div>
+            )}
+            {profile.yearsExperience !== undefined && (
+              <div className="flex items-start gap-3">
+                <Award className="h-5 w-5 text-brand" />
+                <div>
+                  <p className="text-sm text-foreground-muted">Experience</p>
+                  <p className="font-medium text-foreground">
+                    {profile.yearsExperience} years
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 
         {/* Skills */}
-        <Card className="mb-6 p-6">
-          <h2 className="text-heading mb-4">Skills</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {skills.map((skill) => (
-              <div key={skill.name} className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="mb-1 flex items-center justify-between">
-                    <p className="text-sm font-medium text-foreground">
-                      {skill.name}
-                    </p>
-                    <Badge variant="muted" size="sm" className="capitalize">
-                      {skill.proficiency}
-                    </Badge>
+        {profile.skills.length > 0 && (
+          <Card className="mb-6 p-6">
+            <h2 className="text-heading mb-4">Skills</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {profile.skills.map((skill) => (
+                <div key={skill.name} className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="mb-1 flex items-center justify-between">
+                      <p className="text-sm font-medium text-foreground">
+                        {skill.name}
+                      </p>
+                      <Badge variant="muted" size="sm" className="capitalize">
+                        {skill.proficiency}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Certifications */}
-        <Card className="mb-6 p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Award className="h-5 w-5 text-brand" />
-            <h2 className="text-heading">Certifications</h2>
-          </div>
-          <div className="space-y-2">
-            {certifications.map((cert) => (
-              <div key={cert} className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-brand" />
-                <p className="text-foreground-secondary">{cert}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Career Goals */}
-        <Card className="mb-6 p-6">
-          <div className="mb-4 flex items-center gap-2">
-            <Target className="h-5 w-5 text-brand" />
-            <h2 className="text-heading">What I'm looking for</h2>
-          </div>
-          <div className="space-y-2">
-            {careerGoals.map((goal, idx) => (
-              <div key={idx} className="flex items-start gap-2">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-                <p className="text-foreground-secondary">{goal}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+        {profile.goals.length > 0 && (
+          <Card className="mb-6 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-brand" />
+              <h2 className="text-heading">What I'm looking for</h2>
+            </div>
+            <div className="space-y-2">
+              {profile.goals.map((goal, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
+                  <p className="text-foreground-secondary">{goal}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
-        {/* Career Direction */}
-        <Card className="overflow-hidden p-6">
-          <div className="mb-4">
-            <h2 className="text-heading mb-1">Aiming toward</h2>
-            <p className="text-sm text-foreground-secondary">
-              Based on your profile and goals
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Badge variant="brand" size="lg">
-              Project Engineer
-            </Badge>
-            <Badge variant="brand" size="lg">
-              Construction Manager
-            </Badge>
-            <Badge variant="brand" size="lg">
-              Field Operations Manager
-            </Badge>
-          </div>
-        </Card>
+        {/* Target Roles */}
+        {profile.targetRoles.length > 0 && (
+          <Card className="mb-6 p-6">
+            <div className="mb-4">
+              <h2 className="text-heading mb-1">Aiming toward</h2>
+              <p className="text-sm text-foreground-secondary">
+                Based on your goals and background
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {profile.targetRoles.map((role) => (
+                <Badge key={role} variant="brand" size="lg">
+                  {role}
+                </Badge>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Salary & Work Preferences */}
+        {(profile.salaryMin || profile.workPreferences) && (
+          <Card className="mb-6 p-6">
+            <h2 className="text-heading mb-4">Preferences</h2>
+            <div className="space-y-3">
+              {profile.salaryMin && (
+                <div className="flex items-start gap-3">
+                  <DollarSign className="h-5 w-5 text-brand" />
+                  <div>
+                    <p className="text-sm text-foreground-muted">Salary target</p>
+                    <p className="font-medium text-foreground">
+                      ${(profile.salaryMin / 1000).toFixed(0)}K
+                      {profile.salaryIdeal &&
+                        ` - $${(profile.salaryIdeal / 1000).toFixed(0)}K`}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {profile.workPreferences && (
+                <div className="flex items-start gap-3">
+                  <Briefcase className="h-5 w-5 text-brand" />
+                  <div>
+                    <p className="text-sm text-foreground-muted">
+                      Work arrangement
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {profile.workPreferences.remote && (
+                        <Badge variant="muted" size="sm">
+                          Remote
+                        </Badge>
+                      )}
+                      {profile.workPreferences.hybrid && (
+                        <Badge variant="muted" size="sm">
+                          Hybrid
+                        </Badge>
+                      )}
+                      {profile.workPreferences.onsite && (
+                        <Badge variant="muted" size="sm">
+                          On-site
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {profile.preferredLocations.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-brand" />
+                  <div>
+                    <p className="text-sm text-foreground-muted">
+                      Preferred locations
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {profile.preferredLocations.join(", ")}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
     </AppShell>
   );
