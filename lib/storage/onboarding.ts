@@ -211,39 +211,44 @@ export async function saveOnboardingData(data: Partial<OnboardingData>): Promise
   }
 
   // Save onboarding progress
-  const { error: onboardingError } = await supabase.from("onboarding_progress").upsert({
-    user_id: user.id,
-    current_role: data.currentTitle,
-    industry: data.industry,
-    years_experience: data.yearsExperience,
-    employment_status: data.employmentStatus,
-    location: data.location,
-    max_commute: data.maxCommute,
-    willing_to_relocate: data.willingToRelocate,
-    salary_min: data.salaryMin,
-    salary_ideal: data.salaryIdeal,
-    completed: !!(
-      data.goals &&
-      data.goals.length > 0 &&
-      data.currentTitle &&
-      data.yearsExperience !== undefined &&
-      data.skills &&
-      data.skills.length > 0 &&
-      data.targetRoles &&
-      data.targetRoles.length > 0
-    ),
-    completed_at:
-      data.goals &&
-      data.goals.length > 0 &&
-      data.currentTitle &&
-      data.yearsExperience !== undefined &&
-      data.skills &&
-      data.skills.length > 0 &&
-      data.targetRoles &&
-      data.targetRoles.length > 0
-        ? new Date().toISOString()
-        : null,
-  });
+  const { error: onboardingError } = await supabase.from("onboarding_progress").upsert(
+    {
+      user_id: user.id,
+      current_role: data.currentTitle,
+      industry: data.industry,
+      years_experience: data.yearsExperience,
+      employment_status: data.employmentStatus,
+      location: data.location,
+      max_commute: data.maxCommute,
+      willing_to_relocate: data.willingToRelocate,
+      salary_min: data.salaryMin,
+      salary_ideal: data.salaryIdeal,
+      completed: !!(
+        data.goals &&
+        data.goals.length > 0 &&
+        data.currentTitle &&
+        data.yearsExperience !== undefined &&
+        data.skills &&
+        data.skills.length > 0 &&
+        data.targetRoles &&
+        data.targetRoles.length > 0
+      ),
+      completed_at:
+        data.goals &&
+        data.goals.length > 0 &&
+        data.currentTitle &&
+        data.yearsExperience !== undefined &&
+        data.skills &&
+        data.skills.length > 0 &&
+        data.targetRoles &&
+        data.targetRoles.length > 0
+          ? new Date().toISOString()
+          : null,
+    },
+    {
+      onConflict: "user_id",
+    }
+  );
 
   if (onboardingError) {
     console.error("Failed to save onboarding progress:", { userId: user.id, error: onboardingError.message });
@@ -375,17 +380,22 @@ export async function saveOnboardingData(data: Partial<OnboardingData>): Promise
 
   // Save work preferences
   if (data.workPreferences || data.priorities) {
-    const { error: preferencesError } = await supabase.from("user_preferences").upsert({
-      user_id: user.id,
-      remote: data.workPreferences?.remote,
-      hybrid: data.workPreferences?.hybrid,
-      onsite: data.workPreferences?.onsite,
-      full_time: data.workPreferences?.fullTime,
-      part_time: data.workPreferences?.partTime,
-      contract: data.workPreferences?.contract,
-      travel_tolerance: data.workPreferences?.travelTolerance,
-      priorities: data.priorities,
-    });
+    const { error: preferencesError } = await supabase.from("user_preferences").upsert(
+      {
+        user_id: user.id,
+        remote: data.workPreferences?.remote,
+        hybrid: data.workPreferences?.hybrid,
+        onsite: data.workPreferences?.onsite,
+        full_time: data.workPreferences?.fullTime,
+        part_time: data.workPreferences?.partTime,
+        contract: data.workPreferences?.contract,
+        travel_tolerance: data.workPreferences?.travelTolerance,
+        priorities: data.priorities,
+      },
+      {
+        onConflict: "user_id",
+      }
+    );
     if (preferencesError) {
       console.error("Failed to save user preferences:", { userId: user.id, error: preferencesError.message });
       throw new Error("Failed to save user preferences");

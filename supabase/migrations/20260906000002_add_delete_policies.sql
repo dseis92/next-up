@@ -6,7 +6,8 @@ CREATE POLICY "Users can delete own onboarding"
   ON onboarding_progress FOR DELETE
   USING (auth.uid() = user_id);
 
--- user_goals
+-- user_goals (already exists in initial schema, drop and recreate to be safe)
+DROP POLICY IF EXISTS "Users can delete own goals" ON user_goals;
 CREATE POLICY "Users can delete own goals"
   ON user_goals FOR DELETE
   USING (auth.uid() = user_id);

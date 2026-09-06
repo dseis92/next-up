@@ -159,42 +159,79 @@ Built with **Framer Motion**:
 - **React Hook Form** - Form management
 - **Zod** - Schema validation
 - **Zustand** - Lightweight state
-- **TanStack Query** - Server state (when needed)
-
-### Planned
-
-- **Supabase** - Auth, database, storage
-- **AI Integration** - OpenAI/Anthropic for career assistance
+- **TanStack Query** - Server state
+- **Supabase** - Authentication, database with Row Level Security
+- **Vitest** - Unit testing
 
 ## 🎯 Current Status
 
+**Current Phase: Phase 8.2 - Supabase Stabilization**
+
 ### ✅ Completed
 
+**Phase 1-4: Core Product Flow**
 - ✨ Design system with electric lime brand
 - ✨ Responsive navigation (mobile bottom + desktop sidebar)
 - ✨ Landing page with hero and features
-- ✨ Job discovery feed with match cards
-- ✨ Mock job data (5 realistic opportunities)
-- ✨ Match score visualization
-- ✨ Daily progress tracking UI
-- ✨ Placeholder pages for all routes
+- ✨ Job discovery feed with card-based exploration
+- ✨ Job detail pages with match breakdown
+- ✨ Save/Pass/Undo functionality
+- ✨ Application creation and tracking
+- ✨ Application stages, notes, and timeline
+- ✨ Next action tracking
 
-### 🚧 In Progress
+**Phase 5: Onboarding**
+- ✨ 10-step mobile-first onboarding flow
+- ✨ Goals, career, experience, skills, target roles
+- ✨ Salary expectations, work preferences
+- ✨ Location and priorities collection
 
-- Job detail pages
-- Saved jobs functionality
-- Application tracker
-- Activity/streak system
+**Phase 6: Dynamic Profile**
+- ✨ User profile derived from onboarding data
+- ✨ Profile strength calculation
+- ✨ Skills, experience, and preferences display
 
-### 📋 Planned
+**Phase 7: Supabase Authentication**
+- ✨ Signup with email confirmation support
+- ✨ Login and logout
+- ✨ Forgot password and reset password flows
+- ✨ Protected routes with middleware
+- ✨ Session handling
 
-- Onboarding flow
-- User profiles
-- AI career assistant
+**Phase 8: Supabase Persistence**
+- ✨ Database schema with Row Level Security
+- ✨ User profiles, onboarding data, preferences
+- ✨ Saved jobs, passed jobs, applications
+- ✨ Application events and notes
+- ✨ Proper conflict handling for idempotent operations
+
+**Phase 8.1: Stabilization**
+- ✨ Fixed invalid UUIDs in seed data
+- ✨ Error handling for Supabase writes
+- ✨ Proper conflict targets for upserts
+- ✨ Stronger application RLS policies
+
+**Phase 8.2: Auth & Migration Verification**
+- ✨ SSR auth callback for email confirmation
+- ✨ Password recovery callback flow
+- ✨ Migration chain duplicate policy fix
+- ✨ Profile trigger security enhancements
+
+### 🚧 Next Phase
+
+**Phase 9: Deterministic Matching Engine** (Not yet started)
+- Build personalized job matching algorithm
+- Qualification and lifestyle match scoring
+- Skill aliases and transferable experience
+- Match reasons and concerns generation
+
+### 📋 Future Phases
+
+- Phase 10: Integrate matching throughout UI
+- AI career assistance features
 - Resume parsing and tailoring
-- Interview prep
-- Career path explorer
-- Search and filters
+- Interview preparation
+- Career path exploration
 
 ## 🏃 Available Scripts
 
@@ -207,7 +244,13 @@ npm run build        # Build for production
 npm run start        # Start production server
 
 # Quality
+npm run typecheck    # Run TypeScript type checking
 npm run lint         # Run ESLint
+npm run test         # Run Vitest tests
+
+# Database (requires Docker + Supabase CLI)
+npm run db:reset     # Reset local Supabase database
+npm run db:push      # Push migrations to remote Supabase
 ```
 
 ## 🎨 Design Principles
@@ -241,60 +284,41 @@ cp .env.example .env.local
 Edit `.env.local` with your values:
 
 ```env
-# Supabase (when implemented)
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-key
-
-# AI Provider (when implemented)
-AI_PROVIDER=openai
-AI_API_KEY=your-api-key
-AI_MODEL=gpt-4
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-## 🎯 Roadmap
+**Note:** `SUPABASE_SERVICE_ROLE_KEY` is intentionally not used. The application uses Row Level Security and does not require privileged server-side operations.
 
-### Phase 1: Core Discovery (Current)
-- [x] Design system
-- [x] Navigation
-- [x] Landing page
-- [x] Job discovery feed
-- [ ] Job details
-- [ ] Save/pass functionality
+## 🎯 Development Roadmap
 
-### Phase 2: User System
-- [ ] Authentication (Supabase)
-- [ ] User profiles
-- [ ] Onboarding flow
-- [ ] Preferences
+### Completed Phases
+- [x] **Phase 1-4**: Core product flow (Discover, Save, Pass, Apply, Applications tracker)
+- [x] **Phase 5**: Onboarding flow (10 steps)
+- [x] **Phase 6**: Dynamic user profiles
+- [x] **Phase 7**: Supabase authentication
+- [x] **Phase 8**: Supabase persistence with RLS
+- [x] **Phase 8.1**: Stabilization (conflict targets, error handling)
+- [x] **Phase 8.2**: Auth callbacks and migration verification
 
-### Phase 3: Application Management
-- [ ] Application tracker
-- [ ] Kanban board (desktop)
-- [ ] Timeline and notes
-- [ ] Follow-up reminders
+### Next Phases
+- [ ] **Phase 9**: Deterministic personalized matching engine
+- [ ] **Phase 10**: Integrate matching throughout NextUp UI
 
-### Phase 4: AI Features
-- [ ] Resume parsing
-- [ ] Job analysis
-- [ ] Resume tailoring
-- [ ] Interview prep
-- [ ] Career chat assistant
-
-### Phase 5: Career Development
-- [ ] Career path explorer
-- [ ] Transition analysis
-- [ ] Skill gap identification
-- [ ] Learning recommendations
-
-### Phase 6: Social (Future)
-- [ ] Community features
-- [ ] Company reviews
-- [ ] Salary discussions
-- [ ] Career transitions sharing
+### Future Phases
+- AI job explanation
+- AI career coach
+- Resume upload and profile extraction
+- Resume tailoring
+- Interview preparation
+- Application follow-up assistant
+- Career path explorer
+- Skill gap intelligence
+- Natural-language job discovery
 
 ---
 
