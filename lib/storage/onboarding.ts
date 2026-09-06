@@ -200,7 +200,10 @@ export async function getOnboardingData(): Promise<Partial<OnboardingData> | nul
   };
 }
 
-export async function saveOnboardingData(data: Partial<OnboardingData>): Promise<void> {
+export async function saveOnboardingData(
+  data: Partial<OnboardingData>,
+  options?: { markComplete?: boolean }
+): Promise<void> {
   const supabase = createClient();
   const {
     data: { user },
@@ -208,6 +211,34 @@ export async function saveOnboardingData(data: Partial<OnboardingData>): Promise
 
   if (!user) {
     throw new Error("User not authenticated");
+  }
+
+  // Determine completion status
+  // If markComplete is explicitly set, use it
+  // Otherwise, keep existing completed status (progress save, not completion)
+  const shouldMarkComplete = options?.markComplete === true;
+
+  // Validate required fields if marking complete
+  if (shouldMarkComplete) {
+    const hasRequiredFields =
+      data.goals &&
+      data.goals.length > 0 &&
+      data.currentTitle &&
+      data.yearsExperience !== undefined &&
+      data.skills &&
+      data.skills.length > 0 &&
+      data.targetRoles &&
+      data.targetRoles.length > 0 &&
+      data.salaryMin !== undefined &&
+      data.workPreferences &&
+      (data.workPreferences.remote ||
+        data.workPreferences.hybrid ||
+        data.workPreferences.onsite) &&
+      data.location;
+
+    if (!hasRequiredFields) {
+      throw new Error("Cannot mark onboarding complete: required fields missing");
+    }
   }
 
   // Save onboarding progress
@@ -223,27 +254,8 @@ export async function saveOnboardingData(data: Partial<OnboardingData>): Promise
       willing_to_relocate: data.willingToRelocate,
       salary_min: data.salaryMin,
       salary_ideal: data.salaryIdeal,
-      completed: !!(
-        data.goals &&
-        data.goals.length > 0 &&
-        data.currentTitle &&
-        data.yearsExperience !== undefined &&
-        data.skills &&
-        data.skills.length > 0 &&
-        data.targetRoles &&
-        data.targetRoles.length > 0
-      ),
-      completed_at:
-        data.goals &&
-        data.goals.length > 0 &&
-        data.currentTitle &&
-        data.yearsExperience !== undefined &&
-        data.skills &&
-        data.skills.length > 0 &&
-        data.targetRoles &&
-        data.targetRoles.length > 0
-          ? new Date().toISOString()
-          : null,
+      completed: shouldMarkComplete,
+      completed_at: shouldMarkComplete ? new Date().toISOString() : null,
     },
     {
       onConflict: "user_id",

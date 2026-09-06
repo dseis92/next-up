@@ -880,6 +880,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState<Partial<OnboardingData>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -933,11 +934,18 @@ export default function OnboardingPage() {
   };
 
   const handleNext = async () => {
-    // Save current state to database before navigating
-    try {
-      await saveOnboardingData(data);
+    // Prevent concurrent saves
+    if (isSaving) return;
 
-      if (currentStep < TOTAL_STEPS) {
+    const isLastStep = currentStep === TOTAL_STEPS;
+
+    // Save current state to database before navigating
+    setIsSaving(true);
+    try {
+      // Save progress (Steps 1-9) or mark complete (Step 10)
+      await saveOnboardingData(data, { markComplete: isLastStep });
+
+      if (!isLastStep) {
         setCurrentStep(currentStep + 1);
       } else {
         // Complete onboarding - final save successful, navigate to discover
@@ -945,16 +953,21 @@ export default function OnboardingPage() {
       }
     } catch (error) {
       console.error("Failed to save onboarding progress:", error);
-      // TODO: Show user-friendly error toast
-      // For now, prevent navigation on save failure
+      // Show user-friendly error and prevent navigation
       alert("Failed to save your progress. Please check your connection and try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleBack = async () => {
-    // Save current state before navigating back
+    // Prevent concurrent saves
+    if (isSaving) return;
+
+    // Save current state before navigating back (progress only, never mark complete)
+    setIsSaving(true);
     try {
-      await saveOnboardingData(data);
+      await saveOnboardingData(data, { markComplete: false });
 
       if (currentStep > 1) {
         setCurrentStep(currentStep - 1);
@@ -965,6 +978,8 @@ export default function OnboardingPage() {
       if (currentStep > 1) {
         setCurrentStep(currentStep - 1);
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1034,7 +1049,12 @@ export default function OnboardingPage() {
         {/* Navigation */}
         <div className="mt-8 flex gap-3">
           {currentStep > 1 && (
-            <Button variant="secondary" onClick={handleBack} className="flex-1">
+            <Button
+              variant="secondary"
+              onClick={handleBack}
+              disabled={isSaving}
+              className="flex-1"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
@@ -1042,10 +1062,12 @@ export default function OnboardingPage() {
           <Button
             variant="primary"
             onClick={handleNext}
-            disabled={!canProceed()}
+            disabled={!canProceed() || isSaving}
             className="flex-1"
           >
-            {currentStep === TOTAL_STEPS ? (
+            {isSaving ? (
+              "Saving..."
+            ) : currentStep === TOTAL_STEPS ? (
               "Show my matches"
             ) : (
               <>
