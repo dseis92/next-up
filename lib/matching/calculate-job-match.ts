@@ -49,6 +49,10 @@ import {
   findMissingSkills,
   extractSkillsFromText,
 } from "./skill-aliases";
+import {
+  generateFitReasons as centralizedFitReasons,
+  generateConcernReasons as centralizedConcernReasons,
+} from "./reasons";
 
 /**
  * Main entry point: Calculate how well a job matches a user profile
@@ -75,7 +79,7 @@ export function calculateJobMatch(
     };
   }
 
-  // Calculate all component scores
+  // Calculate all component scores (except user priorities which needs breakdown)
   const skillsScore = calculateSkillsScore(profile, job);
   const experienceScore = calculateExperienceScore(profile, job);
   const seniorityScore = calculateSeniorityScore(profile, job);
@@ -83,9 +87,9 @@ export function calculateJobMatch(
   const workArrangementScore = calculateWorkArrangementScore(profile, job);
   const locationScore = calculateLocationScore(profile, job);
   const careerGoalsScore = calculateCareerGoalsScore(profile, job);
-  const userPrioritiesScore = calculateUserPrioritiesScore(profile, job);
 
-  const breakdown = {
+  // Create partial breakdown for user priorities calculation
+  const partialBreakdown = {
     skills: skillsScore,
     experience: experienceScore,
     seniority: seniorityScore,
@@ -93,6 +97,15 @@ export function calculateJobMatch(
     workArrangement: workArrangementScore,
     location: locationScore,
     careerGoals: careerGoalsScore,
+    userPriorities: { score: 0, weight: COMPONENT_WEIGHTS.userPriorities, confidence: "low" as const },
+  };
+
+  // Calculate user priorities with component scores
+  const userPrioritiesScore = calculateUserPrioritiesScore(profile, job, partialBreakdown);
+
+  // Create final breakdown
+  const breakdown = {
+    ...partialBreakdown,
     userPriorities: userPrioritiesScore,
   };
 
@@ -111,9 +124,12 @@ export function calculateJobMatch(
     overallScore = HARD_FAILURE_SCORE_CAP;
   }
 
-  // Generate reasons
-  const reasonsFit = generateFitReasons(profile, job, breakdown);
-  const reasonsConcern = generateConcernReasons(profile, job, breakdown, hardFailures);
+  // Generate reasons using centralized reason generation
+  const matched = skillsScore.metadata?.matched as string[] || [];
+  const missing = skillsScore.metadata?.missing as string[] || [];
+
+  const reasonsFit = centralizedFitReasons(matched, breakdown, job);
+  const reasonsConcern = centralizedConcernReasons(missing, breakdown, hardFailures);
 
   return {
     status: "scored",
@@ -274,11 +290,13 @@ function parseExperienceRequirement(text: string): ExperienceRequirement | null 
   if (!text) return null;
 
   // Patterns like "3+ years", "3-5 years", "minimum 5 years", "at least 2 years"
+  // IMPORTANT: Order matters - check more specific patterns before generic ones
   const patterns = [
-    /(\d+)\+?\s*years?/i,
-    /(\d+)\s*-\s*(\d+)\s*years?/i,
-    /minimum\s+(\d+)\s*years?/i,
-    /at\s+least\s+(\d+)\s*years?/i,
+    /(\d+)\s*-\s*(\d+)\s*years?/i, // "3-5 years" - must come before generic
+    /minimum\s+(\d+)\s*years?/i, // "minimum 5 years"
+    /at\s+least\s+(\d+)\s*years?/i, // "at least 2 years"
+    /(\d+)\+\s*years?/i, // "3+ years" - explicit plus
+    /(\d+)\s+years?/i, // "3 years" - generic, must be last
   ];
 
   for (const pattern of patterns) {
@@ -300,6 +318,7 @@ function parseExperienceRequirement(text: string): ExperienceRequirement | null 
 
 /**
  * Calculate experience component score
+ * Incorporates transferable role relevance as a qualification factor
  */
 function calculateExperienceScore(
   profile: MatchProfile,
@@ -329,8 +348,8 @@ function calculateExperienceScore(
     };
   }
 
-  // Calculate score
-  let score = 70; // Default neutral score
+  // Calculate base score from years
+  let baseScore = 70; // Default neutral score
   let confidence: "high" | "medium" | "low" = "medium";
 
   if (requiredYears) {
@@ -338,7 +357,7 @@ function calculateExperienceScore(
 
     if (userYears >= requiredYears.minYears) {
       // Meets or exceeds requirement
-      score = 100 * EXPERIENCE_WEIGHTS.perfectMatchYears;
+      baseScore = 100 * EXPERIENCE_WEIGHTS.perfectMatchYears;
     } else {
       // Below requirement
       const yearsDifference = requiredYears.minYears - userYears;
@@ -347,20 +366,45 @@ function calculateExperienceScore(
         EXPERIENCE_WEIGHTS.maxYearsPenalty
       );
 
-      score =
+      baseScore =
         100 *
         EXPERIENCE_WEIGHTS.partialMatchYears *
         (1 - penalizedYears * EXPERIENCE_WEIGHTS.underQualifiedPenalty);
     }
   }
 
+  // Check for transferable role relevance
+  let transferabilityBonus = 0;
+  let isTransferable = false;
+  let transferPath: TransferableRole | null = null;
+
+  if (profile.currentRole) {
+    // Check if user's current role transfers to this job title
+    transferPath = findTransferableMatch(profile.currentRole, job.title);
+
+    if (transferPath) {
+      isTransferable = true;
+      // Apply transferability credit as a bonus to base score
+      // This recognizes that transferable field experience is valuable
+      // even if not exact-match experience
+      transferabilityBonus =
+        (100 - baseScore) *
+        transferPath.transferabilityScore *
+        EXPERIENCE_WEIGHTS.transferableExperienceCredit;
+    }
+  }
+
+  const finalScore = Math.max(0, Math.min(100, baseScore + transferabilityBonus));
+
   return {
-    score: Math.max(0, Math.min(100, score)),
+    score: finalScore,
     weight: COMPONENT_WEIGHTS.experience,
     confidence,
     metadata: {
       userYears,
       requiredYears: requiredYears?.minYears,
+      isTransferable,
+      transferabilityBonus: isTransferable ? Math.round(transferabilityBonus) : undefined,
     },
   };
 }
@@ -626,17 +670,11 @@ function calculateWorkArrangementScore(
     hardFailure = true;
     score = 0;
   } else if (userAccepts) {
-    // Check if it's the preferred one (assume remote > hybrid > onsite preference priority)
-    const isPreferred =
-      (jobArrangement === "remote" && prefs.remote) ||
-      (jobArrangement === "hybrid" && prefs.hybrid && !prefs.remote) ||
-      (jobArrangement === "onsite" && prefs.onsite && !prefs.remote && !prefs.hybrid);
-
-    score = isPreferred
-      ? WORK_ARRANGEMENT_WEIGHTS.perfectMatch * 100
-      : WORK_ARRANGEMENT_WEIGHTS.acceptableMatch * 100;
+    // User explicitly accepts this arrangement
+    // All accepted arrangements are treated equally unless priorities indicate otherwise
+    score = WORK_ARRANGEMENT_WEIGHTS.perfectMatch * 100;
   } else {
-    // User didn't explicitly say yes, but also didn't exclude it
+    // User didn't explicitly accept or reject
     score = WORK_ARRANGEMENT_WEIGHTS.notPreferred * 100;
   }
 
@@ -648,6 +686,7 @@ function calculateWorkArrangementScore(
       jobArrangement,
       userAccepts,
       hardFailure,
+      preferencesCount,
     },
   };
 }
@@ -963,31 +1002,121 @@ function calculateCareerGoalsScore(
 
 /**
  * Calculate user priorities score
- * Adjusts based on how well job aligns with what user values most
+ * Weights component compatibility by what user values most
+ * Only uses priorities with measurable job-match evidence
  */
 function calculateUserPrioritiesScore(
   profile: MatchProfile,
-  _job: MatchJob
+  _job: MatchJob,
+  breakdown?: MatchResult["breakdown"]
 ): ComponentScore {
-  if (!profile.priorities) {
+  if (!profile.priorities || !breakdown) {
     return {
-      score: 60, // Neutral
+      score: 60, // Neutral when no priorities or no breakdown available
       weight: COMPONENT_WEIGHTS.userPriorities,
       confidence: "low",
       metadata: {},
     };
   }
 
-  // This is a simplified implementation
-  // A more sophisticated version would weight other component scores by user priorities
-  // For now, use a neutral score with metadata indicating priorities exist
+  const priorities = profile.priorities;
+
+  // Map priority dimensions to measurable components
+  // Only include dimensions where we have actual job-match evidence
+  const measurablePriorities: Array<{
+    dimension: string;
+    priorityValue: number;
+    componentScore: number;
+  }> = [];
+
+  // Salary priority → salary component
+  if (breakdown.salary && priorities.salary > 0) {
+    measurablePriorities.push({
+      dimension: "salary",
+      priorityValue: priorities.salary,
+      componentScore: breakdown.salary.score,
+    });
+  }
+
+  // Location priority → location component
+  if (breakdown.location && priorities.location > 0) {
+    measurablePriorities.push({
+      dimension: "location",
+      priorityValue: priorities.location,
+      componentScore: breakdown.location.score,
+    });
+  }
+
+  // Remote flexibility → work arrangement component
+  if (breakdown.workArrangement && priorities.remoteFlexibility > 0) {
+    measurablePriorities.push({
+      dimension: "remoteFlexibility",
+      priorityValue: priorities.remoteFlexibility,
+      componentScore: breakdown.workArrangement.score,
+    });
+  }
+
+  // Career growth → career goals component
+  if (breakdown.careerGoals && priorities.careerGrowth > 0) {
+    measurablePriorities.push({
+      dimension: "careerGrowth",
+      priorityValue: priorities.careerGrowth,
+      componentScore: breakdown.careerGoals.score,
+    });
+  }
+
+  // Learning → also maps to career goals (advancement/learning opportunity)
+  if (breakdown.careerGoals && priorities.learning > 0) {
+    measurablePriorities.push({
+      dimension: "learning",
+      priorityValue: priorities.learning,
+      componentScore: breakdown.careerGoals.score,
+    });
+  }
+
+  // If no measurable priorities, return neutral
+  if (measurablePriorities.length === 0) {
+    return {
+      score: 60,
+      weight: COMPONENT_WEIGHTS.userPriorities,
+      confidence: "low",
+      metadata: {
+        usedPriorities: [],
+        unsupportedPriorities: [
+          "culture",
+          "mission",
+          "benefits",
+          "stability",
+          "workLifeBalance",
+        ],
+      },
+    };
+  }
+
+  // Calculate weighted priority compatibility
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (const priority of measurablePriorities) {
+    weightedSum += priority.priorityValue * priority.componentScore;
+    totalWeight += priority.priorityValue;
+  }
+
+  const score = totalWeight > 0 ? weightedSum / totalWeight : 60;
 
   return {
-    score: 70,
+    score: Math.max(0, Math.min(100, score)),
     weight: COMPONENT_WEIGHTS.userPriorities,
-    confidence: "medium",
+    confidence: measurablePriorities.length >= 3 ? "high" : "medium",
     metadata: {
-      hasPriorities: true,
+      usedPriorities: measurablePriorities.map((p) => p.dimension),
+      unsupportedPriorities: [
+        "culture",
+        "mission",
+        "benefits",
+        "stability",
+        "workLifeBalance",
+      ],
     },
   };
 }
@@ -1084,129 +1213,34 @@ function detectHardFailures(
     });
   }
 
-  return failures;
-}
+  // Relocation hard failure
+  // Conservative rule: only create failure when data makes incompatibility clear
+  if (
+    profile.location &&
+    job.location &&
+    (job.workArrangement === "onsite" || job.workArrangement === "hybrid") &&
+    profile.willingToRelocate === false
+  ) {
+    const userState = extractState(profile.location);
+    const jobState = extractState(job.location);
 
-/**
- * Generate fit reasons
- */
-function generateFitReasons(
-  profile: MatchProfile,
-  job: MatchJob,
-  breakdown: MatchResult["breakdown"]
-): MatchReason[] {
-  const reasons: MatchReason[] = [];
-
-  // Skills match
-  const matched = breakdown.skills.metadata?.matched as string[] || [];
-  if (matched.length >= 3) {
-    reasons.push({
-      text: `You match ${matched.length} of the key skills for this role`,
-      priority: 100,
-      component: "skills",
-    });
-  }
-
-  // Salary match
-  if (breakdown.salary.score >= 85) {
-    reasons.push({
-      text: "The salary range aligns well with your target compensation",
-      priority: 90,
-      component: "salary",
-    });
-  }
-
-  // Work arrangement match
-  if (breakdown.workArrangement.score >= 90) {
-    reasons.push({
-      text: `This ${job.workArrangement} role matches your work preferences`,
-      priority: 85,
-      component: "workArrangement",
-    });
-  }
-
-  // Career goals match
-  if (breakdown.careerGoals.score >= 80) {
-    const matchType = breakdown.careerGoals.metadata?.matchType;
-    if (matchType === "exact") {
-      reasons.push({
-        text: "This role matches one of your target career paths",
-        priority: 95,
-        component: "careerGoals",
-      });
-    } else if (matchType === "transferable") {
-      reasons.push({
-        text: "Your current experience transfers well to this role",
-        priority: 90,
-        component: "careerGoals",
+    // Different states AND not in preferred locations
+    if (
+      userState &&
+      jobState &&
+      userState !== jobState &&
+      !profile.preferredLocations.some((loc) => locationsMatch(loc, job.location!))
+    ) {
+      failures.push({
+        code: "relocation_conflict",
+        severity: "hard",
+        message: `This position requires relocation to ${job.location}, but you indicated unwillingness to relocate`,
+        component: "location",
       });
     }
   }
 
-  // Sort by priority (descending) and limit
-  reasons.sort((a, b) => b.priority - a.priority);
-  return reasons.slice(0, 4);
-}
-
-/**
- * Generate concern reasons
- */
-function generateConcernReasons(
-  profile: MatchProfile,
-  job: MatchJob,
-  breakdown: MatchResult["breakdown"],
-  hardFailures: HardFailure[]
-): MatchReason[] {
-  const reasons: MatchReason[] = [];
-
-  // Hard failures are top priority
-  for (const failure of hardFailures) {
-    reasons.push({
-      text: failure.message,
-      priority: 100,
-      component: failure.component,
-    });
-  }
-
-  // Missing skills
-  const missing = breakdown.skills.metadata?.missing as string[] || [];
-  if (missing.length > 0 && missing.length <= 3) {
-    const skillsList = missing.slice(0, 2).join(", ");
-    const suffix = missing.length > 2 ? ` and ${missing.length - 2} more` : "";
-    reasons.push({
-      text: `${skillsList}${suffix} listed as desired skills`,
-      priority: 80,
-      component: "skills",
-    });
-  }
-
-  // Experience gap
-  const userYears = breakdown.experience.metadata?.userYears as number;
-  const requiredYears = breakdown.experience.metadata?.requiredYears as number;
-  if (requiredYears && userYears < requiredYears) {
-    reasons.push({
-      text: `Role asks for ${requiredYears}+ years; your profile shows ${userYears} years`,
-      priority: 75,
-      component: "experience",
-    });
-  }
-
-  // Salary below ideal (but not hard failure)
-  if (
-    breakdown.salary.score < 85 &&
-    breakdown.salary.score > 40 &&
-    !breakdown.salary.metadata?.hardFailure
-  ) {
-    reasons.push({
-      text: "Salary range falls below your ideal target",
-      priority: 70,
-      component: "salary",
-    });
-  }
-
-  // Sort by priority and limit
-  reasons.sort((a, b) => b.priority - a.priority);
-  return reasons.slice(0, 3);
+  return failures;
 }
 
 /**

@@ -238,7 +238,7 @@ describe("NextUp Matching Engine", () => {
       const result = calculateJobMatch(profileWithoutBIM, jobRequiringBIM);
 
       expect(result.missingSkills).toBeDefined();
-      // BIM might be in missing skills if extracted
+      expect(result.missingSkills).toContain("bim"); // Canonical normalized form
     });
 
     it("should handle skill aliases correctly", () => {
@@ -305,10 +305,24 @@ describe("NextUp Matching Engine", () => {
         ],
       };
 
-      const result = calculateJobMatch(profileWithDuplicates, projectEngineerJob);
+      const profileWithSingleSkill: MatchProfile = {
+        ...towerForemanProfile,
+        skills: [
+          { name: "Leadership", proficiency: "strong" },
+          { name: "Safety", proficiency: "strong" }, // Need multiple skills to meet min requirements
+        ],
+      };
 
-      // Should normalize to single canonical skill
-      expect(result.status).toBe("scored");
+      const resultDuplicate = calculateJobMatch(profileWithDuplicates, projectEngineerJob);
+      const resultSingle = calculateJobMatch(profileWithSingleSkill, projectEngineerJob);
+
+      // Duplicates should normalize to same matched skills
+      // Both should identify "leadership" as canonical matched skill exactly once
+      const dupMatched = resultDuplicate.matchedSkills.filter((s) => s === "leadership");
+      const singleMatched = resultSingle.matchedSkills.filter((s) => s === "leadership");
+
+      expect(dupMatched.length).toBe(1); // Only one instance despite 3 aliases
+      expect(singleMatched.length).toBe(1); // Same as single instance
     });
   });
 
@@ -360,23 +374,36 @@ describe("NextUp Matching Engine", () => {
       const result = calculateJobMatch(towerForemanProfile, jobWithRange);
 
       expect(result.status).toBe("scored");
-      // Should handle range appropriately
+      // Should parse minYears correctly from range
+      expect(result.breakdown.experience.metadata?.requiredYears).toBe(3);
+      // User has 4 years, should meet 3+ requirement
+      expect(result.breakdown.experience.score).toBeGreaterThan(80);
     });
   });
 
   describe("Transferable Career Paths", () => {
-    it("should recognize Tower Foreman → Project Engineer as transferable", () => {
-      const result = calculateJobMatch(towerForemanProfile, projectEngineerJob);
+    it("should recognize Tower Foreman → Project Engineer as transferable in experience", () => {
+      // Use profile WITHOUT Project Engineer in targetRoles to test transferability
+      // Also use less experience to ensure bonus is visible
+      const towerForemanWithoutTargetRole: MatchProfile = {
+        ...towerForemanProfile,
+        targetRoles: ["Construction Manager", "Operations Manager"], // Different targets
+        yearsExperience: 2, // Below the 3+ requirement, so transferability bonus applies
+      };
 
-      // Should have good career goals score due to transferability
-      expect(result.breakdown.careerGoals.score).toBeGreaterThan(65);
+      const result = calculateJobMatch(towerForemanWithoutTargetRole, projectEngineerJob);
+
+      // Should receive transferability credit in experience component
+      expect(result.breakdown.experience.metadata?.isTransferable).toBe(true);
+      // Transferability bonus increases score for below-requirement candidates
+      expect(result.breakdown.experience.score).toBeGreaterThan(40);
     });
 
     it("should recognize Field Supervisor → Assistant Project Manager", () => {
       const fieldSupervisorProfile: MatchProfile = {
         ...towerForemanProfile,
         currentRole: "Field Supervisor",
-        targetRoles: ["Assistant Project Manager", "Project Coordinator"],
+        targetRoles: ["Operations Supervisor", "Site Manager"], // NOT including APM
       };
 
       const apmJob: MatchJob = {
@@ -386,14 +413,15 @@ describe("NextUp Matching Engine", () => {
 
       const result = calculateJobMatch(fieldSupervisorProfile, apmJob);
 
-      expect(result.breakdown.careerGoals.score).toBeGreaterThan(65);
+      // Should show transferability in experience
+      expect(result.breakdown.experience.metadata?.isTransferable).toBe(true);
     });
 
     it("should recognize Crew Lead → Operations Manager", () => {
       const crewLeadProfile: MatchProfile = {
         ...towerForemanProfile,
         currentRole: "Crew Lead",
-        targetRoles: ["Operations Manager", "Field Operations Manager"],
+        targetRoles: ["Site Supervisor", "Field Manager"], // NOT including Ops Manager
       };
 
       const opsManagerJob: MatchJob = {
@@ -403,7 +431,21 @@ describe("NextUp Matching Engine", () => {
 
       const result = calculateJobMatch(crewLeadProfile, opsManagerJob);
 
-      expect(result.breakdown.careerGoals.score).toBeGreaterThan(60);
+      // Should show transferability in experience
+      expect(result.breakdown.experience.metadata?.isTransferable).toBe(true);
+    });
+
+    it("should NOT give transferability credit for unrelated roles", () => {
+      const chefProfile: MatchProfile = {
+        ...towerForemanProfile,
+        currentRole: "Executive Chef",
+        targetRoles: ["Restaurant Manager", "Culinary Director"],
+      };
+
+      const result = calculateJobMatch(chefProfile, projectEngineerJob);
+
+      // Should NOT show transferability
+      expect(result.breakdown.experience.metadata?.isTransferable).not.toBe(true);
     });
 
     it("should score exact target role match higher than transferable", () => {
@@ -413,10 +455,16 @@ describe("NextUp Matching Engine", () => {
         targetRoles: ["Project Engineer", "Senior Project Engineer"],
       };
 
-      const exactResult = calculateJobMatch(exactMatchProfile, projectEngineerJob);
-      const transferableResult = calculateJobMatch(towerForemanProfile, projectEngineerJob);
+      const transferableProfile: MatchProfile = {
+        ...towerForemanProfile,
+        targetRoles: ["Construction Manager"], // NOT Project Engineer
+      };
 
-      expect(exactResult.breakdown.careerGoals.score).toBeGreaterThanOrEqual(
+      const exactResult = calculateJobMatch(exactMatchProfile, projectEngineerJob);
+      const transferableResult = calculateJobMatch(transferableProfile, projectEngineerJob);
+
+      // Exact target match should score higher in career goals
+      expect(exactResult.breakdown.careerGoals.score).toBeGreaterThan(
         transferableResult.breakdown.careerGoals.score
       );
     });
@@ -564,6 +612,38 @@ describe("NextUp Matching Engine", () => {
       // Most people find remote acceptable
       expect(result.breakdown.workArrangement.score).toBeGreaterThan(0);
     });
+
+    it("should not arbitrarily rank accepted work arrangements", () => {
+      const profileAcceptingBoth: MatchProfile = {
+        ...towerForemanProfile,
+        workPreferences: {
+          remote: false,
+          hybrid: true,
+          onsite: true,
+          fullTime: true,
+          partTime: false,
+          contract: false,
+        },
+      };
+
+      const hybridJob: MatchJob = {
+        ...projectEngineerJob,
+        workArrangement: "hybrid",
+      };
+
+      const onsiteJob: MatchJob = {
+        ...projectEngineerJob,
+        workArrangement: "onsite",
+      };
+
+      const hybridResult = calculateJobMatch(profileAcceptingBoth, hybridJob);
+      const onsiteResult = calculateJobMatch(profileAcceptingBoth, onsiteJob);
+
+      // Both accepted arrangements should score equally
+      expect(hybridResult.breakdown.workArrangement.score).toBe(
+        onsiteResult.breakdown.workArrangement.score
+      );
+    });
   });
 
   describe("Location Scoring", () => {
@@ -627,6 +707,26 @@ describe("NextUp Matching Engine", () => {
 
       // Willing to relocate helps
       expect(result.breakdown.location.score).toBeGreaterThan(60);
+    });
+
+    it("should create hard failure for relocation conflicts", () => {
+      const unwillingProfile: MatchProfile = {
+        ...towerForemanProfile,
+        location: "Madison, WI",
+        preferredLocations: ["Madison, WI", "Milwaukee, WI"],
+        willingToRelocate: false,
+      };
+
+      const distantOnsiteJob: MatchJob = {
+        ...projectEngineerJob,
+        location: "Denver, CO", // Different state
+        workArrangement: "onsite",
+      };
+
+      const result = calculateJobMatch(unwillingProfile, distantOnsiteJob);
+
+      // Should detect relocation conflict
+      expect(result.hardFailures.some((f) => f.code === "relocation_conflict")).toBe(true);
     });
   });
 
@@ -805,6 +905,76 @@ describe("NextUp Matching Engine", () => {
       const result = calculateJobMatch(upperCaseProfile, lowerCaseJob);
 
       expect(result.matchedSkills.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("User Priorities", () => {
+    it("should affect score when priorities differ for measurable dimensions", () => {
+      // Create job with weaker salary match to differentiate priority impact
+      const moderateSalaryJob: MatchJob = {
+        ...projectEngineerJob,
+        salaryMin: 60000,
+        salaryMax: 75000, // Below ideal, will score around 70
+      };
+
+      const highSalaryPriorityProfile: MatchProfile = {
+        ...towerForemanProfile,
+        priorities: {
+          salary: 10, // High salary priority
+          workLifeBalance: 1,
+          careerGrowth: 1,
+          location: 1,
+          remoteFlexibility: 1,
+          culture: 1,
+          stability: 1,
+          benefits: 1,
+          mission: 1,
+          learning: 1,
+        },
+      };
+
+      const lowSalaryPriorityProfile: MatchProfile = {
+        ...towerForemanProfile,
+        priorities: {
+          salary: 1, // Low salary priority
+          workLifeBalance: 1,
+          careerGrowth: 10, // High career growth priority
+          location: 10,
+          remoteFlexibility: 10,
+          culture: 1,
+          stability: 1,
+          benefits: 1,
+          mission: 1,
+          learning: 10,
+        },
+      };
+
+      const highSalaryResult = calculateJobMatch(highSalaryPriorityProfile, moderateSalaryJob);
+      const lowSalaryResult = calculateJobMatch(lowSalaryPriorityProfile, moderateSalaryJob);
+
+      // Different priorities should affect userPriorities score
+      // High salary priority with mediocre salary match should score lower
+      expect(highSalaryResult.breakdown.userPriorities.score).not.toBe(
+        lowSalaryResult.breakdown.userPriorities.score
+      );
+    });
+
+    it("should use only measurable priority dimensions", () => {
+      const result = calculateJobMatch(towerForemanProfile, projectEngineerJob);
+
+      const usedPriorities = result.breakdown.userPriorities.metadata?.usedPriorities as
+        | string[]
+        | undefined;
+      const unsupportedPriorities = result.breakdown.userPriorities.metadata
+        ?.unsupportedPriorities as string[] | undefined;
+
+      // Should identify which priorities are measurable vs not
+      expect(usedPriorities).toBeDefined();
+      expect(unsupportedPriorities).toBeDefined();
+
+      // Unsupported should include non-measurable dimensions
+      expect(unsupportedPriorities).toContain("culture");
+      expect(unsupportedPriorities).toContain("mission");
     });
   });
 });

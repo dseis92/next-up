@@ -1,8 +1,8 @@
 /**
- * NextUp Matching Engine - Reason Generation
+ * NextUp Matching Engine - Centralized Reason Generation
  *
- * This module contains utilities for generating match reasons.
- * Reasons are deterministic templates populated with actual match data.
+ * This module is the single source for generating match reasons.
+ * All reason strings are defined here and used by the matching engine.
  *
  * All reasons must be:
  * - Factual (based on actual data, not speculation)
@@ -11,11 +11,30 @@
  * - Deterministic (same inputs = same reasons)
  */
 
-import type { MatchReason } from "./types";
+import type { MatchReason, MatchProfile, MatchJob, ComponentScore } from "./types";
 
 /**
- * Reason templates
+ * Reason priority constants
  * Priority scale: 100 = most important, 0 = least important
+ */
+const PRIORITY = {
+  HARD_FAILURE: 100,
+  STRONG_FIT: 100,
+  EXACT_TARGET: 95,
+  SALARY_MATCH: 90,
+  TRANSFERABLE: 90,
+  WORK_ARRANGEMENT: 85,
+  LOCATION_MATCH: 85,
+  MISSING_SKILLS: 80,
+  EXPERIENCE_GAP: 75,
+  INDUSTRY: 70,
+  SENIORITY: 75,
+  SALARY_PARTIAL: 70,
+} as const;
+
+/**
+ * Reason generation functions
+ * Each function creates a deterministic reason from data
  */
 export const REASON_TEMPLATES = {
   // Skill-based reasons
@@ -177,14 +196,143 @@ export const REASON_TEMPLATES = {
   seniority: {
     goodFit: (): MatchReason => ({
       text: "Seniority level aligns well with your experience",
-      priority: 75,
+      priority: PRIORITY.SENIORITY,
       component: "seniority",
     }),
 
     majorGap: (): MatchReason => ({
       text: "Significant seniority gap between your current level and this role",
-      priority: 80,
+      priority: PRIORITY.MISSING_SKILLS,
       component: "seniority",
     }),
   },
 } as const;
+
+/**
+ * Generate fit reasons from breakdown data
+ * Centralized logic for creating positive match reasons
+ */
+export function generateFitReasons(
+  matchedSkills: string[],
+  breakdown: {
+    skills: ComponentScore;
+    salary: ComponentScore;
+    workArrangement: ComponentScore;
+    careerGoals: ComponentScore;
+  },
+  job: MatchJob
+): MatchReason[] {
+  const reasons: MatchReason[] = [];
+
+  // Skills match
+  if (matchedSkills.length >= 3) {
+    reasons.push({
+      text: `You match ${matchedSkills.length} of the key skills for this role`,
+      priority: PRIORITY.STRONG_FIT,
+      component: "skills",
+    });
+  }
+
+  // Salary match
+  if (breakdown.salary.score >= 85) {
+    reasons.push({
+      text: "The salary range aligns well with your target compensation",
+      priority: PRIORITY.SALARY_MATCH,
+      component: "salary",
+    });
+  }
+
+  // Work arrangement match
+  if (breakdown.workArrangement.score >= 90) {
+    reasons.push({
+      text: `This ${job.workArrangement} role matches your work preferences`,
+      priority: PRIORITY.WORK_ARRANGEMENT,
+      component: "workArrangement",
+    });
+  }
+
+  // Career goals match
+  if (breakdown.careerGoals.score >= 80) {
+    const matchType = breakdown.careerGoals.metadata?.matchType;
+    if (matchType === "exact") {
+      reasons.push({
+        text: "This role matches one of your target career paths",
+        priority: PRIORITY.EXACT_TARGET,
+        component: "careerGoals",
+      });
+    } else if (matchType === "transferable") {
+      reasons.push({
+        text: "Your current experience transfers well to this role",
+        priority: PRIORITY.TRANSFERABLE,
+        component: "careerGoals",
+      });
+    }
+  }
+
+  // Sort by priority (descending) and limit
+  reasons.sort((a, b) => b.priority - a.priority);
+  return reasons.slice(0, 4);
+}
+
+/**
+ * Generate concern reasons from breakdown data
+ * Centralized logic for creating negative match reasons
+ */
+export function generateConcernReasons(
+  missingSkills: string[],
+  breakdown: {
+    experience: ComponentScore;
+    salary: ComponentScore;
+  },
+  hardFailures: Array<{ message: string; component: string }>
+): MatchReason[] {
+  const reasons: MatchReason[] = [];
+
+  // Hard failures are top priority
+  for (const failure of hardFailures) {
+    reasons.push({
+      text: failure.message,
+      priority: PRIORITY.HARD_FAILURE,
+      component: failure.component,
+    });
+  }
+
+  // Missing skills
+  if (missingSkills.length > 0 && missingSkills.length <= 3) {
+    const skillsList = missingSkills.slice(0, 2).join(", ");
+    const suffix = missingSkills.length > 2 ? ` and ${missingSkills.length - 2} more` : "";
+    reasons.push({
+      text: `${skillsList}${suffix} listed as desired skills`,
+      priority: PRIORITY.MISSING_SKILLS,
+      component: "skills",
+    });
+  }
+
+  // Experience gap
+  const userYears = breakdown.experience.metadata?.userYears as number | undefined;
+  const requiredYears = breakdown.experience.metadata?.requiredYears as number | undefined;
+  if (requiredYears && userYears !== undefined && userYears < requiredYears) {
+    reasons.push({
+      text: `Role asks for ${requiredYears}+ years; your profile shows ${userYears} years`,
+      priority: PRIORITY.EXPERIENCE_GAP,
+      component: "experience",
+    });
+  }
+
+  // Salary below ideal (but not hard failure)
+  if (
+    breakdown.salary.score < 85 &&
+    breakdown.salary.score > 40 &&
+    !breakdown.salary.metadata?.hardFailure
+  ) {
+    reasons.push({
+      text: "Salary range falls below your ideal target",
+      priority: PRIORITY.SALARY_PARTIAL,
+      component: "salary",
+    });
+  }
+
+  // Sort by priority and limit
+  reasons.sort((a, b) => b.priority - a.priority);
+  return reasons.slice(0, 3);
+}
