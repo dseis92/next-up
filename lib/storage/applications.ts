@@ -87,7 +87,7 @@ export async function getApplicationById(id: string): Promise<Application | null
     )
     .eq("id", id)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Failed to fetch application by id:", { applicationId: id, error: error.message });
@@ -139,7 +139,7 @@ export async function getApplicationByJobId(jobId: string): Promise<Application 
     )
     .eq("job_id", jobId)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Failed to fetch application by job id:", { jobId, error: error.message });
