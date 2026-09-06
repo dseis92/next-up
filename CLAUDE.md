@@ -58,27 +58,18 @@ Do not assume this document is newer than the repository.
 
 # CURRENT PROJECT STATE
 
-Latest expected starting commit:
+Current repository HEAD at the time these instructions were written:
+
+b4e8209
+Update Claude continuation instructions
+
+Latest completed implementation commit:
 
 c9c9e85
 Phase 8.1: Stabilize Supabase persistence and auth flows
 
-Completed:
-
-Phases 1–6:
-Core product flow, onboarding, profile, Discover, Save/Pass/Undo,
-Applications and application tracking.
-
-Phase 7:
-Supabase authentication.
-
-Phase 8:
-Supabase persistence and RLS.
-
-Phase 8.1:
-Supabase stabilization.
-
-The Supabase project has been linked locally.
+The b4e8209 commit only updates Claude project instructions.
+Phase 8.2 implementation has NOT started yet.
 
 IMPORTANT:
 The existing migrations have NOT yet been pushed to the remote Supabase
