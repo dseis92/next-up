@@ -214,8 +214,6 @@ export async function saveOnboardingData(
   }
 
   // Determine completion status
-  // If markComplete is explicitly set, use it
-  // Otherwise, keep existing completed status (progress save, not completion)
   const shouldMarkComplete = options?.markComplete === true;
 
   // Validate required fields if marking complete
@@ -224,7 +222,9 @@ export async function saveOnboardingData(
       data.goals &&
       data.goals.length > 0 &&
       data.currentTitle &&
+      data.industry &&
       data.yearsExperience !== undefined &&
+      data.employmentStatus &&
       data.skills &&
       data.skills.length > 0 &&
       data.targetRoles &&
@@ -241,7 +241,7 @@ export async function saveOnboardingData(
     }
   }
 
-  // Save onboarding progress
+  // Save onboarding progress (omit completed/completed_at for progress saves)
   const { error: onboardingError } = await supabase.from("onboarding_progress").upsert(
     {
       user_id: user.id,
@@ -254,8 +254,7 @@ export async function saveOnboardingData(
       willing_to_relocate: data.willingToRelocate,
       salary_min: data.salaryMin,
       salary_ideal: data.salaryIdeal,
-      completed: shouldMarkComplete,
-      completed_at: shouldMarkComplete ? new Date().toISOString() : null,
+      // Omit completed/completed_at — will be set after all writes succeed if marking complete
     },
     {
       onConflict: "user_id",
@@ -411,6 +410,22 @@ export async function saveOnboardingData(
     if (preferencesError) {
       console.error("Failed to save user preferences:", { userId: user.id, error: preferencesError.message });
       throw new Error("Failed to save user preferences");
+    }
+  }
+
+  // Mark completion LAST — only after all required writes succeed
+  if (shouldMarkComplete) {
+    const { error: completionError } = await supabase
+      .from("onboarding_progress")
+      .update({
+        completed: true,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("user_id", user.id);
+
+    if (completionError) {
+      console.error("Failed to mark onboarding complete:", { userId: user.id, error: completionError.message });
+      throw new Error("Failed to mark onboarding complete");
     }
   }
 }
