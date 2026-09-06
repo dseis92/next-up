@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Search, MapPin, ArrowRight, SlidersHorizontal } from "lucide-react";
-import { mockJobMatches } from "@/lib/data/mock-jobs";
+import { getJobs } from "@/lib/storage/jobs";
+import { calculatePersonalizedMatches } from "@/lib/matching/integration";
+import { createClient } from "@/lib/supabase/client";
 import { formatSalary } from "@/lib/utils";
+import type { JobMatch } from "@/types";
 
 export default function ExplorePage() {
   const router = useRouter();
@@ -21,8 +24,78 @@ export default function ExplorePage() {
   );
   const [minMatch, setMinMatch] = useState(0);
 
+  // Load personalized job matches
+  const [allMatches, setAllMatches] = useState<JobMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadMatches = async () => {
+      try {
+        // Get current user
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Load jobs
+        const jobs = await getJobs();
+
+        // Calculate personalized matches
+        const matchResults = await calculatePersonalizedMatches(user.id, jobs);
+
+        // Build JobMatch objects with real match scores
+        const jobMatches: JobMatch[] = [];
+
+        for (let i = 0; i < jobs.length; i++) {
+          const job = jobs[i];
+          const matchResult = matchResults[i];
+
+          // Skip incomplete profiles
+          if (matchResult.status === "incomplete_profile") {
+            continue;
+          }
+
+          jobMatches.push({
+            id: `${job.id}-match`,
+            user_id: user.id,
+            job_id: job.id,
+            job,
+            overall_score: matchResult.overallScore!,
+            qualification_score: matchResult.qualificationScore!,
+            lifestyle_score: matchResult.lifestyleScore!,
+            breakdown: {
+              skills: matchResult.breakdown.skills.score,
+              experience: matchResult.breakdown.experience.score,
+              salary: matchResult.breakdown.salary.score,
+              location: matchResult.breakdown.location.score,
+              work_arrangement: matchResult.breakdown.workArrangement.score,
+              career_goals: matchResult.breakdown.careerGoals.score,
+            },
+            matched_skills: matchResult.matchedSkills,
+            missing_skills: matchResult.missingSkills,
+            reasons_fit: matchResult.reasonsFit.map((r) => r.text),
+            reasons_concern: matchResult.reasonsConcern.map((r) => r.text),
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        setAllMatches(jobMatches);
+      } catch (error) {
+        console.error("Failed to load personalized matches:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMatches();
+  }, []);
+
   const filteredJobs = useMemo(() => {
-    return mockJobMatches.filter((match) => {
+    return allMatches.filter((match) => {
       const { job, overall_score } = match;
 
       // Search filter
@@ -41,7 +114,7 @@ export default function ExplorePage() {
 
       return matchesSearch && matchesArrangement && matchesScore;
     });
-  }, [searchQuery, selectedArrangement, minMatch]);
+  }, [allMatches, searchQuery, selectedArrangement, minMatch]);
 
   const arrangements = [
     { value: "remote", label: "Remote" },
@@ -55,6 +128,16 @@ export default function ExplorePage() {
     { value: 70, label: "70%+" },
     { value: 0, label: "All" },
   ];
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading opportunities...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

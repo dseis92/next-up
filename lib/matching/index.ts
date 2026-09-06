@@ -32,3 +32,5 @@ export type {
   TransferableRole,
 } from "./types";
 export { COMPONENT_WEIGHTS } from "./weights";
+export { buildMatchProfile, adaptJobForMatching } from "./adapters";
+export type { UserMatchingData } from "./adapters";

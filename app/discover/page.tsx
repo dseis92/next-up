@@ -7,7 +7,9 @@ import { JobDiscoveryCard } from "@/components/jobs/job-discovery-card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Toast } from "@/components/ui/toast";
-import { mockJobMatches } from "@/lib/data/mock-jobs";
+import { getJobs } from "@/lib/storage/jobs";
+import { calculatePersonalizedMatches } from "@/lib/matching/integration";
+import { createClient } from "@/lib/supabase/client";
 import {
   saveJob,
   passJob,
@@ -18,6 +20,7 @@ import {
 } from "@/lib/storage/job-actions";
 import { Flame } from "lucide-react";
 import type { JobMatch } from "@/types";
+import type { MatchResult } from "@/lib/matching/types";
 
 export default function DiscoverPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -29,15 +32,78 @@ export default function DiscoverPage() {
   } | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  // Filter out passed jobs
-  const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>(mockJobMatches);
+  // Personalized job matches
+  const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadMatches = async () => {
-      const passedIds = await getPassedJobIds();
-      setFilteredMatches(
-        mockJobMatches.filter((match) => !passedIds.includes(match.job.id))
-      );
+      try {
+        // Get current user
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Load jobs
+        const jobs = await getJobs();
+
+        // Calculate personalized matches
+        const matchResults = await calculatePersonalizedMatches(user.id, jobs);
+
+        // Filter out passed jobs
+        const passedIds = await getPassedJobIds();
+
+        // Build JobMatch objects with real match scores
+        const jobMatches: JobMatch[] = [];
+
+        for (let i = 0; i < jobs.length; i++) {
+          const job = jobs[i];
+          const matchResult = matchResults[i];
+
+          // Skip incomplete profiles or passed jobs
+          if (
+            matchResult.status === "incomplete_profile" ||
+            passedIds.includes(job.id)
+          ) {
+            continue;
+          }
+
+          jobMatches.push({
+            id: `${job.id}-match`,
+            user_id: user.id,
+            job_id: job.id,
+            job,
+            overall_score: matchResult.overallScore!,
+            qualification_score: matchResult.qualificationScore!,
+            lifestyle_score: matchResult.lifestyleScore!,
+            breakdown: {
+              skills: matchResult.breakdown.skills.score,
+              experience: matchResult.breakdown.experience.score,
+              salary: matchResult.breakdown.salary.score,
+              location: matchResult.breakdown.location.score,
+              work_arrangement: matchResult.breakdown.workArrangement.score,
+              career_goals: matchResult.breakdown.careerGoals.score,
+            },
+            matched_skills: matchResult.matchedSkills,
+            missing_skills: matchResult.missingSkills,
+            reasons_fit: matchResult.reasonsFit.map((r) => r.text),
+            reasons_concern: matchResult.reasonsConcern.map((r) => r.text),
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        setFilteredMatches(jobMatches);
+      } catch (error) {
+        console.error("Failed to load personalized matches:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     loadMatches();
   }, []);
@@ -108,6 +174,16 @@ export default function DiscoverPage() {
       reviewed: Math.min(prev.reviewed + 1, prev.target),
     }));
   };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading opportunities...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

@@ -10,7 +10,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { MatchScore } from "@/components/jobs/match-score";
 import { Progress } from "@/components/ui/progress";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { formatSalary } from "@/lib/utils";
+import { getJob } from "@/lib/storage/jobs";
+import { calculatePersonalizedMatch } from "@/lib/matching/integration";
+import { createClient } from "@/lib/supabase/client";
 import { saveJob, unsaveJob, isJobSaved } from "@/lib/storage/job-actions";
 import {
   createApplication,
@@ -27,8 +31,8 @@ import {
   AlertCircle,
   ExternalLink,
 } from "lucide-react";
-import { mockJobMatches } from "@/lib/data/mock-jobs";
 import type { JobMatch, Application } from "@/types";
+import type { MatchResult } from "@/lib/matching/types";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -36,22 +40,82 @@ export default function JobDetailPage() {
   const jobId = params.id as string;
 
   const [match, setMatch] = useState<JobMatch | null>(null);
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [application, setApplication] = useState<Application | null>(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadJobData = async () => {
-      // Find the job match
-      const foundMatch = mockJobMatches.find((m) => m.job.id === jobId);
-      setMatch(foundMatch || null);
+      try {
+        // Get current user
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      // Check if saved
-      setIsSaved(await isJobSaved(jobId));
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-      // Check if already applied
-      const existingApp = await getApplicationByJobId(jobId);
-      setApplication(existingApp);
+        // Load the job
+        const job = await getJob(jobId);
+
+        if (!job) {
+          setLoading(false);
+          return;
+        }
+
+        // Calculate personalized match
+        const result = await calculatePersonalizedMatch(user.id, job);
+
+        setMatchResult(result);
+
+        // Build JobMatch object
+        const isIncomplete = result.status === "incomplete_profile";
+
+        const jobMatch: JobMatch = {
+          id: `${job.id}-match`,
+          user_id: user.id,
+          job_id: job.id,
+          job,
+          overall_score: isIncomplete ? 0 : result.overallScore!,
+          qualification_score: isIncomplete ? 0 : result.qualificationScore!,
+          lifestyle_score: isIncomplete ? 0 : result.lifestyleScore!,
+          breakdown: {
+            skills: isIncomplete ? 0 : result.breakdown.skills.score,
+            experience: isIncomplete ? 0 : result.breakdown.experience.score,
+            salary: isIncomplete ? 0 : result.breakdown.salary.score,
+            location: isIncomplete ? 0 : result.breakdown.location.score,
+            work_arrangement: isIncomplete
+              ? 0
+              : result.breakdown.workArrangement.score,
+            career_goals: isIncomplete ? 0 : result.breakdown.careerGoals.score,
+          },
+          matched_skills: isIncomplete ? [] : result.matchedSkills,
+          missing_skills: isIncomplete ? [] : result.missingSkills,
+          reasons_fit: isIncomplete ? [] : result.reasonsFit.map((r) => r.text),
+          reasons_concern: isIncomplete
+            ? []
+            : result.reasonsConcern.map((r) => r.text),
+          created_at: new Date().toISOString(),
+        };
+
+        setMatch(jobMatch);
+
+        // Check if saved
+        setIsSaved(await isJobSaved(jobId));
+
+        // Check if already applied
+        const existingApp = await getApplicationByJobId(jobId);
+        setApplication(existingApp);
+      } catch (error) {
+        console.error("Failed to load job data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadJobData();
@@ -103,6 +167,16 @@ export default function JobDetailPage() {
       router.push("/applications");
     }, 500);
   };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading job...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!match) {
     return (
@@ -203,91 +277,100 @@ export default function JobDetailPage() {
               </div>
             )}
 
-            {/* Match Score */}
-            <Card variant="elevated" className="p-4">
-              <MatchScore score={overall_score} size="lg" />
-            </Card>
+            {/* Match Score or Incomplete Profile Message */}
+            {matchResult?.status === "incomplete_profile" ? (
+              <IncompleteProfileMessage />
+            ) : (
+              <Card variant="elevated" className="p-4">
+                <MatchScore score={overall_score} size="lg" />
+              </Card>
+            )}
           </div>
 
           {/* Match Breakdown */}
-          <Card className="mb-6 p-6">
-            <h2 className="text-heading mb-4">Match breakdown</h2>
-            <div className="space-y-3">
-              {Object.entries(breakdown).map(([key, value]) => (
-                <div key={key}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
-                    <span className="capitalize text-foreground">
-                      {key.replace("_", " ")}
-                    </span>
-                    <span className="font-semibold text-foreground">
-                      {value}%
-                    </span>
+          {matchResult?.status !== "incomplete_profile" && (
+            <Card className="mb-6 p-6">
+              <h2 className="text-heading mb-4">Match breakdown</h2>
+              <div className="space-y-3">
+                {Object.entries(breakdown).map(([key, value]) => (
+                  <div key={key}>
+                    <div className="mb-1 flex items-center justify-between text-sm">
+                      <span className="capitalize text-foreground">
+                        {key.replace("_", " ")}
+                      </span>
+                      <span className="font-semibold text-foreground">
+                        {value}%
+                      </span>
+                    </div>
+                    <Progress value={value} max={100} size="sm" />
                   </div>
-                  <Progress value={value} max={100} size="sm" />
-                </div>
-              ))}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Why you're a strong match */}
-          <Card className="mb-6 p-6">
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-              <h2 className="text-heading">Why you&apos;re a strong match</h2>
-            </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-              {matched_skills.map((skill) => (
-                <Badge key={skill} variant="success" size="md">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
-            <ul className="space-y-2">
-              {match.reasons_fit.map((reason, idx) => (
-                <li key={idx} className="flex gap-2 text-foreground-secondary">
-                  <span className="text-green-500">•</span>
-                  <span>{reason}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          {/* Things to consider */}
-          {missing_skills.length > 0 || match.reasons_concern.length > 0 ? (
+          {matchResult?.status !== "incomplete_profile" && (
             <Card className="mb-6 p-6">
               <div className="mb-4 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-warning" />
-                <h2 className="text-heading">Things to consider</h2>
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <h2 className="text-heading">Why you&apos;re a strong match</h2>
               </div>
-              {missing_skills.length > 0 && (
-                <div className="mb-4">
-                  <p className="mb-2 text-sm font-medium text-foreground">
-                    Skills to develop
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {missing_skills.map((skill) => (
-                      <Badge key={skill} variant="warning" size="sm">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {match.reasons_concern.length > 0 && (
-                <ul className="space-y-2">
-                  {match.reasons_concern.map((reason, idx) => (
-                    <li
-                      key={idx}
-                      className="flex gap-2 text-foreground-secondary"
-                    >
-                      <span className="text-warning">•</span>
-                      <span>{reason}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="mb-4 flex flex-wrap gap-2">
+                {matched_skills.map((skill) => (
+                  <Badge key={skill} variant="success" size="md">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+              <ul className="space-y-2">
+                {match.reasons_fit.map((reason, idx) => (
+                  <li key={idx} className="flex gap-2 text-foreground-secondary">
+                    <span className="text-green-500">•</span>
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ul>
             </Card>
-          ) : null}
+          )}
+
+          {/* Things to consider */}
+          {matchResult?.status !== "incomplete_profile" &&
+            (missing_skills.length > 0 || match.reasons_concern.length > 0) && (
+              <Card className="mb-6 p-6">
+                <div className="mb-4 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-warning" />
+                  <h2 className="text-heading">Things to consider</h2>
+                </div>
+                {missing_skills.length > 0 && (
+                  <div className="mb-4">
+                    <p className="mb-2 text-sm font-medium text-foreground">
+                      Skills to develop
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {missing_skills.map((skill) => (
+                        <Badge key={skill} variant="warning" size="sm">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {match.reasons_concern.length > 0 && (
+                  <ul className="space-y-2">
+                    {match.reasons_concern.map((reason, idx) => (
+                      <li
+                        key={idx}
+                        className="flex gap-2 text-foreground-secondary"
+                      >
+                        <span className="text-warning">•</span>
+                        <span>{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            )}
 
           {/* About the role */}
           <Card className="mb-6 p-6">

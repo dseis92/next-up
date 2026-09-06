@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Bookmark, MapPin, ArrowRight, X } from "lucide-react";
-import { mockJobMatches } from "@/lib/data/mock-jobs";
+import { getJobs } from "@/lib/storage/jobs";
+import { calculatePersonalizedMatches } from "@/lib/matching/integration";
+import { createClient } from "@/lib/supabase/client";
 import { formatSalary } from "@/lib/utils";
 import { getSavedJobs, unsaveJob } from "@/lib/storage/job-actions";
 import type { JobMatch } from "@/types";
@@ -17,12 +19,98 @@ import type { JobMatch } from "@/types";
 export default function SavedPage() {
   const router = useRouter();
   const [savedMatches, setSavedMatches] = useState<JobMatch[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadSavedJobs = async () => {
-      const savedIds = await getSavedJobs();
-      const matches = mockJobMatches.filter((m) => savedIds.includes(m.job.id));
-      setSavedMatches(matches);
+      try {
+        // Get current user
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        // Get saved job IDs
+        const savedIds = await getSavedJobs();
+
+        if (savedIds.length === 0) {
+          setLoading(false);
+          return;
+        }
+
+        // Load all jobs
+        const jobs = await getJobs();
+
+        // Filter to saved jobs only
+        const savedJobs = jobs.filter((job) => savedIds.includes(job.id));
+
+        // Calculate current personalized matches for saved jobs
+        const matchResults = await calculatePersonalizedMatches(
+          user.id,
+          savedJobs
+        );
+
+        // Build JobMatch objects with current match scores
+        const jobMatches: JobMatch[] = [];
+
+        for (let i = 0; i < savedJobs.length; i++) {
+          const job = savedJobs[i];
+          const matchResult = matchResults[i];
+
+          // Include even incomplete profiles (user might have saved before completing profile)
+          const isIncomplete = matchResult.status === "incomplete_profile";
+
+          jobMatches.push({
+            id: `${job.id}-match`,
+            user_id: user.id,
+            job_id: job.id,
+            job,
+            overall_score: isIncomplete ? 0 : matchResult.overallScore!,
+            qualification_score: isIncomplete
+              ? 0
+              : matchResult.qualificationScore!,
+            lifestyle_score: isIncomplete ? 0 : matchResult.lifestyleScore!,
+            breakdown: {
+              skills: isIncomplete
+                ? 0
+                : matchResult.breakdown.skills.score,
+              experience: isIncomplete
+                ? 0
+                : matchResult.breakdown.experience.score,
+              salary: isIncomplete ? 0 : matchResult.breakdown.salary.score,
+              location: isIncomplete
+                ? 0
+                : matchResult.breakdown.location.score,
+              work_arrangement: isIncomplete
+                ? 0
+                : matchResult.breakdown.workArrangement.score,
+              career_goals: isIncomplete
+                ? 0
+                : matchResult.breakdown.careerGoals.score,
+            },
+            matched_skills: isIncomplete ? [] : matchResult.matchedSkills,
+            missing_skills: isIncomplete ? [] : matchResult.missingSkills,
+            reasons_fit: isIncomplete
+              ? []
+              : matchResult.reasonsFit.map((r) => r.text),
+            reasons_concern: isIncomplete
+              ? []
+              : matchResult.reasonsConcern.map((r) => r.text),
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        setSavedMatches(jobMatches);
+      } catch (error) {
+        console.error("Failed to load saved jobs:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     loadSavedJobs();
   }, []);
@@ -31,6 +119,16 @@ export default function SavedPage() {
     await unsaveJob(jobId);
     setSavedMatches(savedMatches.filter((m) => m.job.id !== jobId));
   };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading saved jobs...</p>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (savedMatches.length === 0) {
     return (
