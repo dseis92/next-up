@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { getUserProfile, type UserProfile } from "@/lib/storage/profile";
+import { signOut } from "@/lib/auth/actions";
 import {
   User,
   MapPin,
@@ -18,6 +19,7 @@ import {
   Settings,
   DollarSign,
   Globe,
+  LogOut,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -62,15 +64,23 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="gap-2"
-            onClick={() => router.push("/onboarding")}
-          >
-            <Settings className="h-4 w-4" />
-            Edit
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-2"
+              onClick={() => router.push("/onboarding")}
+            >
+              <Settings className="h-4 w-4" />
+              Edit
+            </Button>
+            <form action={signOut}>
+              <Button variant="ghost" size="sm" className="gap-2" type="submit">
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </Button>
+            </form>
+          </div>
         </div>
 
         {/* Profile Strength */}
