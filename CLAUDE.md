@@ -1,2034 +1,1484 @@
-# NextUp — Claude Code Project Instructions
+NextUp — Claude Code Project Instructions
 
-## IMPORTANT: READ THIS FILE BEFORE MAKING CHANGES
+IMPORTANT: READ THIS FILE BEFORE MAKING CHANGES
 
 You are continuing development of an existing application called NextUp.
 
 This repository already contains substantial completed work.
 
 Do not rebuild the project from scratch.
-Do not redesign working screens.
+Do not redesign working screens without a concrete product reason.
 Do not skip development phases.
-Do not assume previous Claude summaries are correct without inspecting the repository.
+Do not assume documentation is more authoritative than the repository.
 
 The repository is the source of truth.
 
----
+FRAMEWORK / STACK
 
-# FRAMEWORK RULE
+Current stack:
 
-This project currently uses:
+Next.js 16.3.4
 
-- Next.js 16.3.4
-- React 19.2.8
-- TypeScript 5
-- Tailwind CSS v4
-- Supabase
-- Vitest
+React 19.2.8
+
+TypeScript 5
+
+Tailwind CSS v4
+
+Framer Motion 13.2
+
+Lucide
+
+React Hook Form
+
+Zod
+
+Zustand
+
+TanStack Query
+
+Supabase
+
+Vitest
 
 Do not assume older Next.js conventions are correct.
 
-Before making framework-sensitive changes involving:
-
-- routing
-- middleware / proxy
-- cookies
-- Server Components
-- Server Actions
-- authentication
-- rendering behavior
-- redirects
-- route handlers
-
-consult the documentation installed with the exact Next.js version under:
+Before making framework-sensitive changes involving routing, Server Components, Client Components, cookies, redirects, route handlers, caching, authentication, proxy/middleware, or rendering behavior, consult:
 
 node_modules/next/dist/docs/
 
-Follow the conventions appropriate for the installed version.
+Follow the conventions for the installed Next.js version.
 
-Do not rewrite working framework infrastructure merely because a newer or
-different pattern exists unless the current implementation is actually
-incorrect or incompatible.
+PROJECT
 
----
-
-# PROJECT
-
-## Name
+Name
 
 NextUp
 
-## Tagline
+Tagline
 
 Find what's next.
 
-## Product Vision
-
-NextUp is a modern, mobile-first career discovery and job-search platform.
-
-The central product principle is:
+Core Product Principle
 
 Job searching should feel like discovering opportunities, not digging through listings.
 
-NextUp is intended to grow into a Career Operating System that helps users
-navigate the entire career lifecycle:
+NextUp is a modern, mobile-first career discovery and job-search platform intended to grow into a Career Operating System.
 
-Discover
-→ Match
-→ Save
-→ Apply
-→ Follow Up
-→ Interview
-→ Offer
-→ Hired
-→ Grow
-→ Advance
-→ Discover Again
+Core lifecycle:
 
-NextUp should optimize around the person, not merely around a database of job listings.
+Discover → Match → Save → Apply → Follow Up → Interview → Offer → Hired → Grow → Advance → Discover Again
 
----
+The product should optimize around the person, not merely around a database of job listings.
 
-# PRODUCT EXPERIENCE
+Long-term product question:
 
-The product combines ideas inspired by:
+What should I do next with my career?
 
-- Hinge / Tinder for opportunity discovery
-- Spotify for personalized discovery
-- Duolingo for progress and motivation
-- Linear for polish and clarity
-- modern consumer apps rather than recruiting software
+PRODUCT EXPERIENCE
 
-The existing product design is already strong and must be preserved.
+NextUp blends inspiration from:
 
-## Existing Visual Identity
+Hinge / Tinder for opportunity discovery
 
-- dark charcoal / near-black interface
-- electric lime / chartreuse primary accent
-- warm supporting accent
-- premium consumer-app feel
-- mobile-first layout
-- large salary hierarchy
-- circular match visualization
-- rounded but controlled card design
-- strong typography hierarchy
-- subtle motion
-- five-item mobile bottom navigation
+Spotify for personalized discovery
 
-Do NOT:
+Duolingo for progress and motivation
 
-- redesign the product into generic SaaS
-- introduce generic blue/purple startup gradients
-- convert screens into corporate dashboards
-- overuse rounded container cards
-- replace the established design system
-- add a sixth Saved tab to mobile navigation
-- redesign Discover without a concrete usability reason
+Linear for clarity and polish
 
-The existing Discover screen is one of the product's signature experiences.
+modern consumer products rather than legacy recruiting software
 
-Preserve it.
+The existing design is strong and should be preserved.
 
----
+Existing Visual Identity
 
-# SOURCE OF TRUTH
+dark charcoal / near-black UI
 
-Before doing any implementation work, run:
+electric lime / chartreuse primary accent
+
+warm supporting accent
+
+premium consumer-app feel
+
+mobile-first layout
+
+large salary hierarchy
+
+circular match visualization
+
+controlled rounded cards
+
+strong typography hierarchy
+
+subtle motion
+
+five-item mobile bottom navigation
+
+Do NOT
+
+redesign the product into generic SaaS
+
+introduce generic blue/purple startup gradients
+
+convert screens into corporate dashboards
+
+overuse rounded cards
+
+replace the established design system
+
+add a sixth bottom navigation tab
+
+redesign Discover without a concrete usability reason
+
+turn Applications into another discovery screen
+
+The existing Discover experience is one of the product's signature surfaces. Preserve it.
+
+SOURCE OF TRUTH
+
+Before implementation work:
 
 git pull origin main
-git status
+git status --short
 git log --oneline -10
 npm install
 
 Inspect the repository before modifying anything.
 
-The repository is always more authoritative than this document if there is a
-difference.
+If the repository has advanced beyond the checkpoint documented here, inspect the newer commits before continuing.
 
-Do not assume commit references written here are necessarily the current HEAD.
+CURRENT APPROVED CHECKPOINT
 
-Documentation-only commits may exist after the implementation checkpoint below.
+Phase 8.2 is complete.
 
----
+Phase 9 is complete and independently approved.
 
-# CURRENT IMPLEMENTATION CHECKPOINT
+Approved Phase 9 checkpoint:
 
-The latest completed application implementation milestone before Phase 8.2 is:
+7cecc4741600b0a1cda49b84763814e40a9ce2ec
+Phase 9: Finalize matching engine audit fixes
 
-c9c9e85
-Phase 8.1: Stabilize Supabase persistence and auth flows
+Verify with:
 
-There may be newer documentation or instruction-only commits after c9c9e85.
+git log -1 --oneline
 
-That is expected.
+COMPLETED PRODUCT WORK
 
-Phase 8.2 application implementation has NOT been completed yet.
-
-Verify this with:
-
-git log --oneline -10
-
-before starting.
-
----
-
-# COMPLETED WORK
-
-The following product phases are already substantially implemented.
-
-## Phases 1–4 — Core Product Flow
+Phases 1–4 — Core Product Flow
 
 Implemented:
 
-- Discover final-card progression
-- Pass
-- Undo
-- Save
-- real application creation
-- Applications tracker
-- application detail
-- application stages
-- application timeline
-- notes
-- next-action tracking
+Discover progression
+
+Pass
+
+Undo
+
+Save
+
+Apply
+
+Applications tracker
+
+application detail
+
+application stages
+
+application timeline
+
+application notes
+
+next-action tracking
 
 Do not rebuild these systems from scratch.
 
----
+Phase 5 — Onboarding
 
-## Phase 5 — Onboarding
+A mobile-first 10-step onboarding flow exists:
 
-A mobile-first 10-step onboarding experience exists.
+Goals
 
-Current steps include:
+Current Career
 
-1. Goals
-2. Current Career
-3. Experience
-4. Skills
-5. Target Roles
-6. Salary
-7. Work Preferences
-8. Location
-9. Priorities
-10. Review
+Experience
 
-Onboarding currently works with a limited prototype dataset.
+Skills
 
-Future improvements to skills, occupations, career taxonomy, location
-autocomplete and job-market intelligence are intentionally deferred until the
-core matching foundation is stable.
+Target Roles
 
-Do not expand onboarding scope during Phase 8.2.
+Salary
 
----
+Work Preferences
 
-## Phase 6 — Dynamic Profile
+Location
 
-Profile data is derived from onboarding/user data rather than a hard-coded
-demo identity.
+Priorities
 
-The profile includes a dynamic profile-strength calculation.
+Review
 
-Do not reintroduce hard-coded user data as a source of truth.
+Onboarding uses controlled step-boundary persistence.
 
----
+Do not reintroduce autosave-on-every-keystroke behavior.
 
-## Phase 7 — Supabase Authentication
+Future improvements to occupation taxonomy, skill taxonomy, O*NET, location autocomplete, geocoding, and job-market intelligence remain deferred.
 
-Authentication infrastructure exists for:
+Phase 6 — Dynamic Profile
 
-- signup
-- login
-- logout
-- forgot password
-- reset password UI
-- protected routes
-- session handling
-- onboarding routing
+Profile data is derived from persisted onboarding/user data.
 
-Phase 8.2 must finalize and verify the SSR confirmation/recovery callback flow.
+Do not reintroduce hard-coded demo identity as a source of truth.
 
----
+Phase 7 — Authentication
 
-## Phase 8 — Supabase Persistence + RLS
+Authentication exists for signup, login, logout, forgot password, password recovery, reset password, protected routes, onboarding routing, and SSR auth callback.
 
-Supabase persistence exists for major user data.
+Password recovery has been manually verified end-to-end.
 
-The current database architecture includes tables for:
+Do not modify auth during Phase 10 unless a direct integration regression proves a real auth issue.
 
-- profiles
-- onboarding_progress
-- user_goals
-- user_preferences
-- preferred_locations
-- target_roles
-- skills
-- user_skills
-- work_experiences
-- companies
-- jobs
-- saved_jobs
-- passed_jobs
-- applications
-- application_events
-- application_notes
+Phase 8 / 8.1 / 8.2 — Supabase Persistence + Stabilization
 
-Row Level Security is implemented and must be verified, not merely assumed.
-
----
-
-## Phase 8.1 — Stabilization
-
-Phase 8.1 addressed several issues including:
-
-- invalid UUIDs in seed data
-- mismatched frontend/database job IDs
-- Supabase write error handling
-- saved job conflict targets
-- passed job conflict targets
-- stronger application RLS
-- signup confirmation-state handling
-- reset-password UI
-- onboarding enforcement
-- database scripts
-- Vitest infrastructure
-- removal of unnecessary Vercel runtime dependency
-
-The implementation commit is:
-
-c9c9e85
-
-Phase 8.1 was audited afterward and several remaining blockers were discovered.
-
-Those blockers define Phase 8.2.
-
----
-
-# SUPABASE PROJECT STATE
-
-The developer has already linked the local repository to the intended Supabase
-project using the Supabase CLI.
-
-Do not require them to relink unless the existing link is invalid.
-
-IMPORTANT:
-
-The migration chain has intentionally NOT been approved for remote push yet.
-
-The developer previously ran:
-
-npm run db:push
-
-but did NOT approve the migration push because a known migration issue remained.
-
-Do not push migrations to the production/main Supabase database until the
-Phase 8.2 migration chain has been corrected and verified.
-
-Never place secrets into:
-
-- CLAUDE.md
-- README.md
-- source files
-- Git commits
-- console output intended for documentation
-
-Do not reintroduce SUPABASE_SERVICE_ROLE_KEY unless the application genuinely
-requires privileged server-side operations.
-
-The current architecture is intended to work without it.
-
----
-
-# IMMEDIATE DEVELOPMENT TASK
-
-# PHASE 8.2 — FINAL SUPABASE / AUTH STABILIZATION
-
-This is the ONLY implementation phase you should perform right now.
-
-DO NOT begin Phase 9 during this session unless the developer explicitly
-returns after the Phase 8.2 audit and instructs you to proceed.
-
-Complete Phase 8.2.
-
-Commit it.
-
-Push it.
-
-Report the results.
-
-Then STOP.
-
----
-
-# PHASE 8.2 — FIRST STEP
-
-Before editing anything, inspect at minimum:
-
-supabase/migrations/20260906000000_initial_schema.sql
-supabase/migrations/20260906000001_seed_mock_data.sql
-supabase/migrations/20260906000002_add_delete_policies.sql
-supabase/migrations/20260906000003_tighten_application_rls.sql
-supabase/migrations/20260906000004_auto_create_profile.sql
-
-lib/supabase/client.ts
-lib/supabase/server.ts
-lib/supabase/middleware.ts
-middleware.ts
-
-lib/storage/job-actions.ts
-lib/storage/applications.ts
-lib/storage/onboarding.ts
-lib/storage/profile.ts
-
-app/signup/page.tsx
-app/login/page.tsx
-app/forgot-password/page.tsx
-app/reset-password/page.tsx
-
-package.json
-.env.example
-README.md
-
-Also search the repository for:
-
-.upsert(
-exchangeCodeForSession
-verifyOtp
-resetPasswordForEmail
-emailRedirectTo
-redirectTo
-SUPABASE_SERVICE_ROLE_KEY
-
-Do not blindly apply the notes below.
-
-Verify each issue against the current repository first.
-
----
-
-# PHASE 8.2 ISSUE 1 — MIGRATION CHAIN
-
-The previous audit found that:
-
-20260906000000_initial_schema.sql
-
-already creates a DELETE policy approximately named:
-
-Users can delete own goals
-
-and:
-
-20260906000002_add_delete_policies.sql
-
-attempts to create the same policy again.
-
-That can make a clean migration chain fail.
-
-Fix this correctly.
-
-The final migration chain must be able to initialize from an empty database.
-
-Use safe SQL/migration practices.
-
-Possible approaches include:
-
-DROP POLICY IF EXISTS ...
-
-before recreating a policy, or removing redundant creation where doing so is
-safe for the current migration history.
-
-Be careful about editing historical migrations if an additive corrective
-migration would be safer for already-deployed environments.
-
-The important requirement is:
-
-npm run db:reset
-
-must succeed from a clean local Supabase database when the environment supports
-local Supabase.
-
-Do not consider a migration verified merely because a partially migrated
-database accepts it.
-
----
-
-# PHASE 8.2 ISSUE 2 — UPSERT CONFLICT TARGETS
-
-The previous audit found that:
-
-saveOnboardingData()
-
-still contained upserts without explicit conflict targets for:
-
-onboarding_progress
-user_preferences
-
-Both tables use UNIQUE(user_id) while also having generated primary keys.
-
-The expected behavior is conceptually:
-
-.upsert(data, {
-onConflict: "user_id"
-})
-
-Audit EVERY .upsert() in the repository.
-
-Expected conflict targets currently include:
-
-saved_jobs
-→ user_id,job_id
-
-passed_jobs
-→ user_id,job_id
-
-onboarding_progress
-→ user_id
-
-user_preferences
-→ user_id
-
-Do not assume the list is complete.
-
-Inspect the real constraints.
-
-Repeated operations must be idempotent.
-
-Required behavior:
-
-save the same job twice
-→ no duplicate
-
-pass the same job twice
-→ no duplicate
-
-apply to the same job twice
-→ no duplicate application
-
-save onboarding twice
-→ update existing onboarding row
-
-save preferences twice
-→ update existing preferences row
-
-No uncontrolled unique constraint errors should occur.
-
----
-
-# PHASE 8.2 ISSUE 3 — SUPABASE SSR AUTH CALLBACK
-
-The application uses:
-
-@supabase/ssr
-
-The previous audit found no proper server-side auth callback implementation for
-the email-confirmation and password-recovery flow.
-
-The reset-password page currently expects a valid session to already exist.
-
-That is not sufficient if the email link arrives with an auth code/token that
-still needs to be exchanged.
-
-Implement the proper Supabase SSR auth callback flow for the currently installed
-Supabase libraries.
-
-Use the official supported flow.
-
-Do not invent a custom authentication mechanism.
-
-Likely route:
-
-app/auth/callback/route.ts
-
-or the correct equivalent for the installed framework/library versions.
-
-For PKCE/code-based flow, use the appropriate:
-
-supabase.auth.exchangeCodeForSession(code)
-
-If the project's email templates use token hashes, use the correct:
-
-verifyOtp(...)
-
-flow.
-
-Inspect the current Supabase documentation and installed library behavior before
-choosing the implementation.
-
----
-
-# REQUIRED SIGNUP FLOW
-
-When email confirmation is ENABLED:
-
-Signup
-→ account created
-→ user sees Check Your Email
-→ confirmation email
-→ NextUp auth callback
-→ auth code/token processed
-→ cookie-backed session established
-→ onboarding
-
-When email confirmation is DISABLED:
-
-Signup
-→ session returned immediately
-→ onboarding
-
-Both paths must be supported.
-
-The user's name/profile metadata should remain intact.
-
----
-
-# REQUIRED PASSWORD RECOVERY FLOW
-
-Forgot Password
-→ resetPasswordForEmail()
-→ recovery email
-→ NextUp auth callback
-→ auth code/token processed
-→ valid recovery session established
-→ /reset-password
-→ user enters new password
-→ auth.updateUser()
-→ success
-→ login
-
-Do NOT assume that simply navigating to:
-
-/reset-password
-
-means the recovery session already exists.
-
-Handle invalid and expired recovery links cleanly.
-
-Do not expose technical Supabase errors directly to normal users.
-
----
-
-# AUTH CALLBACK SECURITY
-
-Any callback redirect/next parameter must be handled safely.
-
-Do not create an open redirect vulnerability.
-
-Only allow internal application paths or explicitly trusted origins.
-
-Avoid blindly redirecting to arbitrary user-provided URLs.
-
-The expected signup destination is generally:
-
-/onboarding
-
-The expected recovery destination is generally:
-
-/reset-password
-
-unless the existing architecture requires an equivalent safe route.
-
----
-
-# PHASE 8.2 ISSUE 4 — PROFILE CREATION TRIGGER
-
-Audit:
-
-20260906000004_auto_create_profile.sql
-
-The database trigger automatically creates a profile when a Supabase auth user
-is created.
-
-Verify:
-
-- trigger works on a clean database
-- duplicate profile creation cannot break signup
-- display_name is safely taken from metadata
-- the SECURITY DEFINER function uses appropriate security practices
-- use a safe search_path if appropriate for Supabase/Postgres security
-
-Do not overengineer this.
-
-Fix only genuine issues.
-
----
-
-# PHASE 8.2 ISSUE 5 — REAL DATABASE VERIFICATION
-
-Earlier implementation reports claimed database behavior was verified even
-though some manual real-Supabase verification had actually been deferred.
-
-Do NOT repeat that mistake.
-
-Never describe something as verified unless it was actually tested.
-
-If the required Supabase environment/configuration is unavailable, clearly say:
-
-NOT VERIFIED — environment unavailable
-
-and specify exactly what remains to be tested.
-
-Do not fabricate successful verification.
-
-Likely application environment variables are:
-
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-NEXT_PUBLIC_APP_URL
-
-Do not expose their actual secret values in reports.
-
----
-
-# USER A — FUNCTIONAL PERSISTENCE TEST
-
-When the environment allows real Supabase testing, verify one complete account
-flow.
-
-Create User A.
-
-Test:
-
-Signup
-→ email confirmation if enabled
-→ onboarding
-→ complete onboarding
-→ Profile
-
-Verify profile reflects onboarding data.
-
-Then test:
-
-Save Job A
-Pass Job B
-Undo Pass Job B
-Apply to Job C
-Open Applications
-Change application stage
-Add application note
-Set next action
-
-Then:
-
-Logout
-→ Login again
-
-Verify persistence of:
-
-- profile
-- goals
-- skills
-- work experience
-- preferences
-- target roles
-- preferred locations
-- saved jobs
-- passed jobs where applicable
-- applications
-- application stage
-- timeline/events
-- notes
-- next actions
-
-If practical, verify from a second browser/session.
-
-Do not state that cross-device/session persistence was verified if it was not.
-
----
-
-# USER B — RLS ISOLATION TEST
-
-Create User B.
-
-User B must not be able to access User A's private data.
-
-Verify database-level isolation for at least:
+Current tables include:
 
 profiles
+
 onboarding_progress
+
 user_goals
+
 user_preferences
+
 preferred_locations
+
 target_roles
+
+skills
+
 user_skills
+
 work_experiences
+
+companies
+
+jobs
+
 saved_jobs
+
 passed_jobs
+
 applications
+
 application_events
+
 application_notes
 
-Test relevant operations where practical:
+RLS is active.
 
-SELECT
-INSERT
-UPDATE
-DELETE
+Final authenticated RLS verification:
 
-The frontend's:
+Total tests: 22
+Passed: 22
+Failed: 0
+Errors: 0
 
-.eq("user_id", user.id)
+Do not weaken RLS.
 
-is NOT a security boundary.
+CURRENT MIGRATIONS
 
-RLS must enforce isolation.
+20260906000000_initial_schema.sql
+20260906000001_seed_mock_data.sql
+20260906000002_add_delete_policies.sql
+20260906000003_tighten_application_rls.sql
+20260906000004_auto_create_profile.sql
+20260906000005_add_passed_jobs_update_policy.sql
 
----
+Phase 10 should require no database migration.
 
-# APPLICATION EVENT / NOTE OWNERSHIP
+If you believe a schema change is required, STOP and explain why. Do not add a migration without explicit approval.
 
-application_events and application_notes reference applications.
+PHASE 9 — DETERMINISTIC MATCHING ENGINE — COMPLETE
 
-The database must prevent a malicious authenticated user from inserting or
-modifying an event/note attached to another user's application.
+The Phase 9 engine is an approved foundational system.
 
-Ownership must be verified using the referenced application relationship.
+Primary public API:
 
-Do not rely exclusively on a user_id supplied by frontend code.
+calculateJobMatch(profile, job)
 
----
-
-# ERROR HANDLING AUDIT
-
-Audit critical Supabase reads and writes.
-
-Critical writes must not silently fail.
-
-Important user actions include:
-
-- Save
-- Pass
-- Undo
-- Apply
-- onboarding save
-- preference save
-- application stage change
-- note creation
-- next-action updates
-- profile updates
-
-The UI must not indicate success if the database rejected the operation.
-
-Preserve the fast consumer-app experience.
-
-Use clean user-facing errors.
-
-Do not expose database stack traces, internal SQL or sensitive information.
-
----
-
-# PHASE 8.2 TESTING
-
-Keep the existing Vitest setup.
-
-Add targeted tests where they provide meaningful protection.
-
-Run:
-
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-
-All four must pass before Phase 8.2 is considered code-complete.
-
-Also run:
-
-npm run db:reset
-
-when local Supabase/Docker/environment support it.
-
-If db:reset cannot run because the environment does not support Docker or local
-Supabase, report that accurately.
-
-Do not substitute:
-
-npm run build
-
-for real migration verification.
-
-They validate different things.
-
----
-
-# REMOTE DATABASE PUSH
-
-Do NOT automatically push migrations to the developer's main remote Supabase
-project merely because the SQL was edited.
-
-First verify the migration chain as safely as possible.
-
-If the developer must approve:
-
-npm run db:push
-
-stop and explain what is ready to be pushed.
-
-Do not approve an interactive destructive operation on behalf of the developer
-unless explicitly authorized.
-
----
-
-# README CLEANUP — PART OF PHASE 8.2
-
-README.md is currently stale relative to the actual application.
-
-Update README.md during Phase 8.2.
-
-The README should accurately reflect:
-
-- current NextUp product vision
-- current Next.js/React stack
-- Supabase authentication
-- Supabase persistence
-- RLS
-- onboarding
-- dynamic user profile
-- Discover
-- Explore
-- Save / Pass / Undo
-- Job Detail
-- Applications tracker
-- application stages
-- notes/timeline
-- current test commands
-- current database commands
-- environment configuration
-- current development phase
-
-Remove stale claims that these are merely planned:
-
-- Supabase
-- authentication
-- onboarding
-- profiles
-- saved jobs
-- Applications tracker
-
-Remove any instruction that says:
-
-SUPABASE_SERVICE_ROLE_KEY
-
-is required when it is not actually used.
-
-Do not add real environment secrets.
-
-Do not expand product scope during README cleanup.
-
----
-
-# PHASE 8.2 DEFINITION OF DONE
-
-Phase 8.2 is complete only when the following are true or accurately reported
-as environment-blocked:
-
-Migration chain:
-
-- duplicate policy issue fixed
-- clean migration path inspected
-- db reset tested where possible
-
-Persistence:
-
-- onboarding conflict target correct
-- preferences conflict target correct
-- all upserts audited
-- duplicate operations handled intentionally
-
-Auth:
-
-- SSR callback exists
-- signup confirmation callback supported
-- password recovery callback supported
-- callback redirect behavior safe
-
-Security:
-
-- RLS policies audited
-- application note/event ownership enforced
-- profile trigger audited
-
-Quality:
-
-- typecheck passes
-- lint passes
-- tests pass
-- production build passes
-
-Documentation:
-
-- README updated
-
-Verification:
-
-- real Supabase behavior clearly distinguished from code-only verification
-
----
-
-# PHASE 8.2 COMMIT
-
-After completing Phase 8.2:
-
-git status
-
-Review the diff.
-
-Then commit the Phase 8.2 implementation separately.
-
-Expected commit message:
-
-git add .
-git commit -m "Phase 8.2: Verify Supabase migrations and SSR auth callbacks"
-git push origin main
-
-Do not mix Phase 9 matching work into this commit.
-
----
-
-# PHASE 8.2 AUDIT GATE
-
-AFTER PHASE 8.2 IS COMMITTED AND PUSHED:
-
-STOP.
-
-DO NOT START PHASE 9.
-
-Report to the developer:
-
-- commit SHA
-- files changed
-- migration changes
-- migration verification result
-- db reset result
-- auth callback implementation
-- signup confirmation verification result
-- password recovery verification result
-- real Supabase verification result
-- User A persistence result
-- User B / RLS result
-- duplicate/idempotency result
-- typecheck result
-- lint result
-- test result
-- build result
-- README update result
-- anything that could not actually be tested
-- any remaining concerns
-
-Clearly label each item as one of:
-
-PASS
-FAIL
-NOT VERIFIED
-NOT APPLICABLE
-
-Then STOP.
-
-Wait for the developer to have Phase 8.2 independently reviewed.
-
-Do not begin Phase 9 until the developer explicitly tells you that the audit is
-approved and instructs you to continue.
-
-This gate applies even if every Phase 8.2 test passes.
-
----
-
-# PHASE 9 — FUTURE REFERENCE ONLY
-
-DO NOT IMPLEMENT THIS DURING PHASE 8.2.
-
-Once the developer explicitly approves the Phase 8.2 audit, the next phase will
-be:
-
-Phase 9: Build deterministic personalized matching engine
-
-The match percentage must NOT be generated by AI.
-
-The matching engine should become the factual source of truth for personalized
-job fit.
-
-Likely structure:
+Matching engine location:
 
 lib/matching/
-calculate-job-match.ts
-weights.ts
-skill-aliases.ts
-reasons.ts
-types.ts
-**tests**/
 
----
+Core files include:
 
-# PHASE 9 — MATCHING INPUT
+lib/matching/index.ts
+lib/matching/types.ts
+lib/matching/weights.ts
+lib/matching/skill-aliases.ts
+lib/matching/reasons.ts
+lib/matching/calculate-job-match.ts
+lib/matching/**tests**/calculate-job-match.test.ts
 
-The engine should use real NextUp user data such as:
+The engine is deterministic, synchronous, pure, bounded, explainable, independent of Supabase, independent of React, independent of AI, and independent of network calls.
 
-- profile
-- work experience
-- skills
-- preferences
-- goals
-- job
+PHASE 9 FUNDAMENTAL RULE
 
-Conceptual API:
+Data + deterministic matching decide facts. AI may later explain, coach, recommend, and help act.
 
-calculateJobMatch({
-profile,
-experiences,
-skills,
-preferences,
-goals,
-job,
-})
+AI must never invent or override the deterministic match score.
 
----
+APPROVED PHASE 9 MATCH RESULT
 
-# PHASE 9 — MATCHING OUTPUT
+The engine returns structured information including:
 
-Return deterministic structured data conceptually like:
+status
 
-{
-overallScore,
-qualificationScore,
-lifestyleScore,
+overallScore
 
-breakdown: {
-skills,
-experience,
-salary,
-location,
-workArrangement,
-careerGoals,
-seniority,
-},
+qualificationScore
 
-matchedSkills,
-missingSkills,
-hardFailures,
+lifestyleScore
 
-reasonsFit,
-reasonsConcern,
-}
+component breakdown
 
-All scores must be constrained to:
+matched skills
 
-0–100
+missing skills
 
-Identical inputs must produce identical outputs.
+hard failures
 
-No randomness.
+fit reasons
 
-No AI-generated percentage.
+concern reasons
 
----
+missing-profile fields where applicable
 
-# PHASE 9 — INITIAL WEIGHTING
+For incomplete profiles:
 
-Use centralized/configurable weights approximately around:
+status = incomplete_profile
+overallScore = null
 
-Skills: 25%
-Experience: 20%
-Salary: 15%
-Location: 10%
-Work arrangement: 10%
-Career goals: 10%
-User priorities: 10%
+Do not convert incomplete profiles into 0%.
 
-Do not scatter magic scoring constants throughout the code.
+APPROVED PHASE 9 WEIGHTS
 
-Weights must live in a clear source of truth.
+Skills 25
+Experience 20
+Salary 15
+Location 10
+Work Arrangement 10
+Career Goals 10
+Seniority 5
+User Priorities 5
+\---
+Total 100
 
----
+Qualification components:
 
-# QUALIFICATION MATCH
+Skills
 
-Qualification Match should primarily consider:
+Experience
 
-- relevant skills
-- required skills
-- experience
-- seniority
-- required qualifications
-- transferable experience
+Seniority
 
-Do not heavily punish someone for a missing skill that is merely preferred or
-optional.
+Career Goals
 
----
+Lifestyle components:
 
-# LIFESTYLE MATCH
+Salary
 
-Lifestyle Match should consider available data such as:
+Location
 
-- salary expectations
-- work arrangement
-- employment type
-- location
-- commute
-- travel tolerance
-- relocation willingness
-- user priorities
+Work Arrangement
 
-Missing job data should not automatically be treated as a negative fact.
+User Priorities
 
----
+Do not add a second scoring formula in Phase 10.
 
-# HARD CONSTRAINTS
+APPROVED HARD FAILURES
 
-Support genuine hard conflicts where the data actually supports them.
+The Phase 9 engine can produce structured hard failures including:
+
+salary below absolute minimum
+
+exclusive work-arrangement conflict
+
+conservative relocation conflict
+
+Phase 10 must display these appropriately. Do not re-implement their logic.
+
+APPROVED TRANSFERABILITY
+
+Phase 9 includes small deterministic transfer paths including:
+
+Tower Foreman → Project Engineer
+Field Supervisor → Assistant Project Manager
+Crew Lead → Operations Manager
+
+Transferability affects qualification/experience and can produce a deterministic fit reason.
+
+Do not reimplement transferability in page code.
+
+APPROVED PRIORITY SEMANTICS
+
+Current measurable priority dimensions:
+
+salary
+
+location
+
+remoteFlexibility
+
+careerGrowth
+
+Current unsupported priority dimensions:
+
+learning
+
+culture
+
+mission
+
+benefits
+
+stability
+
+workLifeBalance
+
+Remote-flexibility evidence:
+
+remote = 100
+hybrid = 60
+onsite = 20
+
+Do not recreate this logic in the UI.
+
+CURRENT PHASE
+
+PHASE 10 — DETERMINISTIC MATCHING INTEGRATION
+
+This is the ONLY product implementation phase authorized right now.
+
+Phase 10 goal:
+
+Integrate the approved Phase 9 deterministic matching result throughout NextUp.
+
+Do not begin Phase 11.
+Do not begin AI.
+Do not begin O*NET.
+Do not begin geocoding.
+Do not begin resume parsing.
+Do not redesign Discover.
+
+PHASE 10 CORE INVARIANT
+
+SAME USER +
+SAME JOB
+=
+
+SAME MATCH RESULT
+EVERYWHERE
+
+Discover must not calculate one score.
+Explore must not calculate another.
+Saved must not calculate another.
+Job Detail must not calculate another.
+Applications must not calculate another.
+
+There is one matching engine:
+
+calculateJobMatch()
+
+All surfaces consume it.
+
+PHASE 10 ARCHITECTURE
+
+Target conceptual pipeline:
+
+PERSISTED USER DATA
+↓
+CANONICAL PROFILE ADAPTER
+↓
+MatchProfile
+
+APP JOB DATA
+↓
+CANONICAL JOB ADAPTER
+↓
+MatchJob
+
+MatchProfile + MatchJob
+↓
+calculateJobMatch()
+↓
+MatchResult
+↓
+ALL UI SURFACES
+
+Do not manually construct matching inputs separately per page.
+
+CANONICAL PROFILE ADAPTER
+
+Create one canonical transformation from persisted authenticated user state into MatchProfile.
+
+Expected mappings:
+
+current title → currentRole
+years experience → yearsExperience
+industry → industry
+goals → goals
+target roles → targetRoles
+skills → skills
+work experiences → experiences
+salary minimum → salaryMin
+salary ideal → salaryIdeal
+work arrangement preferences → workPreferences
+current location → location
+preferred locations → preferredLocations
+relocation willingness → willingToRelocate
+max commute → maxCommute
+priorities → priorities
+
+Use actual persisted values.
+
+Do not invent defaults that make incomplete profiles appear complete.
+
+CANONICAL JOB ADAPTER
+
+Create one canonical transformation from the application's existing Job model into Phase 9 MatchJob.
+
+Map:
+
+id
+
+title
+
+description
+
+requirements
+
+responsibilities
+
+work arrangement
+
+employment type
+
+experience level
+
+salary minimum
+
+salary maximum
+
+salary period
+
+location
+
+company name
+
+company industry
+
+Do not mutate original Job objects.
+Do not adapt jobs differently on different pages.
+
+IMPORTANT TYPE BOUNDARY
+
+Keep this separation:
+
+application domain type
+→ adapter
+→ matching input
+
+Do not replace every app Job with MatchJob.
+Do not create circular dependencies.
+Do not create a third competing match-result type.
+
+For new Phase 10 work, Phase 9 MatchResult is the scoring source of truth.
+
+CANONICAL MATCHING ORCHESTRATION
+
+Create a small reusable integration API.
+
+Acceptable concepts include:
+
+buildMatchProfile(...)
+adaptJobForMatching(...)
+calculateMatchForJob(...)
+
+Integration helpers may hydrate, adapt, orchestrate, or memoize safely.
+
+They must NOT introduce a second scoring formula, override match results, invent page-specific scoring, or use AI.
+
+PROFILE DATA LOADING
+
+Load the user's matching data efficiently.
+
+Do NOT do this per job card:
+
+fetch profile
+fetch skills
+fetch goals
+fetch preferences
+
+Preferred flow:
+
+page / feature
+→ load user matching data once
+→ build MatchProfile once
+→ calculate locally for all jobs
+
+For a list of jobs:
+
+jobs.map((job) => calculateJobMatch(matchProfile, adaptJobForMatching(job)))
+
+Do not persist match results in Phase 10.
+
+NO MATCH CACHE TABLE
+
+Do not add:
+
+job_matches
+
+match_results
+
+match_cache
+
+persisted calculated scores
+
+A profile change should naturally update future calculations.
+
+PROFILE CHANGES MUST UPDATE SCORES
 
 Examples:
 
-User's absolute minimum salary is above the job's maximum salary.
+add relevant skill → score may change
+change salary minimum → salary compatibility may change
+change target role → career goals may change
+change work preference → work arrangement / priorities may change
+change relocation willingness → location / hard failures may change
 
-Remote-only user +
-onsite-only job.
+Do not permanently cache stale results.
 
-Job explicitly requires relocation +
-user explicitly refuses relocation.
+INCOMPLETE PROFILE RULE
 
-Use care.
+If Phase 9 returns:
 
-Do not invent hard disqualifications from vague text.
+status = incomplete_profile
 
----
+Phase 10 must show no fake percentage.
 
-# CAREER TRANSITION IS CORE TO NEXTUP
+Use consistent consumer language:
 
-NextUp must not match people only to identical prior job titles.
+Finish your profile to see your match
 
-Transferable experience is one of the product's core differentiators.
+Where appropriate, provide a subtle existing-style CTA to /profile or /onboarding.
 
-Examples:
+MATCH DISPLAY RULE
 
-Tower Foreman
-→ Project Engineer
+When status = scored, the primary percentage is:
 
-Tower Foreman
-→ Assistant Project Manager
+overallScore
 
-Field Supervisor
-→ Project Coordinator
+Do not substitute qualification or lifestyle for the main score.
 
-Crew Lead
-→ Operations Manager
+COMPACT VS DETAIL HIERARCHY
 
-Field Construction
-→ Construction Management
+Compact card:
 
-The engine should recognize transferable concepts such as:
+overall match only
 
-- leadership
-- crew management
-- field operations
-- construction
-- safety
-- project documentation
-- coordination
-- troubleshooting
-- quality control
-- scheduling
-- project execution
-- telecom
-- fiber
-- client communication
+Job Detail:
 
-where genuinely relevant.
+overall match
 
----
+qualification score
 
-# SKILL ALIASES
+lifestyle score
 
-Use deterministic skill normalization.
+fit reasons
 
-Do not implement embeddings yet.
+concerns
 
-Example alias group:
+matched skills
 
-Leadership
-Team Leadership
-Crew Leadership
-Crew Management
-People Management
-Supervision
+missing skills
 
-Another:
+hard failures
 
-Project Documentation
-Construction Documentation
-Field Documentation
-Closeout Documentation
+Applications:
 
-Another:
+overall match as secondary context only
 
-Scheduling
-Project Scheduling
-Construction Scheduling
-Schedule Coordination
+Do not overload compact discovery cards.
 
-Alias behavior must be configurable and testable.
+DISCOVER INTEGRATION
 
----
+Discover is a signature experience.
 
-# EXPERIENCE REQUIREMENTS
+DO NOT redesign it.
 
-Support simple deterministic parsing where useful.
+Find the existing match circle/badge/ring and replace hard-coded/demo/static scoring with:
 
-Examples:
+MatchResult.overallScore
 
-"3+ years field construction experience"
+Requirements:
 
-"5 years project coordination"
+use authenticated user's actual persisted profile
 
-Compare the requirement to the user's known experience.
+use actual job data
 
-Do not attempt sophisticated NLP during the MVP.
+use approved Phase 9 engine
 
-If the text cannot be confidently interpreted, avoid pretending it was.
+no local scoring logic
 
----
+no mock fallback score
 
-# DETERMINISTIC MATCH REASONS
+support incomplete profile state
 
-Generate useful reasons from deterministic facts.
+pass unchanged
 
-Examples:
+undo unchanged
 
-Your field leadership experience aligns strongly with this role.
+save unchanged
 
-Your salary target falls within the published range.
+apply unchanged
 
-This role supports your goal of moving into project management.
+animation unchanged
 
-Your telecommunications construction background transfers well to this
-position.
+progression unchanged
 
-These are templates driven by actual data.
+EXPLORE INTEGRATION
 
-They are not AI-generated claims.
+Explore must use the same exact result.
 
----
+If Discover says 87% for a user/job pair, Explore must also say 87%.
 
-# DETERMINISTIC MATCH CONCERNS
+Preserve filtering, search, layout, and interactions.
 
-Examples:
+SAVED INTEGRATION
 
-BIM is listed as preferred but is not currently in your skills.
+Saved jobs should show current personalized match results.
 
-This role requires more travel than your stated preference.
+The score is NOT frozen when the job is saved.
 
-The bottom of the published salary range falls below your ideal target.
+If the user's profile changes, Saved should recalculate.
 
-Keep concerns useful.
+Preserve save/unsave behavior.
 
-Do not use discouraging or absolute language unless the requirement genuinely
-is absolute.
+JOB DETAIL INTEGRATION
 
----
+Job Detail should be the richest Phase 10 match surface.
 
-# PHASE 9 TESTS
+Use the same MatchResult.
 
-Phase 9 must have meaningful unit tests.
+Where appropriate, display:
 
-At minimum test:
+overall score
 
-- strong skill overlap
-- weak skill overlap
-- required vs preferred skills
-- strong experience
-- insufficient experience
-- transferable career experience
-- salary below absolute minimum
-- salary inside target range
-- salary above target
-- remote preference + remote job
-- remote-only + onsite-only hard conflict
-- relocation conflict
-- score lower bound
-- score upper bound
-- deterministic repeatability
-- incomplete profile
-- missing job data
-- alias matching
+qualification score
 
-Run:
+lifestyle score
 
-npm run test
-npm run typecheck
-npm run lint
-npm run build
+reasonsFit
 
-Phase 9 should be committed separately as:
+reasonsConcern
 
-Phase 9: Build deterministic personalized matching engine
+matchedSkills
 
-Then stop for review unless the developer explicitly instructs otherwise.
+missingSkills
 
----
+hardFailures
 
-# PHASE 10 — FUTURE REFERENCE ONLY
+Do not show raw implementation metadata such as transferabilityBonus, matchRatio, or confidence values unless deliberately designed.
 
-After Phase 9 has been independently reviewed and approved:
+HARD FAILURE PRESENTATION
 
-Phase 10: Integrate personalized matching throughout NextUp
+Hard failures are guidance, not bans.
 
-The same user/job combination must show the same match everywhere.
+Do not hide them.
+Do not show internal codes.
+Do not block Apply solely because a hard failure exists.
 
-Integrate matching into:
+Use clear consumer language.
 
-- Discover
-- Explore
-- Saved
-- Job Detail
-- Applications where appropriate
+FIT / CONCERN REASONS
 
-There must be one matching source of truth.
+Use:
 
----
+reasonsFit
+reasonsConcern
 
-# DISCOVER — PHASE 10
+Do not regenerate explanations in React components.
+Do not create page-specific interpretations.
 
-Discover should eventually:
+SKILL PRESENTATION
 
-load authenticated user data
-→ calculate deterministic job matches
-→ filter passed jobs
-→ rank opportunities
-→ display personalized scores
+Use:
 
-Preserve the existing Discover visual design.
+matchedSkills
+missingSkills
 
-Do not redesign the card.
+Apply display formatting only.
+Do not alter the underlying matching result.
 
----
+APPLICATIONS INTEGRATION
 
-# EXPLORE — PHASE 10
+Applications remains primarily an application-management experience.
 
-Preserve:
+Show matching context only where it adds value.
 
-- search
-- work-arrangement filtering
-- minimum-match filtering
+Do not let match information overwhelm:
 
-Replace hard-coded match values with calculated personalized results.
+stage
 
----
+next action
 
-# SAVED — PHASE 10
+timeline
 
-Saved jobs must display the same deterministic match as every other surface.
+notes
 
-No stale demo values.
+Application match is current-state matching. Do not persist historical match scores during Phase 10.
 
----
+MATCH DISPLAY COMPONENTS
 
-# JOB DETAIL — PHASE 10
+Audit existing match visual components.
 
-Eventually display:
+A small shared display primitive may be created if it reduces drift.
 
-Overall Match
-Qualification Match
-Lifestyle Match
+Possible concepts:
 
-Matched Skills
-Possible Gaps
-Why You Fit
-Worth Knowing
+MatchBadge
+MatchRing
+MatchScore
 
-Every value must derive from the deterministic matching engine.
+Display components must not calculate the match.
 
----
+PRESENTATION TIERS
 
-# MATCH CONSISTENCY
+If the product already has match colors/labels, reuse them.
 
-For the same authenticated user and job:
+Presentation tiers may be centralized as UI-only mapping.
 
-Discover: 93%
-Explore: 93%
-Saved: 93%
-Job Detail: 93%
+Do not change numeric MatchResult values.
 
-Never:
+LOADING STATE
 
-Discover: 93%
-Explore: 88%
-Job Detail: 91%
+Do not render mock scores while actual profile data loads.
 
-Use one calculation path.
+Avoid flicker such as:
 
----
+95% → loading → 78%
 
-# PROFILE CHANGES
+Use existing skeleton/loading patterns.
 
-When relevant profile data changes:
+ERROR STATE
 
-- skills
-- experience
-- salary expectations
-- location preferences
-- career goals
-- work arrangement
-- priorities
+Differentiate:
 
-match results must update predictably.
-
-Avoid persistent hard-coded match scores.
-
----
-
-# INCOMPLETE PROFILE
-
-If there is not enough user information to create a meaningful personalized
-match:
-
-DO NOT display a fabricated percentage.
-
-Prefer messaging such as:
-
-Finish your profile to see your match.
-
-The product must distinguish:
-
-unknown
+profile incomplete
 
 from:
 
-poor match.
+profile failed to load
 
----
+If profile hydration fails:
 
-# STOP AFTER PHASE 10
+do not fake a score
 
-After Phase 10 is eventually completed and reviewed:
+do not expose raw Supabase errors
 
-STOP.
+use existing app error conventions
 
-Do not automatically start:
+AUTH / RLS SAFETY
 
-- AI Career Coach
-- resume AI
-- social/community
-- employer recruiting
-- live job provider integrations
-- job scraping
-- notifications
-- payments
-- subscriptions
+Only authenticated user profile data may be used for personalized matching.
 
-Those are separate future product phases.
+Do not:
 
----
+add service-role access
 
-# FUTURE AI ARCHITECTURE — LOCKED PRODUCT PRINCIPLE
+weaken RLS
 
-Do NOT implement the following during Phase 8.2, Phase 9 or Phase 10 unless
-explicitly requested later.
+change Phase 8.2 policies
 
-NextUp's structured data and deterministic matching engine establish facts.
+rewrite auth flow
 
-AI sits on top of those facts.
+SERVER / CLIENT BOUNDARY
 
-AI should:
+The matching engine is pure and can run server-side or client-side.
 
-- explain
-- coach
-- recommend
-- help users prepare
-- help users communicate
-- help users understand career options
-- help users act
+Choose the integration point that best fits the existing architecture.
 
-AI must NOT:
+Prioritize:
 
-- invent match percentages
-- invent employment history
-- invent accomplishments
-- invent credentials
-- invent certifications
-- invent skills
-- silently modify factual career data
-- automatically apply to jobs
-- automatically send recruiter messages without user approval
+no N+1 profile requests
 
-Core rule:
+no hydration mismatch
 
-NEXTUP DATA + DETERMINISTIC ENGINE = FACTS
+responsive interactions
 
-AI = EXPLANATION + COACHING + ASSISTANCE
+maintainability
 
----
+Do not perform a broad Server Component / Client Component rewrite.
 
-# FUTURE AI ROLLOUT ORDER
+TANSTACK QUERY / ZUSTAND
 
-The intended AI rollout after the matching foundation is stable is:
+Inspect actual current usage before adding state.
 
-1. AI Job Explanation
-2. AI Career Coach
-3. Resume Upload + Profile Extraction
-4. Resume Tailoring
-5. Interview Coach
-6. Application Follow-Up Assistant
-7. Career Path Explorer
-8. Skill Gap Intelligence
-9. Natural-Language Job Discovery
+Do not introduce a parallel state architecture solely for matching.
+Do not perform an unrelated state-management refactor.
 
-Do not reorder or implement these prematurely without developer direction.
+ACCESSIBILITY
 
----
-
-# AI JOB EXPLANATION
-
-The first AI feature should take:
-
-user profile +
-job +
-deterministic match result
-
-and explain:
-
-- why the user fits
-- strongest transferable experience
-- possible gaps
-- what to highlight
-- whether the role appears worth considering
-
-AI must explain the deterministic score.
-
-It must not generate its own competing match percentage.
-
----
-
-# AI CAREER COACH
-
-The future Career Coach should understand the user's actual NextUp profile.
-
-It should be able to help with questions like:
-
-What roles should I target?
-
-How could my current experience transfer?
-
-What should I learn next?
-
-How can I move into management?
-
-It should use structured career context rather than behave like an empty generic
-chatbot.
-
----
-
-# RESUME UPLOAD + PROFILE EXTRACTION
-
-Future resume upload should extract structured information such as:
-
-- work history
-- skills
-- certifications
-- education
-- accomplishments
-- job titles
-- employment dates
-
-The user should review extracted information before it becomes permanent profile
-data.
-
-AI must never fabricate missing experience.
-
----
-
-# RESUME TAILORING
-
-Resume tailoring should work from:
-
-master resume +
-verified profile data +
-selected job
-
-AI may rewrite truthful experience for relevance and clarity.
-
-AI may NOT add experience that does not exist.
-
-Prefer suggestion/review workflows rather than silently replacing the resume.
-
----
-
-# INTERVIEW COACH
-
-When an application reaches an interview stage, AI can eventually use:
-
-- user background
-- selected job
-- match strengths
-- match gaps
-- company/job information
-
-to generate likely interview questions and coaching.
-
-Voice interview simulation may be explored later.
-
----
-
-# APPLICATION FOLLOW-UP ASSISTANT
-
-AI may eventually recommend actions such as:
-
-Follow up with the recruiter.
-
-It may draft:
-
-- follow-up emails
-- recruiter messages
-- thank-you messages
-- interview follow-ups
-
-But the user must review and approve communication.
-
-No autonomous sending.
-
----
-
-# CAREER PATH EXPLORER
-
-AI may eventually help users understand realistic paths from their current
-career toward other roles.
-
-Example:
-
-Tower Foreman
-→ Project Engineer
-→ Assistant Project Manager
-→ Project Manager
-→ Senior Project Manager / Construction Manager
-
-The system should combine:
-
-structured occupation data +
-user background +
-real career transitions +
-job-market information
-
-AI should explain paths rather than invent them.
-
----
-
-# SKILL GAP INTELLIGENCE
-
-Future NextUp should analyze recurring skill gaps across strong job matches.
-
-Example:
-
-BIM appears in 60% of the user's strongest Project Engineer opportunities.
-
-This is more useful than generic skill recommendations.
-
-Later this can support:
-
-- learning recommendations
-- certifications
-- courses
-- skill-building plans
-
-based on actual opportunity demand.
-
----
-
-# NATURAL-LANGUAGE JOB DISCOVERY
-
-Eventually a user should be able to say something like:
-
-Find jobs around Madison where I can use my field construction experience,
-make at least $80,000, travel less than 20%, and stop climbing towers.
-
-AI should convert that intent into structured filters.
-
-The normal search/job/matching systems should retrieve and rank opportunities.
-
-AI should interpret the request.
-
-AI should not become the database.
-
----
-
-# FUTURE ONBOARDING IMPROVEMENTS
-
-Do NOT implement these during Phase 8.2.
-
-The current onboarding prototype uses limited suggested skills and roles.
-
-Before real-user launch, NextUp should move toward a structured career taxonomy.
-
-Potential foundation:
-
-- O*NET occupation data
-- normalized skill catalog
-- occupation aliases
-- skill aliases
-- occupation-to-skill relationships
-- industry relationships
-- certifications
-- transferable career paths
-- NextUp-specific career-transition mappings
-
-The jobs currently in NextUp should NOT determine which careers NextUp knows
-exist.
-
-Career knowledge must exist independently from current job inventory.
-
----
-
-# FUTURE SKILL SUGGESTIONS
-
-Skills onboarding should eventually use:
-
-career taxonomy +
-current role +
-work experience +
-selected industry +
-real job-market patterns
-
-to suggest a broader set of skills.
-
-Users must always be able to:
-
-- search all skills
-- add another skill
-- select suggested skills
-- add a skill not currently suggested
-
-Suggestions should assist users, not restrict them.
-
----
-
-# FUTURE ROLE SUGGESTIONS
-
-Role suggestions should eventually support categories such as:
-
-Natural Next Moves
-
-Transferable Career Moves
-
-Career-Change Possibilities
-
-Stretch Opportunities
-
-Example for a field/tower foreman background:
-
-Project Engineer
-Assistant Project Manager
-Project Coordinator
-Field Engineer
-Construction Manager
-Telecommunications Construction Manager
-Field Operations Manager
-Operations Supervisor
-Implementation Manager
-Site Development Manager
-Safety Manager
-Facilities Manager
-
-The purpose is to help users discover realistic opportunities they may not know
-their experience can transfer into.
-
----
-
-# FUTURE LOCATION EXPERIENCE
-
-The onboarding location experience should eventually move beyond a plain text
-field.
-
-Use a modern location autocomplete provider behind a NextUp abstraction.
-
-Potential providers may include:
-
-- Google Places
-- Mapbox
-- another appropriate geocoding/location provider
-
-Do not tightly couple the application to one provider.
-
-Potential architecture:
-
-lib/location/
-provider.ts
-search-locations.ts
-normalize-location.ts
-distance.ts
-
-Store structured data where appropriate:
-
-display name
-city
-state / region
-state code
-country
-country code
-latitude
-longitude
-provider place ID
-
-Do not store only an arbitrary free-text location string when structured data is
-available.
-
----
-
-# FUTURE LOCATION CONCEPTS
-
-Eventually distinguish:
-
-CURRENT LOCATION
-Where the user lives.
-
-PREFERRED LOCATIONS
-Places the user is willing to work.
-
-COMMUTE
-How far the user is willing to travel regularly.
-
-RELOCATION
-Whether the user is willing to move.
-
-WORK ARRANGEMENT
-Remote / Hybrid / Onsite preferences.
-
-TRAVEL TOLERANCE
-How much work travel is acceptable.
-
-These should eventually contribute to Lifestyle Match.
-
----
-
-# FUTURE LOCATION UX
-
-Potential UX:
-
-Where are you based?
-
-Search/autocomplete location.
-
-Optional:
-
-Use my current location
-
-with explicit browser/mobile permission.
-
-Then:
-
-How far would you commute?
+Match visualizations must have accessible text.
 
 Examples:
 
-15 miles
-25 miles
-50 miles
-75+ miles
-Anywhere
+aria-label="87% job match"
 
-Preferred locations should eventually display as removable chips.
+Incomplete profile:
 
-Example:
+aria-label="Complete your profile to calculate job match"
 
-Madison, WI ×
-Milwaukee, WI ×
-Chicago, IL ×
+Do not rely on color alone.
 
-- Add location
+RESPONSIVE DESIGN
 
-These are future enhancements.
+Preserve mobile-first behavior.
 
-Do not implement them during Phase 8.2.
+New matching UI must not cause horizontal scrolling, card overflow, cramped buttons, broken mobile layouts, or unreadable detail sections.
 
----
+Check mobile and desktop.
 
-# PRODUCT DATA PRINCIPLE
+MOCK SCORE CLEANUP
 
-Every user answer should make the next experience smarter.
+Search the repository for old prototype/demo scores.
 
-The goal is not to make onboarding longer.
+Potential patterns include:
 
-The goal is to make it progressively more intelligent.
+match
+match_score
+matchScore
+matchPercentage
+overall_score
+qualification_score
+lifestyle_score
+JobMatch
+85
+87
+90
+92
+95
 
-Conceptually:
+Do not mechanically remove every numeric literal.
+Understand context.
 
-Current Career
-→ smarter skill suggestions
-→ richer transferable role suggestions
-→ salary preferences
-→ modern location preferences
-→ priorities
-→ personalized profile
-→ deterministic matching
-→ later AI intelligence
+The fallback for missing personalized data is the incomplete-profile state, not a demo score.
 
----
+LEGACY JOBMATCH TYPE
 
-# PRIVACY PRINCIPLE
+The general domain types may still contain an older JobMatch interface.
 
-NextUp will eventually contain sensitive career information such as:
+Audit actual usage.
 
-- employment history
-- resumes
-- salary expectations
-- career goals
-- job applications
-- recruiter communication
-- possibly contact information
+Do not delete it blindly.
 
-Use conservative privacy defaults.
+For Phase 10 scoring, Phase 9 MatchResult remains the source of truth.
 
-AI requests should receive only the context necessary for the specific task.
+PHASE 10 TEST REQUIREMENTS
 
-Do not send a user's entire career database to an AI provider when only a small
-subset is needed.
+Phase 10 tests are mandatory.
 
-Never expose secrets or another user's private data.
+At minimum cover:
 
-RLS is a foundational security boundary.
+profile adapter maps current title
 
----
+profile adapter maps years experience
 
-# FINAL CURRENT MILESTONE
+profile adapter maps skills/proficiency
 
-The immediate objective is to move NextUp from:
+profile adapter maps work experiences
 
-authenticated database-backed prototype
+profile adapter maps goals
 
-to:
+profile adapter maps target roles
 
-verified authenticated database-backed prototype
+profile adapter maps salary minimum
 
-and then, after audit approval:
+profile adapter maps salary ideal
 
-personalized deterministic matching MVP.
+profile adapter maps work arrangements
 
-The intended flow after Phase 10 is eventually:
+profile adapter maps current location
 
-Landing
-→ Signup
-→ Email Confirmation if Required
-→ Onboarding
-→ Supabase Profile
-→ Deterministic Matching
-→ Discover
-→ Job Detail
-→ Save / Pass / Undo
-→ Apply
-→ Applications
-→ Stage / Notes / Timeline
-→ Logout
-→ Login
-→ Data and personalized matches persist
+profile adapter maps preferred locations
 
-But right now:
+profile adapter maps relocation willingness
 
-PHASE 8.2 ONLY.
+profile adapter maps priorities
 
-Complete Phase 8.2.
+job adapter maps company
 
-Commit it.
+job adapter maps industry
 
-Push it.
+job adapter maps title
 
-Report results.
+job adapter maps description
+
+job adapter maps requirements
+
+job adapter maps responsibilities
+
+job adapter maps work arrangement
+
+job adapter maps employment type
+
+job adapter maps experience level
+
+job adapter maps salary fields
+
+job adapter maps salary period
+
+job adapter maps location
+
+adapters do not mutate inputs
+
+incomplete profile remains incomplete
+
+incomplete profile does not become zero score
+
+same user/job returns same result repeatedly
+
+profile skill change updates score/result
+
+salary preference change updates score/result
+
+work preference change updates score/result
+
+target role change updates score/result
+
+saved job calculation uses current profile
+
+canonical integration helper returns Phase 9 MatchResult
+
+representative job receives same result through all shared integration paths
+
+no page-specific scoring logic exists in tested helpers
+
+Add more tests if implementation details justify them.
+
+CROSS-SURFACE CONSISTENCY TEST
+
+For one fixed profile and one fixed job, Discover, Explore, Saved, Job Detail, and Applications must resolve to the same deterministic result.
+
+The same user/job pair must not drift by page.
+
+PROFILE-CHANGE TEST
+
+Use deterministic local fixtures.
+
+Create Profile A, calculate match, then create Profile B with one meaningful relevant change and calculate again.
+
+Assert the result changes appropriately.
+
+Also test at least one preference change.
+
+MANUAL BROWSER VERIFICATION
+
+After automated tests pass, manually verify the real app with an authenticated user.
+
+Discover
+
+real personalized score visible
+
+pass works
+
+undo works
+
+save works
+
+apply works
+
+progression works
+
+no hard-coded old percentage
+
+Explore
+
+same job = same score as Discover
+
+filters work
+
+search works
+
+Saved
+
+current score visible
+
+score recalculates from current profile
+
+unsave works
+
+Job Detail
+
+overall score
+
+qualification score
+
+lifestyle score
+
+fit reasons
+
+concerns
+
+matched skills
+
+missing skills
+
+hard failure presentation
+
+save/apply still work
+
+Applications
+
+stage management unchanged
+
+notes unchanged
+
+next action unchanged
+
+match context remains secondary
+
+Incomplete Profile
+
+Show:
+
+Finish your profile to see your match
+
+No fake percentage.
+
+MANUAL CROSS-SURFACE CHECK
+
+Choose one real job ID and record:
+
+Job ID:
+Discover score:
+Explore score:
+Saved score:
+Job Detail score:
+Applications score:
+
+They must match for the same user.
+
+Do not claim this was verified unless it actually was.
+
+MANUAL PROFILE-CHANGE CHECK
+
+For a real test account:
+
+record one job's score
+
+change one relevant profile field
+
+revisit/reload the job
+
+confirm score changes
+
+restore original data when appropriate
+
+Do not corrupt production-like data.
+
+PERFORMANCE CHECK
+
+Inspect network behavior.
+
+For a list page with many jobs, Phase 10 must not cause per-card profile hydration.
+
+Report approximately:
+
+profile-related requests per page load:
+job-related requests per page load:
+
+Expected architecture is roughly:
+
+profile once
+jobs once / normal existing pagination behavior
+local deterministic matching per job
+
+QUALITY GATE
+
+Before Phase 10 is complete:
+
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+
+Requirements:
+
+typecheck: PASS
+lint: 0 errors
+tests: ALL PASS
+build: PASS
+
+Pre-existing warnings may remain only if genuinely pre-existing.
+
+GIT RULES
+
+Before committing:
+
+git status --short
+
+Review every changed file.
+
+Do not commit:
+
+.env.local
+
+credentials
+
+Supabase secrets
+
+verification passwords
+
+screenshots
+
+debug logs
+
+temporary scripts
+
+generated junk
+
+Expected commit message:
+
+Phase 10: Integrate personalized matching throughout NextUp
+
+Push to main.
+
+VERCEL
+
+After pushing, verify deployment status for the Phase 10 commit.
+
+Phase 10 is not ready for review if Vercel is failing.
+
+Report explicitly:
+
+Vercel: SUCCESS
+
+or:
+
+Vercel: FAILURE
+
+or:
+
+Vercel: NOT VERIFIED
+
+Do not fabricate deployment success.
+
+PHASE 10 FINAL REPORT
+
+When complete, report:
+
+exact commit SHA
+
+exact files created
+
+exact files modified
+
+profile adapter architecture
+
+job adapter architecture
+
+matching integration helper architecture
+
+how user matching data is loaded
+
+confirmation profile is not fetched once per job card
+
+Discover integration
+
+Explore integration
+
+Saved integration
+
+Job Detail integration
+
+Applications integration
+
+incomplete-profile behavior
+
+loading behavior
+
+error behavior
+
+primary score presentation
+
+qualification/lifestyle presentation
+
+hard-failure presentation
+
+matched/missing skill presentation
+
+legacy/mock score code removed or retained, with explanation
+
+new Phase 10 test count
+
+Phase 9 matching test count
+
+pre-existing test count
+
+total test count
+
+typecheck result
+
+lint result
+
+test result
+
+build result
+
+Vercel result
+
+manual Discover result
+
+manual Explore result
+
+manual Saved result
+
+manual Job Detail result
+
+manual Applications result
+
+cross-surface consistency job ID
+
+Discover score
+
+Explore score
+
+Saved score
+
+Job Detail score
+
+Applications score if applicable
+
+profile-change field used
+
+score before
+
+score after
+
+confirmation test data restored if applicable
+
+approximate profile-query behavior
+
+approximate job-query behavior
+
+confirmation no database migration
+
+confirmation auth/RLS unchanged
+
+confirmation no AI
+
+confirmation no embeddings
+
+confirmation Phase 11 was not started
+
+STOP CONDITION
+
+After adapters, deterministic matching integration, automated tests, manual browser verification, cross-surface verification, performance/network audit, quality gates, commit, push, Vercel verification, and final report:
 
 STOP.
 
-Wait for independent audit and explicit developer approval before Phase 9.
+Do not begin another phase.
+
+PHASE 11 — LOCKED
+
+Do NOT begin:
+
+AI job explanation
+
+career coach
+
+resume parsing
+
+resume tailoring
+
+interview coach
+
+follow-up AI
+
+O*NET taxonomy
+
+geocoding
+
+location provider integration
+
+social features
+
+employer tooling
+
+Wait for independent Phase 10 audit and explicit approval.
+
+FUTURE AI RULE
+
+Deterministic systems decide facts. AI explains and helps the user act.
+
+AI may later explain a match, coach the user, tailor resume wording, prepare interview answers, or suggest follow-up language.
+
+AI must not invent experience, invent qualifications, fabricate match scores, override deterministic hard failures, auto-apply without confirmation, or auto-message employers without confirmation.
+
+PRODUCT TRUST PRINCIPLES
+
+Never:
+
+invent experience
+
+invent qualifications
+
+invent salary
+
+invent job requirements
+
+fabricate match percentages
+
+auto-apply without confirmation
+
+auto-message employers without confirmation
+
+expose private user data across accounts
+
+weaken RLS for convenience
+
+show stale persisted scores as though current
+
+hide important match concerns
+
+Matching should remain explainable and trustworthy.
+
+PHASE 10 DEFINITION OF DONE
+
+Phase 10 is successful when a real authenticated NextUp user can view the same job anywhere in the product and get one consistent personalized answer:
+
+How well does this job fit me?
+
+Across:
+
+Discover
+Explore
+Saved
+Job Detail
+Applications
+
+the answer must come from:
+
+current persisted user data +
+current job data +
+approved Phase 9 deterministic engine
+
+No mocks.
+No AI.
+No duplicate formulas.
+No stale stored percentages.
+No fake scores for incomplete profiles.
+No per-card profile fetch explosion.
+
+That is the Phase 10 standard.
