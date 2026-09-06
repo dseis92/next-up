@@ -49,3 +49,7 @@ next-env.d.ts
 # temp
 *.tmp
 *.temp
+
+# verification scripts (may contain test credentials)
+verify-rls.ts
+verify-*.ts

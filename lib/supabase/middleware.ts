@@ -83,12 +83,12 @@ export async function updateSession(request: NextRequest) {
       ) && isProtectedRoute;
 
     if (needsOnboardingCheck) {
-      // Check if onboarding is complete
+      // Check if onboarding is complete (may not exist for fresh users)
       const { data: onboarding } = await supabase
         .from("onboarding_progress")
         .select("completed")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (!onboarding || !onboarding.completed) {
         // Redirect to onboarding if not completed

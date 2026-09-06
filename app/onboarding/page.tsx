@@ -891,10 +891,9 @@ export default function OnboardingPage() {
     loadData();
   }, []);
 
-  const updateData = async (updates: Partial<OnboardingData>) => {
-    const newData = { ...data, ...updates };
-    setData(newData);
-    await saveOnboardingData(newData);
+  // Update local state only (synchronous, no database write)
+  const updateData = (updates: Partial<OnboardingData>) => {
+    setData((prevData) => ({ ...prevData, ...updates }));
   };
 
   const canProceed = () => {
@@ -933,18 +932,39 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < TOTAL_STEPS) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Complete onboarding
-      router.push("/discover");
+  const handleNext = async () => {
+    // Save current state to database before navigating
+    try {
+      await saveOnboardingData(data);
+
+      if (currentStep < TOTAL_STEPS) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        // Complete onboarding - final save successful, navigate to discover
+        router.push("/discover");
+      }
+    } catch (error) {
+      console.error("Failed to save onboarding progress:", error);
+      // TODO: Show user-friendly error toast
+      // For now, prevent navigation on save failure
+      alert("Failed to save your progress. Please check your connection and try again.");
     }
   };
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+  const handleBack = async () => {
+    // Save current state before navigating back
+    try {
+      await saveOnboardingData(data);
+
+      if (currentStep > 1) {
+        setCurrentStep(currentStep - 1);
+      }
+    } catch (error) {
+      console.error("Failed to save onboarding progress:", error);
+      // Allow navigation back even if save fails (data is in local state)
+      if (currentStep > 1) {
+        setCurrentStep(currentStep - 1);
+      }
     }
   };
 

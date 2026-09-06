@@ -46,23 +46,23 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   if (!user) return null;
 
-  // Fetch profile data
+  // Fetch profile data (should be auto-created by trigger, but use maybeSingle for safety)
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError) {
     console.error("Failed to fetch user profile:", { userId: user.id, error: profileError.message });
   }
 
-  // Fetch onboarding data
+  // Fetch onboarding data (may not exist for fresh users)
   const { data: onboarding, error: onboardingError } = await supabase
     .from("onboarding_progress")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (onboardingError) {
     console.error("Failed to fetch onboarding data:", { userId: user.id, error: onboardingError.message });
@@ -123,12 +123,12 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     console.error("Failed to fetch preferred locations:", { userId: user.id, error: preferredLocationsError.message });
   }
 
-  // Fetch work preferences
+  // Fetch work preferences (may not exist for fresh users)
   const { data: preferences, error: preferencesError } = await supabase
     .from("user_preferences")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (preferencesError) {
     console.error("Failed to fetch user preferences:", { userId: user.id, error: preferencesError.message });

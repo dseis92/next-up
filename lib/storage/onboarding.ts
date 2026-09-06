@@ -78,12 +78,12 @@ export async function getOnboardingData(): Promise<Partial<OnboardingData> | nul
 
   if (!user) return null;
 
-  // Fetch onboarding progress
+  // Fetch onboarding progress (may not exist for fresh users)
   const { data: onboarding, error: onboardingError } = await supabase
     .from("onboarding_progress")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (onboardingError) {
     console.error("Failed to fetch onboarding progress:", { userId: user.id, error: onboardingError.message });
@@ -147,12 +147,12 @@ export async function getOnboardingData(): Promise<Partial<OnboardingData> | nul
     console.error("Failed to fetch preferred locations:", { userId: user.id, error: preferredLocationsError.message });
   }
 
-  // Fetch work preferences
+  // Fetch work preferences (may not exist for fresh users)
   const { data: preferences, error: preferencesError } = await supabase
     .from("user_preferences")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (preferencesError) {
     console.error("Failed to fetch user preferences:", { userId: user.id, error: preferencesError.message });
@@ -469,7 +469,7 @@ export async function isOnboardingComplete(): Promise<boolean> {
     .from("onboarding_progress")
     .select("completed")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Failed to check onboarding completion:", { userId: user.id, error: error.message });

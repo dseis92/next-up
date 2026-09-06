@@ -90,7 +90,7 @@ export async function isJobSaved(jobId: string): Promise<boolean> {
     .select("id")
     .eq("user_id", user.id)
     .eq("job_id", jobId)
-    .single();
+    .maybeSingle();
 
   return !!data;
 }
@@ -181,7 +181,7 @@ export async function isJobPassed(jobId: string): Promise<boolean> {
     .select("id")
     .eq("user_id", user.id)
     .eq("job_id", jobId)
-    .single();
+    .maybeSingle();
 
   return !!data;
 }
