@@ -976,5 +976,160 @@ describe("NextUp Matching Engine", () => {
       expect(unsupportedPriorities).toContain("culture");
       expect(unsupportedPriorities).toContain("mission");
     });
+
+    it("should NOT treat learning as measurable without job evidence", () => {
+      const result = calculateJobMatch(towerForemanProfile, projectEngineerJob);
+
+      const unsupportedPriorities = result.breakdown.userPriorities.metadata
+        ?.unsupportedPriorities as string[] | undefined;
+
+      // Learning should be unsupported - no job field proves learning/training
+      expect(unsupportedPriorities).toContain("learning");
+    });
+
+    it("should measure remote flexibility as separate from work arrangement acceptability", () => {
+      const profileAcceptingBoth: MatchProfile = {
+        ...towerForemanProfile,
+        workPreferences: {
+          remote: false,
+          hybrid: true,
+          onsite: true,
+          fullTime: true,
+          partTime: false,
+          contract: false,
+        },
+        priorities: {
+          salary: 5,
+          workLifeBalance: 5,
+          careerGrowth: 5,
+          location: 5,
+          remoteFlexibility: 10, // High priority for remote flexibility
+          culture: 5,
+          stability: 5,
+          benefits: 5,
+          mission: 5,
+          learning: 5,
+        },
+      };
+
+      const remoteJob: MatchJob = { ...projectEngineerJob, workArrangement: "remote" };
+      const hybridJob: MatchJob = { ...projectEngineerJob, workArrangement: "hybrid" };
+      const onsiteJob: MatchJob = { ...projectEngineerJob, workArrangement: "onsite" };
+
+      const remoteResult = calculateJobMatch(profileAcceptingBoth, remoteJob);
+      const hybridResult = calculateJobMatch(profileAcceptingBoth, hybridJob);
+      const onsiteResult = calculateJobMatch(profileAcceptingBoth, onsiteJob);
+
+      // Work arrangement acceptability should be equal (both hybrid and onsite accepted)
+      expect(hybridResult.breakdown.workArrangement.score).toBe(
+        onsiteResult.breakdown.workArrangement.score
+      );
+
+      // But user priorities should differ based on remote flexibility value
+      expect(remoteResult.breakdown.userPriorities.score).toBeGreaterThan(
+        onsiteResult.breakdown.userPriorities.score
+      );
+      expect(hybridResult.breakdown.userPriorities.score).toBeGreaterThan(
+        onsiteResult.breakdown.userPriorities.score
+      );
+      expect(hybridResult.breakdown.userPriorities.score).toBeLessThan(
+        remoteResult.breakdown.userPriorities.score
+      );
+    });
+  });
+
+  describe("Transferability Reasons", () => {
+    it("should explain transferability in fit reasons when experience transfers", () => {
+      // Use profile WITHOUT Project Engineer in targetRoles
+      const towerForemanWithoutTargetRole: MatchProfile = {
+        ...towerForemanProfile,
+        targetRoles: ["Construction Manager", "Operations Manager"], // Different targets
+      };
+
+      const result = calculateJobMatch(towerForemanWithoutTargetRole, projectEngineerJob);
+
+      // Transferability should be detected in experience
+      expect(result.breakdown.experience.metadata?.isTransferable).toBe(true);
+
+      // AND should be explained in fit reasons
+      const hasTransferReason = result.reasonsFit.some(
+        (r) =>
+          r.component === "experience" &&
+          r.text.toLowerCase().includes("transfer") &&
+          r.text.toLowerCase().includes("experience")
+      );
+      expect(hasTransferReason).toBe(true);
+    });
+
+    it("should NOT give transferability reason for unrelated roles", () => {
+      const chefProfile: MatchProfile = {
+        ...towerForemanProfile,
+        currentRole: "Executive Chef",
+        targetRoles: ["Restaurant Manager", "Culinary Director"],
+      };
+
+      const result = calculateJobMatch(chefProfile, projectEngineerJob);
+
+      // Should NOT detect transferability
+      expect(result.breakdown.experience.metadata?.isTransferable).not.toBe(true);
+
+      // Should NOT have transfer reason
+      const hasTransferReason = result.reasonsFit.some(
+        (r) => r.component === "experience" && r.text.toLowerCase().includes("transfer")
+      );
+      expect(hasTransferReason).toBe(false);
+    });
+  });
+
+  describe("Salary Partial Bounds", () => {
+    it("should create hard failure when max only is below user minimum", () => {
+      const jobMaxOnlyBelowMin: MatchJob = {
+        ...projectEngineerJob,
+        salaryMin: undefined,
+        salaryMax: 60000, // Below user min of 65000
+      };
+
+      const result = calculateJobMatch(towerForemanProfile, jobMaxOnlyBelowMin);
+
+      expect(result.breakdown.salary.metadata?.hardFailure).toBe(true);
+      expect(result.breakdown.salary.score).toBe(0);
+    });
+
+    it("should score well when max only meets ideal", () => {
+      const jobMaxOnlyMeetsIdeal: MatchJob = {
+        ...projectEngineerJob,
+        salaryMin: undefined,
+        salaryMax: 85000, // Meets ideal of 80000
+      };
+
+      const result = calculateJobMatch(towerForemanProfile, jobMaxOnlyMeetsIdeal);
+
+      expect(result.breakdown.salary.score).toBeGreaterThan(85);
+    });
+
+    it("should score well when min only meets ideal", () => {
+      const jobMinOnlyMeetsIdeal: MatchJob = {
+        ...projectEngineerJob,
+        salaryMin: 85000, // Exceeds ideal of 80000
+        salaryMax: undefined,
+      };
+
+      const result = calculateJobMatch(towerForemanProfile, jobMinOnlyMeetsIdeal);
+
+      expect(result.breakdown.salary.score).toBeGreaterThan(85);
+    });
+
+    it("should return neutral when no salary data exists", () => {
+      const jobNoSalary: MatchJob = {
+        ...projectEngineerJob,
+        salaryMin: undefined,
+        salaryMax: undefined,
+      };
+
+      const result = calculateJobMatch(towerForemanProfile, jobNoSalary);
+
+      expect(result.breakdown.salary.confidence).toBe("low");
+      expect(result.breakdown.salary.score).toBeLessThan(70);
+    });
   });
 });

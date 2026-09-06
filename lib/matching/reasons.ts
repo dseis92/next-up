@@ -216,6 +216,7 @@ export function generateFitReasons(
   matchedSkills: string[],
   breakdown: {
     skills: ComponentScore;
+    experience: ComponentScore;
     salary: ComponentScore;
     workArrangement: ComponentScore;
     careerGoals: ComponentScore;
@@ -230,6 +231,17 @@ export function generateFitReasons(
       text: `You match ${matchedSkills.length} of the key skills for this role`,
       priority: PRIORITY.STRONG_FIT,
       component: "skills",
+    });
+  }
+
+  // Transferability in experience (qualification factor)
+  // This is separate from career goals - it's about transferable experience credit
+  const isTransferable = breakdown.experience.metadata?.isTransferable;
+  if (isTransferable === true) {
+    reasons.push({
+      text: "Your current experience transfers well to this role",
+      priority: PRIORITY.TRANSFERABLE,
+      component: "experience",
     });
   }
 
@@ -251,7 +263,7 @@ export function generateFitReasons(
     });
   }
 
-  // Career goals match
+  // Career goals match (exact target role)
   if (breakdown.careerGoals.score >= 80) {
     const matchType = breakdown.careerGoals.metadata?.matchType;
     if (matchType === "exact") {
@@ -260,13 +272,8 @@ export function generateFitReasons(
         priority: PRIORITY.EXACT_TARGET,
         component: "careerGoals",
       });
-    } else if (matchType === "transferable") {
-      reasons.push({
-        text: "Your current experience transfers well to this role",
-        priority: PRIORITY.TRANSFERABLE,
-        component: "careerGoals",
-      });
     }
+    // Note: transferable matchType is now handled via experience.isTransferable above
   }
 
   // Sort by priority (descending) and limit

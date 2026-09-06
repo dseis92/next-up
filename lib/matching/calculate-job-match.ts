@@ -585,8 +585,12 @@ function calculateSalaryScore(
     };
   }
 
-  if (!job.salaryMin || !job.salaryMax) {
-    // Job salary unknown - neutral score
+  // Handle partial salary bounds
+  const hasJobMin = job.salaryMin !== undefined && job.salaryMin !== null;
+  const hasJobMax = job.salaryMax !== undefined && job.salaryMax !== null;
+
+  if (!hasJobMin && !hasJobMax) {
+    // No job salary data - neutral score
     return {
       score: SALARY_WEIGHTS.unknownSalary * 100,
       weight: COMPONENT_WEIGHTS.salary,
@@ -595,32 +599,47 @@ function calculateSalaryScore(
     };
   }
 
-  // Normalize to yearly
-  const jobMinYearly = normalizeToYearly(job.salaryMin, job.salaryPeriod);
-  const jobMaxYearly = normalizeToYearly(job.salaryMax, job.salaryPeriod);
+  // Normalize to yearly (handle partial bounds)
+  const jobMinYearly = hasJobMin ? normalizeToYearly(job.salaryMin!, job.salaryPeriod) : null;
+  const jobMaxYearly = hasJobMax ? normalizeToYearly(job.salaryMax!, job.salaryPeriod) : null;
 
   let score = 0;
   let hardFailure = false;
+  let confidence: "high" | "medium" | "low" = "high";
 
-  if (jobMaxYearly < userMin) {
-    // Hard failure: job max below user minimum
+  // RULE 1: If job max is known and below user minimum → HARD FAILURE
+  if (jobMaxYearly !== null && jobMaxYearly < userMin) {
     hardFailure = true;
     score = 0;
-  } else if (jobMaxYearly >= (userIdeal || userMin)) {
-    // Meets or exceeds ideal
+  }
+  // RULE 2: If job max is known and meets/exceeds ideal
+  else if (jobMaxYearly !== null && jobMaxYearly >= (userIdeal || userMin)) {
     score = SALARY_WEIGHTS.meetsIdeal * 100;
-  } else if (jobMaxYearly >= userMin) {
-    // Meets minimum but below ideal
+  }
+  // RULE 3: If job max is known and meets minimum but below ideal
+  else if (jobMaxYearly !== null && userIdeal && jobMaxYearly >= userMin) {
     score = SALARY_WEIGHTS.meetsMinimum * 100;
-  } else if (jobMaxYearly >= userMin * 0.9) {
-    // Close to minimum (within 10%)
-    score = SALARY_WEIGHTS.nearMinimum * 100;
+  }
+  // RULE 4: If job min is known and >= ideal (max unknown but guaranteed to meet)
+  else if (jobMinYearly !== null && jobMinYearly >= (userIdeal || userMin)) {
+    score = SALARY_WEIGHTS.meetsIdeal * 100;
+    confidence = "medium"; // Less certain without max
+  }
+  // RULE 5: If job min is known and >= user min (but ideal unknown)
+  else if (jobMinYearly !== null && jobMinYearly >= userMin) {
+    score = SALARY_WEIGHTS.meetsMinimum * 100;
+    confidence = "medium";
+  }
+  // RULE 6: Partial data, uncertain compatibility
+  else {
+    score = SALARY_WEIGHTS.unknownSalary * 100;
+    confidence = "low";
   }
 
   return {
     score: Math.max(0, Math.min(100, score)),
     weight: COMPONENT_WEIGHTS.salary,
-    confidence: "high",
+    confidence,
     metadata: {
       userMin,
       userIdeal,
@@ -1001,6 +1020,28 @@ function calculateCareerGoalsScore(
 }
 
 /**
+ * Calculate remote flexibility evidence from job work arrangement
+ * This is separate from acceptability - measures inherent flexibility value
+ *
+ * Scale:
+ * - remote: 100 (maximum flexibility)
+ * - hybrid: 60 (partial flexibility)
+ * - onsite: 20 (minimal flexibility)
+ */
+function calculateRemoteFlexibilityEvidence(job: MatchJob): number {
+  switch (job.workArrangement) {
+    case "remote":
+      return 100;
+    case "hybrid":
+      return 60;
+    case "onsite":
+      return 20;
+    default:
+      return 50; // Unknown - neutral
+  }
+}
+
+/**
  * Calculate user priorities score
  * Weights component compatibility by what user values most
  * Only uses priorities with measurable job-match evidence
@@ -1047,12 +1088,14 @@ function calculateUserPrioritiesScore(
     });
   }
 
-  // Remote flexibility → work arrangement component
-  if (breakdown.workArrangement && priorities.remoteFlexibility > 0) {
+  // Remote flexibility → calculate from actual work arrangement flexibility
+  // Separate from acceptability - this measures the job's inherent flexibility value
+  if (priorities.remoteFlexibility > 0) {
+    const remoteFlexibilityEvidence = calculateRemoteFlexibilityEvidence(_job);
     measurablePriorities.push({
       dimension: "remoteFlexibility",
       priorityValue: priorities.remoteFlexibility,
-      componentScore: breakdown.workArrangement.score,
+      componentScore: remoteFlexibilityEvidence,
     });
   }
 
@@ -1061,15 +1104,6 @@ function calculateUserPrioritiesScore(
     measurablePriorities.push({
       dimension: "careerGrowth",
       priorityValue: priorities.careerGrowth,
-      componentScore: breakdown.careerGoals.score,
-    });
-  }
-
-  // Learning → also maps to career goals (advancement/learning opportunity)
-  if (breakdown.careerGoals && priorities.learning > 0) {
-    measurablePriorities.push({
-      dimension: "learning",
-      priorityValue: priorities.learning,
       componentScore: breakdown.careerGoals.score,
     });
   }
@@ -1083,6 +1117,7 @@ function calculateUserPrioritiesScore(
       metadata: {
         usedPriorities: [],
         unsupportedPriorities: [
+          "learning",
           "culture",
           "mission",
           "benefits",
@@ -1111,6 +1146,7 @@ function calculateUserPrioritiesScore(
     metadata: {
       usedPriorities: measurablePriorities.map((p) => p.dimension),
       unsupportedPriorities: [
+        "learning",
         "culture",
         "mission",
         "benefits",
