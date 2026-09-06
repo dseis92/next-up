@@ -43,7 +43,7 @@ function LoginForm() {
       }
 
       // Check if onboarding is complete
-      const onboardingDone = isOnboardingComplete();
+      const onboardingDone = await isOnboardingComplete();
 
       if (onboardingDone) {
         router.push(redirectTo);

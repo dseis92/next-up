@@ -882,16 +882,19 @@ export default function OnboardingPage() {
   const [data, setData] = useState<Partial<OnboardingData>>({});
 
   useEffect(() => {
-    const saved = getOnboardingData();
-    if (saved) {
-      setData(saved);
-    }
+    const loadData = async () => {
+      const saved = await getOnboardingData();
+      if (saved) {
+        setData(saved);
+      }
+    };
+    loadData();
   }, []);
 
-  const updateData = (updates: Partial<OnboardingData>) => {
+  const updateData = async (updates: Partial<OnboardingData>) => {
     const newData = { ...data, ...updates };
     setData(newData);
-    saveOnboardingData(newData);
+    await saveOnboardingData(newData);
   };
 
   const canProceed = () => {

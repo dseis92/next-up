@@ -27,13 +27,16 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const userProfile = getUserProfile();
-    setProfile(userProfile);
+    const loadProfile = async () => {
+      const userProfile = await getUserProfile();
+      setProfile(userProfile);
 
-    // If no profile exists, redirect to onboarding
-    if (!userProfile || !userProfile.currentRole) {
-      router.push("/onboarding");
-    }
+      // If no profile exists, redirect to onboarding
+      if (!userProfile || !userProfile.currentRole) {
+        router.push("/onboarding");
+      }
+    };
+    loadProfile();
   }, [router]);
 
   if (!profile) {

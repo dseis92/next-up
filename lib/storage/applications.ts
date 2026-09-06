@@ -1,8 +1,9 @@
 /**
- * Local storage abstraction for applications
- * This will be replaced by Supabase in Phase 8
+ * Applications storage
+ * Uses Supabase for persistence
  */
 
+import { createClient } from "@/lib/supabase/client";
 import type { Application, ApplicationStage, ApplicationEvent } from "@/types";
 
 export interface ApplicationNote {
@@ -14,79 +15,256 @@ export interface ApplicationNote {
 }
 
 // Applications
-export function getApplications(): Application[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("applications");
-  return stored ? JSON.parse(stored) : [];
+export async function getApplications(): Promise<Application[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("applications")
+    .select(
+      `
+      *,
+      job:jobs (
+        *,
+        company:companies (*)
+      )
+    `
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    data?.map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      job_id: row.job_id,
+      job: {
+        ...row.job,
+        company: row.job.company,
+      },
+      stage: row.stage as ApplicationStage,
+      applied_date: row.applied_date,
+      source: row.source,
+      salary_offered: row.salary_offered,
+      recruiter_name: row.recruiter_name,
+      recruiter_email: row.recruiter_email,
+      next_action: row.next_action,
+      next_action_date: row.next_action_date,
+      notes: row.notes,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    })) || []
+  );
 }
 
-export function getApplicationById(id: string): Application | null {
-  const apps = getApplications();
-  return apps.find((app) => app.id === id) || null;
+export async function getApplicationById(id: string): Promise<Application | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("applications")
+    .select(
+      `
+      *,
+      job:jobs (
+        *,
+        company:companies (*)
+      )
+    `
+    )
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    job_id: data.job_id,
+    job: {
+      ...data.job,
+      company: data.job.company,
+    },
+    stage: data.stage as ApplicationStage,
+    applied_date: data.applied_date,
+    source: data.source,
+    salary_offered: data.salary_offered,
+    recruiter_name: data.recruiter_name,
+    recruiter_email: data.recruiter_email,
+    next_action: data.next_action,
+    next_action_date: data.next_action_date,
+    notes: data.notes,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 }
 
-export function getApplicationByJobId(jobId: string): Application | null {
-  const apps = getApplications();
-  return apps.find((app) => app.job_id === jobId) || null;
+export async function getApplicationByJobId(jobId: string): Promise<Application | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("applications")
+    .select(
+      `
+      *,
+      job:jobs (
+        *,
+        company:companies (*)
+      )
+    `
+    )
+    .eq("job_id", jobId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    job_id: data.job_id,
+    job: {
+      ...data.job,
+      company: data.job.company,
+    },
+    stage: data.stage as ApplicationStage,
+    applied_date: data.applied_date,
+    source: data.source,
+    salary_offered: data.salary_offered,
+    recruiter_name: data.recruiter_name,
+    recruiter_email: data.recruiter_email,
+    next_action: data.next_action,
+    next_action_date: data.next_action_date,
+    notes: data.notes,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 }
 
-export function createApplication(data: {
+export async function createApplication(data: {
   jobId: string;
   job: Application["job"];
   stage?: ApplicationStage;
   source?: string;
-}): Application {
-  const apps = getApplications();
+}): Promise<Application> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Check for duplicate
-  const existing = apps.find((app) => app.job_id === data.jobId);
+  if (!user) throw new Error("User not authenticated");
+
+  // Check for existing application
+  const existing = await getApplicationByJobId(data.jobId);
   if (existing) {
     return existing;
   }
 
   const now = new Date().toISOString();
-  const newApp: Application = {
-    id: crypto.randomUUID(),
-    user_id: "local-user", // Will be replaced with real user ID in Phase 8
-    job_id: data.jobId,
-    job: data.job,
-    stage: data.stage || "applied",
-    applied_date: now,
-    source: data.source || "nextup_discover",
-    created_at: now,
-    updated_at: now,
-  };
 
-  apps.push(newApp);
-  localStorage.setItem("applications", JSON.stringify(apps));
+  const { data: newApp, error } = await supabase
+    .from("applications")
+    .insert({
+      user_id: user.id,
+      job_id: data.jobId,
+      stage: data.stage || "applied",
+      applied_date: now,
+      source: data.source || "nextup_discover",
+    })
+    .select(
+      `
+      *,
+      job:jobs (
+        *,
+        company:companies (*)
+      )
+    `
+    )
+    .single();
+
+  if (error) throw error;
 
   // Create initial event
-  createApplicationEvent({
+  await createApplicationEvent({
     applicationId: newApp.id,
     eventType: "created",
     description: "Application created",
   });
 
-  return newApp;
+  return {
+    id: newApp.id,
+    user_id: newApp.user_id,
+    job_id: newApp.job_id,
+    job: {
+      ...newApp.job,
+      company: newApp.job.company,
+    },
+    stage: newApp.stage as ApplicationStage,
+    applied_date: newApp.applied_date,
+    source: newApp.source,
+    salary_offered: newApp.salary_offered,
+    recruiter_name: newApp.recruiter_name,
+    recruiter_email: newApp.recruiter_email,
+    next_action: newApp.next_action,
+    next_action_date: newApp.next_action_date,
+    notes: newApp.notes,
+    created_at: newApp.created_at,
+    updated_at: newApp.updated_at,
+  };
 }
 
-export function updateApplicationStage(
+export async function updateApplicationStage(
   applicationId: string,
   newStage: ApplicationStage
-): Application | null {
-  const apps = getApplications();
-  const app = apps.find((a) => a.id === applicationId);
+): Promise<Application | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
+  if (!user) return null;
+
+  // Get current application
+  const app = await getApplicationById(applicationId);
   if (!app) return null;
 
   const oldStage = app.stage;
-  app.stage = newStage;
-  app.updated_at = new Date().toISOString();
 
-  localStorage.setItem("applications", JSON.stringify(apps));
+  // Update stage
+  const { data, error } = await supabase
+    .from("applications")
+    .update({ stage: newStage })
+    .eq("id", applicationId)
+    .eq("user_id", user.id)
+    .select(
+      `
+      *,
+      job:jobs (
+        *,
+        company:companies (*)
+      )
+    `
+    )
+    .single();
+
+  if (error || !data) return null;
 
   // Create stage change event
-  createApplicationEvent({
+  await createApplicationEvent({
     applicationId,
     eventType: "stage_change",
     fromStage: oldStage,
@@ -94,10 +272,29 @@ export function updateApplicationStage(
     description: `Moved to ${newStage.replace("_", " ")}`,
   });
 
-  return app;
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    job_id: data.job_id,
+    job: {
+      ...data.job,
+      company: data.job.company,
+    },
+    stage: data.stage as ApplicationStage,
+    applied_date: data.applied_date,
+    source: data.source,
+    salary_offered: data.salary_offered,
+    recruiter_name: data.recruiter_name,
+    recruiter_email: data.recruiter_email,
+    next_action: data.next_action,
+    next_action_date: data.next_action_date,
+    notes: data.notes,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 }
 
-export function updateApplication(
+export async function updateApplication(
   applicationId: string,
   updates: Partial<
     Pick<
@@ -110,106 +307,237 @@ export function updateApplication(
       | "notes"
     >
   >
-): Application | null {
-  const apps = getApplications();
-  const app = apps.find((a) => a.id === applicationId);
+): Promise<Application | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!app) return null;
+  if (!user) return null;
 
-  Object.assign(app, updates);
-  app.updated_at = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("applications")
+    .update(updates)
+    .eq("id", applicationId)
+    .eq("user_id", user.id)
+    .select(
+      `
+      *,
+      job:jobs (
+        *,
+        company:companies (*)
+      )
+    `
+    )
+    .single();
 
-  localStorage.setItem("applications", JSON.stringify(apps));
-  return app;
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    user_id: data.user_id,
+    job_id: data.job_id,
+    job: {
+      ...data.job,
+      company: data.job.company,
+    },
+    stage: data.stage as ApplicationStage,
+    applied_date: data.applied_date,
+    source: data.source,
+    salary_offered: data.salary_offered,
+    recruiter_name: data.recruiter_name,
+    recruiter_email: data.recruiter_email,
+    next_action: data.next_action,
+    next_action_date: data.next_action_date,
+    notes: data.notes,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 }
 
 // Application Events
-export function getApplicationEvents(applicationId: string): ApplicationEvent[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem(`app_events_${applicationId}`);
-  return stored ? JSON.parse(stored) : [];
+export async function getApplicationEvents(
+  applicationId: string
+): Promise<ApplicationEvent[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("application_events")
+    .select("*")
+    .eq("application_id", applicationId)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    data?.map((row) => ({
+      id: row.id,
+      application_id: row.application_id,
+      event_type: row.event_type,
+      from_stage: row.from_stage as ApplicationStage | undefined,
+      to_stage: row.to_stage as ApplicationStage | undefined,
+      description: row.description,
+      event_date: row.event_date,
+      created_at: row.created_at,
+    })) || []
+  );
 }
 
-export function createApplicationEvent(data: {
+export async function createApplicationEvent(data: {
   applicationId: string;
   eventType: string;
   fromStage?: ApplicationStage;
   toStage?: ApplicationStage;
   description?: string;
-}): ApplicationEvent {
-  const events = getApplicationEvents(data.applicationId);
+}): Promise<ApplicationEvent> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const newEvent: ApplicationEvent = {
-    id: crypto.randomUUID(),
-    application_id: data.applicationId,
-    event_type: data.eventType,
-    event_date: new Date().toISOString(),
-    description: data.description,
-    created_at: new Date().toISOString(),
+  if (!user) throw new Error("User not authenticated");
+
+  const { data: newEvent, error } = await supabase
+    .from("application_events")
+    .insert({
+      application_id: data.applicationId,
+      user_id: user.id,
+      event_type: data.eventType,
+      from_stage: data.fromStage,
+      to_stage: data.toStage,
+      description: data.description,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: newEvent.id,
+    application_id: newEvent.application_id,
+    event_type: newEvent.event_type,
+    from_stage: newEvent.from_stage as ApplicationStage | undefined,
+    to_stage: newEvent.to_stage as ApplicationStage | undefined,
+    description: newEvent.description,
+    event_date: newEvent.event_date,
+    created_at: newEvent.created_at,
   };
-
-  events.push(newEvent);
-  localStorage.setItem(
-    `app_events_${data.applicationId}`,
-    JSON.stringify(events)
-  );
-
-  return newEvent;
 }
 
 // Application Notes
-export function getApplicationNotes(applicationId: string): ApplicationNote[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem(`app_notes_${applicationId}`);
-  return stored ? JSON.parse(stored) : [];
+export async function getApplicationNotes(
+  applicationId: string
+): Promise<ApplicationNote[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("application_notes")
+    .select("*")
+    .eq("application_id", applicationId)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    data?.map((row) => ({
+      id: row.id,
+      applicationId: row.application_id,
+      body: row.body,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })) || []
+  );
 }
 
-export function createApplicationNote(
+export async function createApplicationNote(
   applicationId: string,
   body: string
-): ApplicationNote {
-  const notes = getApplicationNotes(applicationId);
+): Promise<ApplicationNote> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const newNote: ApplicationNote = {
-    id: crypto.randomUUID(),
-    applicationId,
-    body,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+  if (!user) throw new Error("User not authenticated");
+
+  const { data: newNote, error } = await supabase
+    .from("application_notes")
+    .insert({
+      application_id: applicationId,
+      user_id: user.id,
+      body,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: newNote.id,
+    applicationId: newNote.application_id,
+    body: newNote.body,
+    createdAt: newNote.created_at,
+    updatedAt: newNote.updated_at,
   };
-
-  notes.push(newNote);
-  localStorage.setItem(`app_notes_${applicationId}`, JSON.stringify(notes));
-
-  return newNote;
 }
 
-export function updateApplicationNote(
+export async function updateApplicationNote(
   applicationId: string,
   noteId: string,
   body: string
-): ApplicationNote | null {
-  const notes = getApplicationNotes(applicationId);
-  const note = notes.find((n) => n.id === noteId);
+): Promise<ApplicationNote | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!note) return null;
+  if (!user) return null;
 
-  note.body = body;
-  note.updatedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("application_notes")
+    .update({ body })
+    .eq("id", noteId)
+    .eq("application_id", applicationId)
+    .eq("user_id", user.id)
+    .select()
+    .single();
 
-  localStorage.setItem(`app_notes_${applicationId}`, JSON.stringify(notes));
-  return note;
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    applicationId: data.application_id,
+    body: data.body,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
 }
 
-export function deleteApplicationNote(
+export async function deleteApplicationNote(
   applicationId: string,
   noteId: string
-): boolean {
-  const notes = getApplicationNotes(applicationId);
-  const filtered = notes.filter((n) => n.id !== noteId);
+): Promise<boolean> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (filtered.length === notes.length) return false;
+  if (!user) return false;
 
-  localStorage.setItem(`app_notes_${applicationId}`, JSON.stringify(filtered));
-  return true;
+  const { error } = await supabase
+    .from("application_notes")
+    .delete()
+    .eq("id", noteId)
+    .eq("application_id", applicationId)
+    .eq("user_id", user.id);
+
+  return !error;
 }

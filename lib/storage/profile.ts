@@ -1,10 +1,10 @@
 /**
  * Profile data storage
- * Combines onboarding data into a unified profile
- * This will be replaced by Supabase in Phase 8
+ * Uses Supabase for persistence
  */
 
-import { getOnboardingData, type OnboardingData } from "./onboarding";
+import { createClient } from "@/lib/supabase/client";
+import type { OnboardingData } from "./onboarding";
 
 export interface UserProfile {
   name: string;
@@ -38,19 +38,121 @@ export interface UserProfile {
   priorities?: OnboardingData["priorities"];
 }
 
-export function getUserProfile(): UserProfile | null {
-  if (typeof window === "undefined") return null;
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Get basic user data
-  const userDataRaw = localStorage.getItem("userData");
-  const userData = userDataRaw ? JSON.parse(userDataRaw) : {};
+  if (!user) return null;
 
-  // Get onboarding data
-  const onboardingData = getOnboardingData() || {};
+  // Fetch profile data
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
-  // Combine into profile
-  const profile: UserProfile = {
-    name: userData.name || "User",
+  // Fetch onboarding data
+  const { data: onboarding } = await supabase
+    .from("onboarding_progress")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  // Fetch goals
+  const { data: goals } = await supabase
+    .from("user_goals")
+    .select("goal")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  // Fetch skills
+  const { data: skills } = await supabase
+    .from("user_skills")
+    .select("skill_name, proficiency, years")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  // Fetch experiences
+  const { data: experiences } = await supabase
+    .from("work_experiences")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("start_date", { ascending: false });
+
+  // Fetch target roles
+  const { data: targetRoles } = await supabase
+    .from("target_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  // Fetch preferred locations
+  const { data: preferredLocations } = await supabase
+    .from("preferred_locations")
+    .select("location")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  // Fetch work preferences
+  const { data: preferences } = await supabase
+    .from("user_preferences")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  const onboardingData = {
+    currentTitle: onboarding?.current_role,
+    location: onboarding?.location,
+    yearsExperience: onboarding?.years_experience,
+    industry: onboarding?.industry,
+    employmentStatus: onboarding?.employment_status,
+    goals: goals?.map((g) => g.goal) || [],
+    skills:
+      skills?.map((s) => ({
+        name: s.skill_name,
+        proficiency: s.proficiency as
+          | "learning"
+          | "comfortable"
+          | "strong"
+          | "expert",
+      })) || [],
+    experiences:
+      experiences?.map((e) => ({
+        title: e.title,
+        company: e.company,
+        startDate: e.start_date,
+        endDate: e.end_date,
+        current: e.current,
+        description: e.description,
+      })) || [],
+    targetRoles: targetRoles?.map((tr) => tr.role) || [],
+    salaryMin: onboarding?.salary_min,
+    salaryIdeal: onboarding?.salary_ideal,
+    workPreferences: preferences
+      ? {
+          remote: preferences.remote,
+          hybrid: preferences.hybrid,
+          onsite: preferences.onsite,
+          fullTime: preferences.full_time,
+          partTime: preferences.part_time,
+          contract: preferences.contract,
+        }
+      : undefined,
+    preferredLocations: preferredLocations?.map((pl) => pl.location) || [],
+    maxCommute: onboarding?.max_commute,
+    willingToRelocate: onboarding?.willing_to_relocate || false,
+    priorities: preferences?.priorities as OnboardingData["priorities"],
+  };
+
+  const userData = {
+    name: profile?.display_name || user.email?.split("@")[0] || "User",
+    about: profile?.about,
+  };
+
+  const userProfile: UserProfile = {
+    name: userData.name,
     currentRole: onboardingData.currentTitle,
     location: onboardingData.location,
     yearsExperience: onboardingData.yearsExperience,
@@ -58,36 +160,46 @@ export function getUserProfile(): UserProfile | null {
     employmentStatus: onboardingData.employmentStatus,
     about: userData.about,
     profileStrength: calculateProfileStrength(onboardingData, userData),
-    goals: onboardingData.goals || [],
-    skills: onboardingData.skills || [],
-    experiences: onboardingData.experiences || [],
-    targetRoles: onboardingData.targetRoles || [],
+    goals: onboardingData.goals,
+    skills: onboardingData.skills,
+    experiences: onboardingData.experiences,
+    targetRoles: onboardingData.targetRoles,
     salaryMin: onboardingData.salaryMin,
     salaryIdeal: onboardingData.salaryIdeal,
     workPreferences: onboardingData.workPreferences,
-    preferredLocations: onboardingData.preferredLocations || [],
+    preferredLocations: onboardingData.preferredLocations,
     maxCommute: onboardingData.maxCommute,
-    willingToRelocate: onboardingData.willingToRelocate || false,
+    willingToRelocate: onboardingData.willingToRelocate,
     priorities: onboardingData.priorities,
   };
 
-  return profile;
+  return userProfile;
 }
 
-export function updateUserProfile(updates: {
+export async function updateUserProfile(updates: {
   name?: string;
   about?: string;
-}): void {
-  const userDataRaw = localStorage.getItem("userData");
-  const userData = userDataRaw ? JSON.parse(userDataRaw) : {};
+}): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const newUserData = { ...userData, ...updates };
-  localStorage.setItem("userData", JSON.stringify(newUserData));
+  if (!user) return;
+
+  await supabase
+    .from("profiles")
+    .upsert({
+      id: user.id,
+      display_name: updates.name,
+      about: updates.about,
+    })
+    .eq("id", user.id);
 }
 
 export function calculateProfileStrength(
   onboarding: Partial<OnboardingData>,
-  userData: any
+  userData: { name?: string; about?: string }
 ): number {
   let score = 0;
 

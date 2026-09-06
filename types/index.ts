@@ -228,6 +228,8 @@ export interface ApplicationEvent {
   id: string;
   application_id: string;
   event_type: string;
+  from_stage?: ApplicationStage;
+  to_stage?: ApplicationStage;
   event_date: string;
   description?: string;
   created_at: string;

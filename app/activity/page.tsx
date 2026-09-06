@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -17,33 +17,59 @@ interface Mission {
 
 export default function ActivityPage() {
   const [streak] = useState(6);
-  const [dailyMissions, setDailyMissions] = useState<Mission[]>(() => {
-    // Load progress from storage on initial render
-    const progress = getDailyProgress();
-    const savedIds = getSavedJobs();
+  const [dailyMissions, setDailyMissions] = useState<Mission[]>([
+    {
+      id: "review",
+      label: "Review 5 opportunities",
+      completed: 0,
+      target: 5,
+    },
+    {
+      id: "save",
+      label: "Save 2 promising roles",
+      completed: 0,
+      target: 2,
+    },
+    { id: "apply", label: "Submit 1 application", completed: 0, target: 1 },
+    {
+      id: "activity",
+      label: "Complete 1 career activity",
+      completed: 0,
+      target: 1,
+    },
+  ]);
 
-    return [
-      {
-        id: "review",
-        label: "Review 5 opportunities",
-        completed: Math.min(progress.reviewed || 0, 5),
-        target: 5,
-      },
-      {
-        id: "save",
-        label: "Save 2 promising roles",
-        completed: Math.min(savedIds.length, 2),
-        target: 2,
-      },
-      { id: "apply", label: "Submit 1 application", completed: 0, target: 1 },
-      {
-        id: "activity",
-        label: "Complete 1 career activity",
-        completed: 0,
-        target: 1,
-      },
-    ];
-  });
+  // Load progress on mount
+  useEffect(() => {
+    const loadProgress = async () => {
+      const progress = getDailyProgress();
+      const savedIds = await getSavedJobs();
+
+      setDailyMissions([
+        {
+          id: "review",
+          label: "Review 5 opportunities",
+          completed: Math.min(progress.reviewed || 0, 5),
+          target: 5,
+        },
+        {
+          id: "save",
+          label: "Save 2 promising roles",
+          completed: Math.min(savedIds.length, 2),
+          target: 2,
+        },
+        { id: "apply", label: "Submit 1 application", completed: 0, target: 1 },
+        {
+          id: "activity",
+          label: "Complete 1 career activity",
+          completed: 0,
+          target: 1,
+        },
+      ]);
+    };
+
+    loadProgress();
+  }, []);
 
   const totalCompleted = dailyMissions.filter(
     (m) => m.completed >= m.target

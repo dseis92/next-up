@@ -82,24 +82,28 @@ export default function ApplicationsPage() {
   });
 
   useEffect(() => {
-    const apps = getApplications();
-    setApplications(apps);
+    const loadApplications = async () => {
+      const apps = await getApplications();
+      setApplications(apps);
 
-    // Group by stage
-    const groups: Record<StageGroup, Application[]> = {
-      preparing: [],
-      applied: [],
-      interviewing: [],
-      offer: [],
-      closed: [],
+      // Group by stage
+      const groups: Record<StageGroup, Application[]> = {
+        preparing: [],
+        applied: [],
+        interviewing: [],
+        offer: [],
+        closed: [],
+      };
+
+      apps.forEach((app) => {
+        const group = getStageGroup(app.stage);
+        groups[group].push(app);
+      });
+
+      setGrouped(groups);
     };
 
-    apps.forEach((app) => {
-      const group = getStageGroup(app.stage);
-      groups[group].push(app);
-    });
-
-    setGrouped(groups);
+    loadApplications();
   }, []);
 
   if (applications.length === 0) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/app-shell";
 import { JobDiscoveryCard } from "@/components/jobs/job-discovery-card";
@@ -30,20 +30,25 @@ export default function DiscoverPage() {
   const [showToast, setShowToast] = useState(false);
 
   // Filter out passed jobs
-  const filteredMatches = useMemo(() => {
-    const passedIds = getPassedJobIds();
-    return mockJobMatches.filter((match) => !passedIds.includes(match.job.id));
+  const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>(mockJobMatches);
+
+  useEffect(() => {
+    const loadMatches = async () => {
+      const passedIds = await getPassedJobIds();
+      setFilteredMatches(
+        mockJobMatches.filter((match) => !passedIds.includes(match.job.id))
+      );
+    };
+    loadMatches();
   }, []);
 
   const currentMatch = filteredMatches[currentIndex];
 
   // Daily progress state
-  const [dailyProgress, setDailyProgress] = useState({ reviewed: 0, target: 5 });
-
-  useEffect(() => {
+  const [dailyProgress, setDailyProgress] = useState(() => {
     const progress = getDailyProgress();
-    setDailyProgress({ reviewed: progress.reviewed, target: 5 });
-  }, []);
+    return { reviewed: progress.reviewed, target: 5 };
+  });
 
   useEffect(() => {
     if (showToast) {
@@ -52,9 +57,9 @@ export default function DiscoverPage() {
     }
   }, [showToast]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (currentMatch) {
-      saveJob(currentMatch.job.id);
+      await saveJob(currentMatch.job.id);
       incrementDailyProgress();
       setDailyProgress((prev) => ({
         ...prev,
@@ -65,9 +70,9 @@ export default function DiscoverPage() {
     setCurrentIndex((prev) => prev + 1);
   };
 
-  const handlePass = () => {
+  const handlePass = async () => {
     if (currentMatch) {
-      passJob(currentMatch.job.id);
+      await passJob(currentMatch.job.id);
       incrementDailyProgress();
       setDailyProgress((prev) => ({
         ...prev,
@@ -86,9 +91,9 @@ export default function DiscoverPage() {
     setCurrentIndex((prev) => prev + 1);
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (lastPassedJob) {
-      undoPass(lastPassedJob.id);
+      await undoPass(lastPassedJob.id);
       setShowToast(false);
       // Go back to that job
       setCurrentIndex(lastPassedJob.index);

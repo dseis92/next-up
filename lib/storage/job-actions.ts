@@ -1,7 +1,9 @@
 /**
- * Local storage abstraction for job actions
- * This will be replaced by Supabase in Phase 8
+ * Job actions storage
+ * Uses Supabase for persistence
  */
+
+import { createClient } from "@/lib/supabase/client";
 
 export interface PassedJob {
   jobId: string;
@@ -10,64 +12,145 @@ export interface PassedJob {
 }
 
 // Saved Jobs
-export function getSavedJobs(): string[] {
-  if (typeof window === "undefined") return [];
-  const saved = localStorage.getItem("savedJobs");
-  return saved ? JSON.parse(saved) : [];
+export async function getSavedJobs(): Promise<string[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("saved_jobs")
+    .select("job_id")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return data?.map((row) => row.job_id) || [];
 }
 
-export function saveJob(jobId: string): void {
-  const savedIds = getSavedJobs();
-  if (!savedIds.includes(jobId)) {
-    savedIds.push(jobId);
-    localStorage.setItem("savedJobs", JSON.stringify(savedIds));
-  }
+export async function saveJob(jobId: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase.from("saved_jobs").upsert({
+    user_id: user.id,
+    job_id: jobId,
+  });
 }
 
-export function unsaveJob(jobId: string): void {
-  const savedIds = getSavedJobs();
-  const filtered = savedIds.filter((id) => id !== jobId);
-  localStorage.setItem("savedJobs", JSON.stringify(filtered));
+export async function unsaveJob(jobId: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase
+    .from("saved_jobs")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("job_id", jobId);
 }
 
-export function isJobSaved(jobId: string): boolean {
-  return getSavedJobs().includes(jobId);
+export async function isJobSaved(jobId: string): Promise<boolean> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("saved_jobs")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("job_id", jobId)
+    .single();
+
+  return !!data;
 }
 
 // Passed Jobs
-export function getPassedJobs(): PassedJob[] {
-  if (typeof window === "undefined") return [];
-  const passed = localStorage.getItem("passedJobs");
-  return passed ? JSON.parse(passed) : [];
+export async function getPassedJobs(): Promise<PassedJob[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("passed_jobs")
+    .select("job_id, reason, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (
+    data?.map((row) => ({
+      jobId: row.job_id,
+      passedAt: row.created_at,
+      reason: row.reason,
+    })) || []
+  );
 }
 
-export function passJob(jobId: string, reason?: string): void {
-  const passedJobs = getPassedJobs();
+export async function passJob(jobId: string, reason?: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // Don't add duplicate
-  if (passedJobs.some((p) => p.jobId === jobId)) return;
+  if (!user) return;
 
-  passedJobs.push({
-    jobId,
-    passedAt: new Date().toISOString(),
+  await supabase.from("passed_jobs").upsert({
+    user_id: user.id,
+    job_id: jobId,
     reason,
   });
-
-  localStorage.setItem("passedJobs", JSON.stringify(passedJobs));
 }
 
-export function undoPass(jobId: string): void {
-  const passedJobs = getPassedJobs();
-  const filtered = passedJobs.filter((p) => p.jobId !== jobId);
-  localStorage.setItem("passedJobs", JSON.stringify(filtered));
+export async function undoPass(jobId: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  await supabase
+    .from("passed_jobs")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("job_id", jobId);
 }
 
-export function isJobPassed(jobId: string): boolean {
-  return getPassedJobs().some((p) => p.jobId === jobId);
+export async function isJobPassed(jobId: string): Promise<boolean> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("passed_jobs")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("job_id", jobId)
+    .single();
+
+  return !!data;
 }
 
-export function getPassedJobIds(): string[] {
-  return getPassedJobs().map((p) => p.jobId);
+export async function getPassedJobIds(): Promise<string[]> {
+  const passedJobs = await getPassedJobs();
+  return passedJobs.map((p) => p.jobId);
 }
 
 // Daily Progress
@@ -76,13 +159,15 @@ export interface DailyProgressData {
   reviewed: number;
 }
 
+// Note: Daily progress tracking will be implemented with analytics in a future phase
+// For now, we'll use client-side state only (not persisted)
 export function getDailyProgress(): DailyProgressData {
   if (typeof window === "undefined") {
     return { date: new Date().toDateString(), reviewed: 0 };
   }
 
   const today = new Date().toDateString();
-  const stored = localStorage.getItem("dailyProgress");
+  const stored = sessionStorage.getItem("dailyProgress");
 
   if (stored) {
     const data = JSON.parse(stored);
@@ -101,5 +186,5 @@ export function incrementDailyProgress(): void {
     date: progress.date,
     reviewed: progress.reviewed + 1,
   };
-  localStorage.setItem("dailyProgress", JSON.stringify(newProgress));
+  sessionStorage.setItem("dailyProgress", JSON.stringify(newProgress));
 }

@@ -57,35 +57,39 @@ export default function ApplicationDetailPage() {
   const [editingNoteText, setEditingNoteText] = useState("");
 
   useEffect(() => {
-    const app = getApplicationById(appId);
-    setApplication(app);
+    const loadApplication = async () => {
+      const app = await getApplicationById(appId);
+      setApplication(app);
 
-    if (app) {
-      setEvents(getApplicationEvents(appId));
-      setNotes(getApplicationNotes(appId));
-    }
+      if (app) {
+        setEvents(await getApplicationEvents(appId));
+        setNotes(await getApplicationNotes(appId));
+      }
+    };
+
+    loadApplication();
   }, [appId]);
 
-  const handleStageChange = (newStage: ApplicationStage) => {
-    const updated = updateApplicationStage(appId, newStage);
+  const handleStageChange = async (newStage: ApplicationStage) => {
+    const updated = await updateApplicationStage(appId, newStage);
     if (updated) {
       setApplication(updated);
-      setEvents(getApplicationEvents(appId));
+      setEvents(await getApplicationEvents(appId));
     }
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (newNote.trim()) {
-      createApplicationNote(appId, newNote.trim());
-      setNotes(getApplicationNotes(appId));
+      await createApplicationNote(appId, newNote.trim());
+      setNotes(await getApplicationNotes(appId));
       setNewNote("");
     }
   };
 
-  const handleEditNote = (noteId: string) => {
+  const handleEditNote = async (noteId: string) => {
     if (editingNoteText.trim()) {
-      updateApplicationNote(appId, noteId, editingNoteText.trim());
-      setNotes(getApplicationNotes(appId));
+      await updateApplicationNote(appId, noteId, editingNoteText.trim());
+      setNotes(await getApplicationNotes(appId));
       setEditingNoteId(null);
       setEditingNoteText("");
     }

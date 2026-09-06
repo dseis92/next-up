@@ -41,24 +41,28 @@ export default function JobDetailPage() {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
 
   useEffect(() => {
-    // Find the job match
-    const foundMatch = mockJobMatches.find((m) => m.job.id === jobId);
-    setMatch(foundMatch || null);
+    const loadJobData = async () => {
+      // Find the job match
+      const foundMatch = mockJobMatches.find((m) => m.job.id === jobId);
+      setMatch(foundMatch || null);
 
-    // Check if saved
-    setIsSaved(isJobSaved(jobId));
+      // Check if saved
+      setIsSaved(await isJobSaved(jobId));
 
-    // Check if already applied
-    const existingApp = getApplicationByJobId(jobId);
-    setApplication(existingApp);
+      // Check if already applied
+      const existingApp = await getApplicationByJobId(jobId);
+      setApplication(existingApp);
+    };
+
+    loadJobData();
   }, [jobId]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isSaved) {
-      unsaveJob(jobId);
+      await unsaveJob(jobId);
       setIsSaved(false);
     } else {
-      saveJob(jobId);
+      await saveJob(jobId);
       setIsSaved(true);
     }
   };
@@ -76,11 +80,11 @@ export default function JobDetailPage() {
     }
   };
 
-  const handleConfirmApply = () => {
+  const handleConfirmApply = async () => {
     if (!match) return;
 
     // Create application
-    const newApp = createApplication({
+    const newApp = await createApplication({
       jobId: match.job.id,
       job: match.job,
       stage: "applied",

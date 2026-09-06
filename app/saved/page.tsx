@@ -19,13 +19,16 @@ export default function SavedPage() {
   const [savedMatches, setSavedMatches] = useState<JobMatch[]>([]);
 
   useEffect(() => {
-    const savedIds = getSavedJobs();
-    const matches = mockJobMatches.filter((m) => savedIds.includes(m.job.id));
-    setSavedMatches(matches);
+    const loadSavedJobs = async () => {
+      const savedIds = await getSavedJobs();
+      const matches = mockJobMatches.filter((m) => savedIds.includes(m.job.id));
+      setSavedMatches(matches);
+    };
+    loadSavedJobs();
   }, []);
 
-  const handleRemove = (jobId: string) => {
-    unsaveJob(jobId);
+  const handleRemove = async (jobId: string) => {
+    await unsaveJob(jobId);
     setSavedMatches(savedMatches.filter((m) => m.job.id !== jobId));
   };
 
