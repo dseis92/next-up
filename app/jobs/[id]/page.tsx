@@ -9,7 +9,13 @@ import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { MatchScore } from "@/components/jobs/match-score";
 import { Progress } from "@/components/ui/progress";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { formatSalary } from "@/lib/utils";
+import { saveJob, unsaveJob, isJobSaved } from "@/lib/storage/job-actions";
+import {
+  createApplication,
+  getApplicationByJobId,
+} from "@/lib/storage/applications";
 import {
   ArrowLeft,
   Bookmark,
@@ -19,9 +25,10 @@ import {
   Building2,
   CheckCircle2,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import { mockJobMatches } from "@/lib/data/mock-jobs";
-import type { JobMatch } from "@/types";
+import type { JobMatch, Application } from "@/types";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -30,6 +37,8 @@ export default function JobDetailPage() {
 
   const [match, setMatch] = useState<JobMatch | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [application, setApplication] = useState<Application | null>(null);
+  const [showApplyDialog, setShowApplyDialog] = useState(false);
 
   useEffect(() => {
     // Find the job match
@@ -37,28 +46,58 @@ export default function JobDetailPage() {
     setMatch(foundMatch || null);
 
     // Check if saved
-    const saved = localStorage.getItem("savedJobs");
-    if (saved) {
-      const savedIds = JSON.parse(saved);
-      setIsSaved(savedIds.includes(jobId));
-    }
+    setIsSaved(isJobSaved(jobId));
+
+    // Check if already applied
+    const existingApp = getApplicationByJobId(jobId);
+    setApplication(existingApp);
   }, [jobId]);
 
   const handleSave = () => {
-    const saved = localStorage.getItem("savedJobs");
-    const savedIds = saved ? JSON.parse(saved) : [];
-
     if (isSaved) {
-      // Remove from saved
-      const newSaved = savedIds.filter((id: string) => id !== jobId);
-      localStorage.setItem("savedJobs", JSON.stringify(newSaved));
+      unsaveJob(jobId);
       setIsSaved(false);
     } else {
-      // Add to saved
-      savedIds.push(jobId);
-      localStorage.setItem("savedJobs", JSON.stringify(savedIds));
+      saveJob(jobId);
       setIsSaved(true);
     }
+  };
+
+  const handleApply = () => {
+    if (application) {
+      // Already applied, go to application detail
+      router.push(`/applications/${application.id}`);
+    } else if (match?.job.external_url) {
+      // Has external URL, show confirmation
+      setShowApplyDialog(true);
+    } else {
+      // Demo job without external URL
+      handleConfirmApply();
+    }
+  };
+
+  const handleConfirmApply = () => {
+    if (!match) return;
+
+    // Create application
+    const newApp = createApplication({
+      jobId: match.job.id,
+      job: match.job,
+      stage: "applied",
+      source: "nextup_job_detail",
+    });
+
+    setApplication(newApp);
+
+    // If external URL exists, open it
+    if (match.job.external_url) {
+      window.open(match.job.external_url, "_blank", "noopener,noreferrer");
+    }
+
+    // Navigate to applications
+    setTimeout(() => {
+      router.push("/applications");
+    }, 500);
   };
 
   if (!match) {
@@ -342,7 +381,7 @@ export default function JobDetailPage() {
           {/* Bottom CTA */}
           <div className="flex gap-3">
             <Button
-              variant={isSaved ? "secondary" : "primary"}
+              variant={isSaved ? "secondary" : "ghost"}
               className="flex-1"
               onClick={handleSave}
               size="lg"
@@ -359,12 +398,37 @@ export default function JobDetailPage() {
                 </>
               )}
             </Button>
-            <Button variant="primary" className="flex-1" size="lg">
-              Apply now
+            <Button
+              variant="primary"
+              className="flex-1"
+              size="lg"
+              onClick={handleApply}
+            >
+              {application ? (
+                "View application"
+              ) : (
+                <>
+                  Apply now
+                  {job.external_url && (
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  )}
+                </>
+              )}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Apply Confirmation Dialog */}
+      <ConfirmDialog
+        open={showApplyDialog}
+        onClose={() => setShowApplyDialog(false)}
+        onConfirm={handleConfirmApply}
+        title="Ready to apply?"
+        description="We'll add this job to your application tracker, then send you to the employer's application page."
+        confirmLabel="Continue to employer"
+        cancelLabel="Cancel"
+      />
     </AppShell>
   );
 }

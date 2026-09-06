@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { getDailyProgress, getSavedJobs } from "@/lib/storage/job-actions";
 import { Flame, CheckCircle2, Circle, TrendingUp, Target } from "lucide-react";
 
 interface Mission {
@@ -29,34 +30,25 @@ export default function ActivityPage() {
   ]);
 
   useEffect(() => {
-    // Load progress from localStorage
-    const today = new Date().toDateString();
-    const stored = localStorage.getItem("dailyProgress");
-    if (stored) {
-      const data = JSON.parse(stored);
-      if (data.date === today) {
-        setDailyMissions((missions) =>
-          missions.map((m) =>
-            m.id === "review"
-              ? { ...m, completed: Math.min(data.reviewed || 0, m.target) }
-              : m
-          )
-        );
-      }
-    }
+    // Load progress from storage abstraction
+    const progress = getDailyProgress();
+    setDailyMissions((missions) =>
+      missions.map((m) =>
+        m.id === "review"
+          ? { ...m, completed: Math.min(progress.reviewed || 0, m.target) }
+          : m
+      )
+    );
 
     // Load saved jobs count
-    const saved = localStorage.getItem("savedJobs");
-    if (saved) {
-      const savedIds = JSON.parse(saved);
-      setDailyMissions((missions) =>
-        missions.map((m) =>
-          m.id === "save"
-            ? { ...m, completed: Math.min(savedIds.length, m.target) }
-            : m
-        )
-      );
-    }
+    const savedIds = getSavedJobs();
+    setDailyMissions((missions) =>
+      missions.map((m) =>
+        m.id === "save"
+          ? { ...m, completed: Math.min(savedIds.length, m.target) }
+          : m
+      )
+    );
   }, []);
 
   const totalCompleted = dailyMissions.filter(

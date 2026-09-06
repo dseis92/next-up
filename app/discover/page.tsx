@@ -1,69 +1,107 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/app-shell";
 import { JobDiscoveryCard } from "@/components/jobs/job-discovery-card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Toast } from "@/components/ui/toast";
 import { mockJobMatches } from "@/lib/data/mock-jobs";
+import {
+  saveJob,
+  passJob,
+  undoPass,
+  getPassedJobIds,
+  getDailyProgress,
+  incrementDailyProgress,
+} from "@/lib/storage/job-actions";
 import { Flame } from "lucide-react";
+import type { JobMatch } from "@/types";
 
 export default function DiscoverPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [matches] = useState(mockJobMatches);
-  const [dailyProgress, setDailyProgress] = useState({ reviewed: 0, target: 5 });
   const [streak] = useState(6);
+  const [lastPassedJob, setLastPassedJob] = useState<{
+    id: string;
+    title: string;
+    index: number;
+  } | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
-  const currentMatch = matches[currentIndex];
-  const hasMore = currentIndex < matches.length - 1;
-
-  useEffect(() => {
-    // Track daily progress
-    const today = new Date().toDateString();
-    const stored = localStorage.getItem("dailyProgress");
-    if (stored) {
-      const data = JSON.parse(stored);
-      if (data.date === today) {
-        setDailyProgress({ reviewed: data.reviewed, target: 5 });
-      }
-    }
+  // Filter out passed jobs
+  const filteredMatches = useMemo(() => {
+    const passedIds = getPassedJobIds();
+    return mockJobMatches.filter((match) => !passedIds.includes(match.job.id));
   }, []);
 
-  const updateDailyProgress = () => {
-    const today = new Date().toDateString();
-    const newReviewed = Math.min(dailyProgress.reviewed + 1, dailyProgress.target);
-    setDailyProgress({ reviewed: newReviewed, target: 5 });
-    localStorage.setItem(
-      "dailyProgress",
-      JSON.stringify({ date: today, reviewed: newReviewed })
-    );
-  };
+  const currentMatch = filteredMatches[currentIndex];
+
+  // Daily progress state
+  const [dailyProgress, setDailyProgress] = useState({ reviewed: 0, target: 5 });
+
+  useEffect(() => {
+    const progress = getDailyProgress();
+    setDailyProgress({ reviewed: progress.reviewed, target: 5 });
+  }, []);
+
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
   const handleSave = () => {
-    const saved = localStorage.getItem("savedJobs");
-    const savedIds = saved ? JSON.parse(saved) : [];
-
-    if (!savedIds.includes(currentMatch.job.id)) {
-      savedIds.push(currentMatch.job.id);
-      localStorage.setItem("savedJobs", JSON.stringify(savedIds));
+    if (currentMatch) {
+      saveJob(currentMatch.job.id);
+      incrementDailyProgress();
+      setDailyProgress((prev) => ({
+        ...prev,
+        reviewed: Math.min(prev.reviewed + 1, prev.target),
+      }));
     }
-
-    updateDailyProgress();
-    if (hasMore) {
-      setCurrentIndex(currentIndex + 1);
-    }
+    // Always advance
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const handlePass = () => {
-    updateDailyProgress();
-    if (hasMore) {
-      setCurrentIndex(currentIndex + 1);
+    if (currentMatch) {
+      passJob(currentMatch.job.id);
+      incrementDailyProgress();
+      setDailyProgress((prev) => ({
+        ...prev,
+        reviewed: Math.min(prev.reviewed + 1, prev.target),
+      }));
+
+      // Show undo toast
+      setLastPassedJob({
+        id: currentMatch.job.id,
+        title: currentMatch.job.title,
+        index: currentIndex,
+      });
+      setShowToast(true);
+    }
+    // Always advance
+    setCurrentIndex((prev) => prev + 1);
+  };
+
+  const handleUndo = () => {
+    if (lastPassedJob) {
+      undoPass(lastPassedJob.id);
+      setShowToast(false);
+      // Go back to that job
+      setCurrentIndex(lastPassedJob.index);
+      setLastPassedJob(null);
     }
   };
 
   const handleViewDetails = () => {
-    updateDailyProgress();
+    incrementDailyProgress();
+    setDailyProgress((prev) => ({
+      ...prev,
+      reviewed: Math.min(prev.reviewed + 1, prev.target),
+    }));
   };
 
   return (
@@ -73,7 +111,9 @@ export default function DiscoverPage() {
         <div className="mb-4 md:mb-6">
           <h1 className="text-heading-lg mb-1 md:mb-2">Hey there!</h1>
           <p className="text-foreground-secondary">
-            {matches.length - currentIndex} fresh opportunities
+            {currentMatch
+              ? `${filteredMatches.length - currentIndex} fresh ${filteredMatches.length - currentIndex === 1 ? "opportunity" : "opportunities"}`
+              : "You're all caught up"}
           </p>
         </div>
 
@@ -127,14 +167,27 @@ export default function DiscoverPage() {
         </div>
 
         {/* Progress indicator */}
-        {matches.length > 0 && (
+        {currentMatch && (
           <div className="mt-4 text-center md:mt-6">
             <p className="text-sm text-foreground-muted">
-              {currentIndex + 1} of {matches.length}
+              {currentIndex + 1} of {filteredMatches.length}
             </p>
           </div>
         )}
       </div>
+
+      {/* Undo Toast */}
+      {lastPassedJob && (
+        <Toast
+          visible={showToast}
+          message={`Passed ${lastPassedJob.title}`}
+          action={{
+            label: "Undo",
+            onClick: handleUndo,
+          }}
+          onClose={() => setShowToast(false)}
+        />
+      )}
     </AppShell>
   );
 }

@@ -210,6 +210,7 @@ export interface Application {
   job: Job;
   stage: ApplicationStage;
   applied_date?: string;
+  source?: string;
   salary_offered?: number;
   recruiter_name?: string;
   recruiter_email?: string;

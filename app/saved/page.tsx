@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Bookmark, MapPin, ArrowRight, X } from "lucide-react";
 import { mockJobMatches } from "@/lib/data/mock-jobs";
 import { formatSalary } from "@/lib/utils";
+import { getSavedJobs, unsaveJob } from "@/lib/storage/job-actions";
 import type { JobMatch } from "@/types";
 
 export default function SavedPage() {
@@ -18,24 +19,14 @@ export default function SavedPage() {
   const [savedMatches, setSavedMatches] = useState<JobMatch[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("savedJobs");
-    if (saved) {
-      const savedIds = JSON.parse(saved);
-      const matches = mockJobMatches.filter((m) =>
-        savedIds.includes(m.job.id)
-      );
-      setSavedMatches(matches);
-    }
+    const savedIds = getSavedJobs();
+    const matches = mockJobMatches.filter((m) => savedIds.includes(m.job.id));
+    setSavedMatches(matches);
   }, []);
 
   const handleRemove = (jobId: string) => {
-    const saved = localStorage.getItem("savedJobs");
-    if (saved) {
-      const savedIds = JSON.parse(saved);
-      const newSaved = savedIds.filter((id: string) => id !== jobId);
-      localStorage.setItem("savedJobs", JSON.stringify(newSaved));
-      setSavedMatches(savedMatches.filter((m) => m.job.id !== jobId));
-    }
+    unsaveJob(jobId);
+    setSavedMatches(savedMatches.filter((m) => m.job.id !== jobId));
   };
 
   if (savedMatches.length === 0) {
