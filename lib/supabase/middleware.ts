@@ -66,12 +66,45 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If user is logged in and tries to access auth pages, redirect to discover
-  const authPages = ["/login", "/signup"];
-  if (user && authPages.includes(request.nextUrl.pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/discover";
-    return NextResponse.redirect(url);
+  // Check onboarding completion for authenticated users
+  if (user) {
+    // Exclude onboarding page itself and auth-related pages
+    const excludeOnboardingCheck = [
+      "/onboarding",
+      "/login",
+      "/signup",
+      "/forgot-password",
+      "/reset-password",
+    ];
+
+    const needsOnboardingCheck =
+      !excludeOnboardingCheck.some((route) =>
+        request.nextUrl.pathname.startsWith(route)
+      ) && isProtectedRoute;
+
+    if (needsOnboardingCheck) {
+      // Check if onboarding is complete
+      const { data: onboarding } = await supabase
+        .from("onboarding_progress")
+        .select("completed")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!onboarding || !onboarding.completed) {
+        // Redirect to onboarding if not completed
+        const url = request.nextUrl.clone();
+        url.pathname = "/onboarding";
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // If user is logged in and tries to access auth pages, redirect to discover
+    const authPages = ["/login", "/signup"];
+    if (authPages.includes(request.nextUrl.pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/discover";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

@@ -47,60 +47,92 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   if (!user) return null;
 
   // Fetch profile data
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
 
+  if (profileError) {
+    console.error("Failed to fetch user profile:", { userId: user.id, error: profileError.message });
+  }
+
   // Fetch onboarding data
-  const { data: onboarding } = await supabase
+  const { data: onboarding, error: onboardingError } = await supabase
     .from("onboarding_progress")
     .select("*")
     .eq("user_id", user.id)
     .single();
 
+  if (onboardingError) {
+    console.error("Failed to fetch onboarding data:", { userId: user.id, error: onboardingError.message });
+  }
+
   // Fetch goals
-  const { data: goals } = await supabase
+  const { data: goals, error: goalsError } = await supabase
     .from("user_goals")
     .select("goal")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
+  if (goalsError) {
+    console.error("Failed to fetch user goals:", { userId: user.id, error: goalsError.message });
+  }
+
   // Fetch skills
-  const { data: skills } = await supabase
+  const { data: skills, error: skillsError } = await supabase
     .from("user_skills")
     .select("skill_name, proficiency, years")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
+  if (skillsError) {
+    console.error("Failed to fetch user skills:", { userId: user.id, error: skillsError.message });
+  }
+
   // Fetch experiences
-  const { data: experiences } = await supabase
+  const { data: experiences, error: experiencesError } = await supabase
     .from("work_experiences")
     .select("*")
     .eq("user_id", user.id)
     .order("start_date", { ascending: false });
 
+  if (experiencesError) {
+    console.error("Failed to fetch work experiences:", { userId: user.id, error: experiencesError.message });
+  }
+
   // Fetch target roles
-  const { data: targetRoles } = await supabase
+  const { data: targetRoles, error: targetRolesError } = await supabase
     .from("target_roles")
     .select("role")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
+  if (targetRolesError) {
+    console.error("Failed to fetch target roles:", { userId: user.id, error: targetRolesError.message });
+  }
+
   // Fetch preferred locations
-  const { data: preferredLocations } = await supabase
+  const { data: preferredLocations, error: preferredLocationsError } = await supabase
     .from("preferred_locations")
     .select("location")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
+  if (preferredLocationsError) {
+    console.error("Failed to fetch preferred locations:", { userId: user.id, error: preferredLocationsError.message });
+  }
+
   // Fetch work preferences
-  const { data: preferences } = await supabase
+  const { data: preferences, error: preferencesError } = await supabase
     .from("user_preferences")
     .select("*")
     .eq("user_id", user.id)
     .single();
+
+  if (preferencesError) {
+    console.error("Failed to fetch user preferences:", { userId: user.id, error: preferencesError.message });
+  }
 
   const onboardingData = {
     currentTitle: onboarding?.current_role,
@@ -185,9 +217,11 @@ export async function updateUserProfile(updates: {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
 
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .upsert({
       id: user.id,
@@ -195,6 +229,11 @@ export async function updateUserProfile(updates: {
       about: updates.about,
     })
     .eq("id", user.id);
+
+  if (error) {
+    console.error("Failed to update user profile:", { userId: user.id, error: error.message });
+    throw new Error("Failed to update user profile");
+  }
 }
 
 export function calculateProfileStrength(

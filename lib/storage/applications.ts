@@ -23,7 +23,7 @@ export async function getApplications(): Promise<Application[]> {
 
   if (!user) return [];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("applications")
     .select(
       `
@@ -36,6 +36,11 @@ export async function getApplications(): Promise<Application[]> {
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch applications:", { userId: user.id, error: error.message });
+    return [];
+  }
 
   return (
     data?.map((row) => ({
@@ -69,7 +74,7 @@ export async function getApplicationById(id: string): Promise<Application | null
 
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("applications")
     .select(
       `
@@ -83,6 +88,11 @@ export async function getApplicationById(id: string): Promise<Application | null
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
+
+  if (error) {
+    console.error("Failed to fetch application by id:", { applicationId: id, error: error.message });
+    return null;
+  }
 
   if (!data) return null;
 
@@ -116,7 +126,7 @@ export async function getApplicationByJobId(jobId: string): Promise<Application 
 
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("applications")
     .select(
       `
@@ -130,6 +140,11 @@ export async function getApplicationByJobId(jobId: string): Promise<Application 
     .eq("job_id", jobId)
     .eq("user_id", user.id)
     .single();
+
+  if (error) {
+    console.error("Failed to fetch application by job id:", { jobId, error: error.message });
+    return null;
+  }
 
   if (!data) return null;
 
@@ -196,7 +211,10 @@ export async function createApplication(data: {
     )
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Failed to create application:", { jobId: data.jobId, error: error.message });
+    throw new Error("Failed to create application");
+  }
 
   // Create initial event
   await createApplicationEvent({
@@ -236,7 +254,9 @@ export async function updateApplicationStage(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
 
   // Get current application
   const app = await getApplicationById(applicationId);
@@ -261,7 +281,12 @@ export async function updateApplicationStage(
     )
     .single();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("Failed to update application stage:", { applicationId, newStage, error: error.message });
+    throw new Error("Failed to update application stage");
+  }
+
+  if (!data) return null;
 
   // Create stage change event
   await createApplicationEvent({
@@ -313,7 +338,9 @@ export async function updateApplication(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
 
   const { data, error } = await supabase
     .from("applications")
@@ -331,7 +358,12 @@ export async function updateApplication(
     )
     .single();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("Failed to update application:", { applicationId, error: error.message });
+    throw new Error("Failed to update application");
+  }
+
+  if (!data) return null;
 
   return {
     id: data.id,
@@ -366,12 +398,17 @@ export async function getApplicationEvents(
 
   if (!user) return [];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("application_events")
     .select("*")
     .eq("application_id", applicationId)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch application events:", { applicationId, error: error.message });
+    return [];
+  }
 
   return (
     data?.map((row) => ({
@@ -414,7 +451,10 @@ export async function createApplicationEvent(data: {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Failed to create application event:", { applicationId: data.applicationId, eventType: data.eventType, error: error.message });
+    throw new Error("Failed to create application event");
+  }
 
   return {
     id: newEvent.id,
@@ -439,12 +479,17 @@ export async function getApplicationNotes(
 
   if (!user) return [];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("application_notes")
     .select("*")
     .eq("application_id", applicationId)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch application notes:", { applicationId, error: error.message });
+    return [];
+  }
 
   return (
     data?.map((row) => ({
@@ -478,7 +523,10 @@ export async function createApplicationNote(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Failed to create application note:", { applicationId, error: error.message });
+    throw new Error("Failed to create application note");
+  }
 
   return {
     id: newNote.id,
@@ -499,7 +547,9 @@ export async function updateApplicationNote(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
 
   const { data, error } = await supabase
     .from("application_notes")
@@ -510,7 +560,12 @@ export async function updateApplicationNote(
     .select()
     .single();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("Failed to update application note:", { applicationId, noteId, error: error.message });
+    throw new Error("Failed to update application note");
+  }
+
+  if (!data) return null;
 
   return {
     id: data.id,
@@ -530,7 +585,9 @@ export async function deleteApplicationNote(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return false;
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
 
   const { error } = await supabase
     .from("application_notes")
@@ -539,5 +596,10 @@ export async function deleteApplicationNote(
     .eq("application_id", applicationId)
     .eq("user_id", user.id);
 
-  return !error;
+  if (error) {
+    console.error("Failed to delete application note:", { applicationId, noteId, error: error.message });
+    throw new Error("Failed to delete application note");
+  }
+
+  return true;
 }

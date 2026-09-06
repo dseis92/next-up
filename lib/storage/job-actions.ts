@@ -35,12 +35,24 @@ export async function saveJob(jobId: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user) {
+    throw new Error("User must be authenticated to save jobs");
+  }
 
-  await supabase.from("saved_jobs").upsert({
-    user_id: user.id,
-    job_id: jobId,
-  });
+  const { error } = await supabase.from("saved_jobs").upsert(
+    {
+      user_id: user.id,
+      job_id: jobId,
+    },
+    {
+      onConflict: "user_id,job_id",
+    }
+  );
+
+  if (error) {
+    console.error("Failed to save job:", { jobId, error: error.message });
+    throw new Error("Failed to save job");
+  }
 }
 
 export async function unsaveJob(jobId: string): Promise<void> {
@@ -49,13 +61,20 @@ export async function unsaveJob(jobId: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user) {
+    throw new Error("User must be authenticated to unsave jobs");
+  }
 
-  await supabase
+  const { error } = await supabase
     .from("saved_jobs")
     .delete()
     .eq("user_id", user.id)
     .eq("job_id", jobId);
+
+  if (error) {
+    console.error("Failed to unsave job:", { jobId, error: error.message });
+    throw new Error("Failed to unsave job");
+  }
 }
 
 export async function isJobSaved(jobId: string): Promise<boolean> {
@@ -106,13 +125,25 @@ export async function passJob(jobId: string, reason?: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user) {
+    throw new Error("User must be authenticated to pass jobs");
+  }
 
-  await supabase.from("passed_jobs").upsert({
-    user_id: user.id,
-    job_id: jobId,
-    reason,
-  });
+  const { error } = await supabase.from("passed_jobs").upsert(
+    {
+      user_id: user.id,
+      job_id: jobId,
+      reason,
+    },
+    {
+      onConflict: "user_id,job_id",
+    }
+  );
+
+  if (error) {
+    console.error("Failed to pass job:", { jobId, error: error.message });
+    throw new Error("Failed to pass job");
+  }
 }
 
 export async function undoPass(jobId: string): Promise<void> {
@@ -121,13 +152,20 @@ export async function undoPass(jobId: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user) {
+    throw new Error("User must be authenticated to undo pass");
+  }
 
-  await supabase
+  const { error } = await supabase
     .from("passed_jobs")
     .delete()
     .eq("user_id", user.id)
     .eq("job_id", jobId);
+
+  if (error) {
+    console.error("Failed to undo pass:", { jobId, error: error.message });
+    throw new Error("Failed to undo pass");
+  }
 }
 
 export async function isJobPassed(jobId: string): Promise<boolean> {

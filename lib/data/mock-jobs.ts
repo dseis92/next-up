@@ -3,7 +3,7 @@ import type { Job, Company, JobMatch } from "@/types";
 // Mock Companies
 export const mockCompanies: Company[] = [
   {
-    id: "1",
+    id: "00000000-0000-0000-0000-000000000001",
     name: "Acme Construction",
     slug: "acme-construction",
     description:
@@ -17,7 +17,7 @@ export const mockCompanies: Company[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "2",
+    id: "00000000-0000-0000-0000-000000000002",
     name: "Globalcom Technologies",
     slug: "globalcom-tech",
     description:
@@ -31,7 +31,7 @@ export const mockCompanies: Company[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "3",
+    id: "00000000-0000-0000-0000-000000000003",
     name: "Summit Engineering",
     slug: "summit-engineering",
     description:
@@ -45,7 +45,7 @@ export const mockCompanies: Company[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "4",
+    id: "00000000-0000-0000-0000-000000000004",
     name: "BuildRight Solutions",
     slug: "buildright",
     description:
@@ -63,8 +63,8 @@ export const mockCompanies: Company[] = [
 // Mock Jobs
 export const mockJobs: Job[] = [
   {
-    id: "1",
-    company_id: "1",
+    id: "10000000-0000-0000-0000-000000000001",
+    company_id: "00000000-0000-0000-0000-000000000001",
     company: mockCompanies[0],
     title: "Project Engineer",
     description:
@@ -103,8 +103,8 @@ export const mockJobs: Job[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "2",
-    company_id: "1",
+    id: "10000000-0000-0000-0000-000000000002",
+    company_id: "00000000-0000-0000-0000-000000000001",
     company: mockCompanies[0],
     title: "Assistant Project Manager",
     description:
@@ -142,8 +142,8 @@ export const mockJobs: Job[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "3",
-    company_id: "2",
+    id: "10000000-0000-0000-0000-000000000003",
+    company_id: "00000000-0000-0000-0000-000000000002",
     company: mockCompanies[1],
     title: "Telecommunications Construction Manager",
     description:
@@ -182,8 +182,8 @@ export const mockJobs: Job[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "4",
-    company_id: "3",
+    id: "10000000-0000-0000-0000-000000000004",
+    company_id: "00000000-0000-0000-0000-000000000003",
     company: mockCompanies[2],
     title: "Field Engineer",
     description:
@@ -222,8 +222,8 @@ export const mockJobs: Job[] = [
     updated_at: new Date().toISOString(),
   },
   {
-    id: "5",
-    company_id: "4",
+    id: "10000000-0000-0000-0000-000000000005",
+    company_id: "00000000-0000-0000-0000-000000000004",
     company: mockCompanies[3],
     title: "Construction Coordinator",
     description:
@@ -265,9 +265,9 @@ export const mockJobs: Job[] = [
 // Mock Job Matches with realistic scores
 export const mockJobMatches: JobMatch[] = [
   {
-    id: "1",
+    id: "20000000-0000-0000-0000-000000000001",
     user_id: "demo-user",
-    job_id: "1",
+    job_id: "10000000-0000-0000-0000-000000000001",
     job: mockJobs[0],
     overall_score: 93,
     qualification_score: 94,
@@ -302,9 +302,9 @@ export const mockJobMatches: JobMatch[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "2",
+    id: "20000000-0000-0000-0000-000000000002",
     user_id: "demo-user",
-    job_id: "2",
+    job_id: "10000000-0000-0000-0000-000000000002",
     job: mockJobs[1],
     overall_score: 91,
     qualification_score: 92,
@@ -337,9 +337,9 @@ export const mockJobMatches: JobMatch[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "3",
+    id: "20000000-0000-0000-0000-000000000003",
     user_id: "demo-user",
-    job_id: "3",
+    job_id: "10000000-0000-0000-0000-000000000003",
     job: mockJobs[2],
     overall_score: 88,
     qualification_score: 90,
@@ -372,9 +372,9 @@ export const mockJobMatches: JobMatch[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "4",
+    id: "20000000-0000-0000-0000-000000000004",
     user_id: "demo-user",
-    job_id: "4",
+    job_id: "10000000-0000-0000-0000-000000000004",
     job: mockJobs[3],
     overall_score: 84,
     qualification_score: 86,
@@ -407,9 +407,9 @@ export const mockJobMatches: JobMatch[] = [
     created_at: new Date().toISOString(),
   },
   {
-    id: "5",
+    id: "20000000-0000-0000-0000-000000000005",
     user_id: "demo-user",
-    job_id: "5",
+    job_id: "10000000-0000-0000-0000-000000000005",
     job: mockJobs[4],
     overall_score: 76,
     qualification_score: 82,

@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "test": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -23,7 +26,6 @@
     "react-dom": "19.2.8",
     "react-hook-form": "^7.87.0",
     "tailwind-merge": "^3.6.0",
-    "vercel": "^59.11.7",
     "zod": "^3.25.76",
     "zustand": "^5.0.15"
   },
@@ -32,11 +34,15 @@
     "@types/node": "^20.19.43",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/ui": "^5.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "supabase": "^2.116.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
   }
 }

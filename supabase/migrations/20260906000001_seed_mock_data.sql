@@ -7,7 +7,7 @@
 INSERT INTO companies (id, name, slug, description, logo_url, website, industry, size, locations)
 VALUES
   (
-    'c1a1e1f0-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
     'Acme Construction',
     'acme-construction',
     'Leading commercial construction firm specializing in infrastructure and building projects across the Midwest.',
@@ -18,7 +18,7 @@ VALUES
     ARRAY['Madison, WI', 'Chicago, IL', 'Minneapolis, MN']
   ),
   (
-    'c1a1e1f0-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000002',
     'Globalcom Technologies',
     'globalcom-tech',
     'Telecommunications infrastructure company providing wireless network solutions nationwide.',
@@ -29,7 +29,7 @@ VALUES
     ARRAY['Remote', 'Milwaukee, WI', 'Madison, WI']
   ),
   (
-    'c1a1e1f0-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000003',
     'Summit Engineering',
     'summit-engineering',
     'Civil engineering and project management firm focused on sustainable infrastructure.',
@@ -40,7 +40,7 @@ VALUES
     ARRAY['Madison, WI', 'Green Bay, WI']
   ),
   (
-    'c1a1e1f0-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000004',
     'BuildRight Solutions',
     'buildright',
     'Residential and commercial construction company with emphasis on quality craftsmanship.',
@@ -74,8 +74,8 @@ INSERT INTO jobs (
 )
 VALUES
   (
-    'j0b1d000-0000-0000-0000-000000000001',
-    'c1a1e1f0-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
     'Project Engineer',
     'Seeking an experienced Project Engineer to lead field operations and coordinate construction projects. Ideal candidate has strong leadership background in telecommunications or construction.',
     ARRAY[
@@ -110,8 +110,8 @@ VALUES
     NOW() - INTERVAL '2 days'
   ),
   (
-    'j0b1d000-0000-0000-0000-000000000002',
-    'c1a1e1f0-0000-0000-0000-000000000001',
+    '10000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000001',
     'Assistant Project Manager',
     'Join our team as an Assistant Project Manager supporting large-scale commercial construction projects. Great opportunity for field professionals looking to transition into management.',
     ARRAY[
@@ -145,8 +145,8 @@ VALUES
     NOW() - INTERVAL '5 days'
   ),
   (
-    'j0b1d000-0000-0000-0000-000000000003',
-    'c1a1e1f0-0000-0000-0000-000000000002',
+    '10000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000002',
     'Telecommunications Construction Manager',
     'Lead telecommunications infrastructure projects including tower construction and fiber deployment. Perfect for experienced foremen ready to move into project management.',
     ARRAY[
@@ -181,8 +181,8 @@ VALUES
     NOW() - INTERVAL '1 day'
   ),
   (
-    'j0b1d000-0000-0000-0000-000000000004',
-    'c1a1e1f0-0000-0000-0000-000000000003',
+    '10000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000003',
     'Field Engineer',
     'Civil engineering role focused on field supervision and project coordination. Combines technical engineering with hands-on field management.',
     ARRAY[
@@ -217,8 +217,8 @@ VALUES
     NOW() - INTERVAL '4 days'
   ),
   (
-    'j0b1d000-0000-0000-0000-000000000005',
-    'c1a1e1f0-0000-0000-0000-000000000004',
+    '10000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000004',
     'Construction Coordinator',
     'Coordinate construction activities and manage project logistics. Great role for organized individuals with field construction background.',
     ARRAY[

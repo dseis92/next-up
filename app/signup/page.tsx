@@ -20,6 +20,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,9 +46,22 @@ export default function SignupPage() {
         return;
       }
 
-      if (data.user) {
-        // Save name to local storage for now (will be in Supabase in Phase 8)
-        updateUserProfile({ name });
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation required - show message
+        setNeedsEmailConfirmation(true);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user && data.session) {
+        // User is authenticated - save profile and redirect
+        try {
+          await updateUserProfile({ name });
+        } catch (profileError) {
+          console.error("Failed to save profile:", profileError);
+          // Continue anyway - profile can be updated later
+        }
 
         // Redirect to onboarding
         router.push("/onboarding");
@@ -72,13 +86,35 @@ export default function SignupPage() {
         </div>
 
         <Card className="p-6">
-          <form onSubmit={handleSignup} className="space-y-4">
-            {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <p>{error}</p>
+          {needsEmailConfirmation ? (
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/10">
+                  <AlertCircle className="h-6 w-6 text-brand" />
+                </div>
               </div>
-            )}
+              <div>
+                <h2 className="text-heading mb-2">Check your email</h2>
+                <p className="text-sm text-foreground-secondary">
+                  We sent a confirmation link to{" "}
+                  <span className="font-medium text-foreground">{email}</span>.
+                  Click the link to activate your account.
+                </p>
+              </div>
+              <Link href="/login">
+                <Button variant="secondary" className="w-full">
+                  Back to sign in
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={handleSignup} className="space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <p>{error}</p>
+                </div>
+              )}
 
             <div>
               <label className="mb-2 block text-sm font-medium text-foreground">
@@ -135,8 +171,10 @@ export default function SignupPage() {
               {loading ? "Creating account..." : "Create account"}
             </Button>
           </form>
+          )}
 
-          <div className="mt-6 text-center text-sm">
+          {!needsEmailConfirmation && (
+            <div className="mt-6 text-center text-sm">
             <p className="text-foreground-secondary">
               Already have an account?{" "}
               <Link href="/login" className="font-medium text-brand hover:underline">
@@ -144,6 +182,7 @@ export default function SignupPage() {
               </Link>
             </p>
           </div>
+          )}
         </Card>
 
         <p className="mt-4 text-center text-xs text-foreground-muted">
