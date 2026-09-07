@@ -15,13 +15,17 @@ import { calculatePersonalizedMatches } from "@/lib/matching/integration";
 import { createClient } from "@/lib/supabase/client";
 import { formatSalary } from "@/lib/utils";
 import { getSavedJobs, unsaveJob } from "@/lib/storage/job-actions";
-import type { JobMatch } from "@/types";
+import type { Job } from "@/types";
 import type { MatchResult } from "@/lib/matching/types";
+
+type SavedJobWithMatch = {
+  job: Job;
+  matchResult: MatchResult;
+};
 
 export default function SavedPage() {
   const router = useRouter();
-  const [savedMatches, setSavedMatches] = useState<JobMatch[]>([]);
-  const [matchResults, setMatchResults] = useState<Map<string, MatchResult>>(new Map());
+  const [savedJobs, setSavedJobs] = useState<SavedJobWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -51,12 +55,12 @@ export default function SavedPage() {
         const jobs = await getJobs();
 
         // Filter to saved jobs only
-        const savedJobs = jobs.filter((job) => savedIds.includes(job.id));
+        const savedJobsData = jobs.filter((job) => savedIds.includes(job.id));
 
         // Calculate current personalized matches for saved jobs
         const matchResult = await calculatePersonalizedMatches(
           user.id,
-          savedJobs
+          savedJobsData
         );
 
         // Handle load failure
@@ -69,70 +73,13 @@ export default function SavedPage() {
 
         const results = matchResult.results;
 
-        // Store match results separately
-        const resultsMap = new Map<string, MatchResult>();
-        for (let i = 0; i < savedJobs.length; i++) {
-          resultsMap.set(savedJobs[i].id, results[i]);
-        }
-        setMatchResults(resultsMap);
+        // Build SavedJobWithMatch - no fake scores for incomplete profiles
+        const jobsWithMatches: SavedJobWithMatch[] = savedJobsData.map((job, i) => ({
+          job,
+          matchResult: results[i],
+        }));
 
-        // Build JobMatch objects with just the job data
-        // Match scores will be determined from matchResults map
-        const jobMatches: JobMatch[] = savedJobs.map((job, i) => {
-          const result = results[i];
-
-          if (result.status === "scored") {
-            return {
-              id: `${job.id}-match`,
-              user_id: user.id,
-              job_id: job.id,
-              job,
-              overall_score: result.overallScore!,
-              qualification_score: result.qualificationScore!,
-              lifestyle_score: result.lifestyleScore!,
-              breakdown: {
-                skills: result.breakdown.skills.score,
-                experience: result.breakdown.experience.score,
-                salary: result.breakdown.salary.score,
-                location: result.breakdown.location.score,
-                work_arrangement: result.breakdown.workArrangement.score,
-                career_goals: result.breakdown.careerGoals.score,
-              },
-              matched_skills: result.matchedSkills,
-              missing_skills: result.missingSkills,
-              reasons_fit: result.reasonsFit.map((r) => r.text),
-              reasons_concern: result.reasonsConcern.map((r) => r.text),
-              created_at: new Date().toISOString(),
-            };
-          } else {
-            // For incomplete profiles, create a minimal JobMatch with just the job data
-            // Do NOT create fake zero scores - they won't be displayed
-            return {
-              id: `${job.id}-match`,
-              user_id: user.id,
-              job_id: job.id,
-              job,
-              overall_score: 0, // Not displayed for incomplete profiles
-              qualification_score: 0,
-              lifestyle_score: 0,
-              breakdown: {
-                skills: 0,
-                experience: 0,
-                salary: 0,
-                location: 0,
-                work_arrangement: 0,
-                career_goals: 0,
-              },
-              matched_skills: [],
-              missing_skills: [],
-              reasons_fit: [],
-              reasons_concern: [],
-              created_at: new Date().toISOString(),
-            };
-          }
-        });
-
-        setSavedMatches(jobMatches);
+        setSavedJobs(jobsWithMatches);
       } catch (error) {
         console.error("Failed to load saved jobs:", error);
       } finally {
@@ -144,7 +91,7 @@ export default function SavedPage() {
 
   const handleRemove = async (jobId: string) => {
     await unsaveJob(jobId);
-    setSavedMatches(savedMatches.filter((m) => m.job.id !== jobId));
+    setSavedJobs(savedJobs.filter((item) => item.job.id !== jobId));
   };
 
   if (loading) {
@@ -174,7 +121,7 @@ export default function SavedPage() {
     );
   }
 
-  if (savedMatches.length === 0) {
+  if (savedJobs.length === 0) {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center">
@@ -198,15 +145,13 @@ export default function SavedPage() {
         <div className="mb-6">
           <h1 className="text-heading-lg mb-2">Saved jobs</h1>
           <p className="text-foreground-secondary">
-            {savedMatches.length} {savedMatches.length === 1 ? "opportunity" : "opportunities"} saved
+            {savedJobs.length} {savedJobs.length === 1 ? "opportunity" : "opportunities"} saved
           </p>
         </div>
 
         <div className="space-y-4">
-          {savedMatches.map((match) => {
-            const { job, overall_score, matched_skills } = match;
-            const matchResult = matchResults.get(job.id);
-            const isIncomplete = matchResult?.status === "incomplete_profile";
+          {savedJobs.map(({ job, matchResult }) => {
+            const isIncomplete = matchResult.status === "incomplete_profile";
 
             return (
               <Card key={job.id} variant="elevated" className="p-4">
@@ -250,12 +195,12 @@ export default function SavedPage() {
                       ) : (
                         <div className="flex items-center gap-2">
                           <Badge
-                            variant={overall_score >= 90 ? "success" : "brand"}
+                            variant={matchResult.overallScore! >= 90 ? "success" : "brand"}
                             size="sm"
                           >
-                            {overall_score}% match
+                            {matchResult.overallScore}% match
                           </Badge>
-                          {matched_skills.slice(0, 2).map((skill) => (
+                          {matchResult.matchedSkills.slice(0, 2).map((skill) => (
                             <Badge key={skill} variant="muted" size="sm">
                               {skill}
                             </Badge>

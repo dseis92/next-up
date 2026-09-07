@@ -19,6 +19,120 @@ import type { UserMatchingData } from "./adapters";
 import type { UserSkill, WorkExperience } from "@/types";
 
 /**
+ * Raw database row types for persistence transformation
+ */
+export interface RawOnboardingRow {
+  current_title?: string;
+  industry?: string;
+  years_experience?: number;
+  employment_status?: string;
+  location?: string;
+  max_commute?: number;
+  willing_to_relocate: boolean;
+  salary_min?: number;
+  salary_ideal?: number;
+}
+
+export interface RawSkillRow {
+  id: string;
+  user_id: string;
+  skill_id: string | null;
+  skill_name: string;
+  proficiency: "learning" | "comfortable" | "strong" | "expert";
+  years: number;
+}
+
+export interface RawPreferencesRow {
+  remote: boolean;
+  hybrid: boolean;
+  onsite: boolean;
+  full_time: boolean;
+  part_time: boolean;
+  contract: boolean;
+  travel_tolerance?: number;
+  priorities: Record<string, number>;
+}
+
+export interface RawGoalRow {
+  goal: string;
+}
+
+export interface RawTargetRoleRow {
+  role: string;
+}
+
+export interface RawPreferredLocationRow {
+  location: string;
+}
+
+/**
+ * Transform raw database rows into UserMatchingData
+ * Pure function for testing persistence boundary
+ */
+export function transformUserMatchingRows(params: {
+  onboarding: RawOnboardingRow | null;
+  skills: RawSkillRow[];
+  experiences: WorkExperience[];
+  preferences: RawPreferencesRow | null;
+  goals: RawGoalRow[];
+  roles: RawTargetRoleRow[];
+  locations: RawPreferredLocationRow[];
+}): UserMatchingData {
+  const { onboarding, skills: rawSkills, experiences, preferences: rawPreferences, goals, roles, locations } = params;
+
+  // Transform skills data structure
+  // skill_name is the canonical persisted name; skill_id may be null
+  const skills: UserSkill[] = rawSkills.map((us) => ({
+    id: us.id,
+    user_id: us.user_id,
+    skill_id: us.skill_id || us.id, // Use id as fallback if skill_id is null
+    skill: {
+      id: us.skill_id || us.id,
+      name: us.skill_name,
+      category: undefined, // Category not available without join
+    },
+    proficiency: us.proficiency,
+    years: us.years,
+  }));
+
+  // Transform preferences to match PersistedUserPreferences shape
+  const rawPriorities = (rawPreferences?.priorities as Record<string, number>) || {};
+  const preferences = rawPreferences
+    ? {
+        remote: rawPreferences.remote,
+        hybrid: rawPreferences.hybrid,
+        onsite: rawPreferences.onsite,
+        full_time: rawPreferences.full_time,
+        part_time: rawPreferences.part_time,
+        contract: rawPreferences.contract,
+        travel_tolerance: rawPreferences.travel_tolerance,
+        priorities: {
+          salary: rawPriorities.salary ?? 5,
+          workLifeBalance: rawPriorities.work_life_balance ?? rawPriorities.workLifeBalance ?? 5,
+          careerGrowth: rawPriorities.career_growth ?? rawPriorities.careerGrowth ?? 5,
+          location: rawPriorities.location ?? 5,
+          remoteFlexibility: rawPriorities.remote_flexibility ?? rawPriorities.remoteFlexibility ?? 5,
+          culture: rawPriorities.culture ?? 5,
+          stability: rawPriorities.stability ?? 5,
+          benefits: rawPriorities.benefits ?? 5,
+          mission: rawPriorities.mission ?? 5,
+          learning: rawPriorities.learning ?? 5,
+        },
+      }
+    : null;
+
+  return {
+    onboarding: onboarding || null,
+    skills,
+    experiences,
+    preferences,
+    goals: goals.map((g) => g.goal),
+    targetRoles: roles.map((r) => r.role),
+    preferredLocations: locations.map((l) => l.location),
+  };
+}
+
+/**
  * Load all user matching data in one efficient operation
  *
  * @param userId - Authenticated user ID
@@ -123,56 +237,16 @@ export async function loadUserMatchingData(
       return null;
     }
 
-    // Transform skills data structure
-    // skill_name is the canonical persisted name; skill_id may be null
-    const skills: UserSkill[] = (skillsResult.data || []).map((us) => ({
-      id: us.id,
-      user_id: us.user_id,
-      skill_id: us.skill_id || us.id, // Use id as fallback if skill_id is null
-      skill: {
-        id: us.skill_id || us.id,
-        name: us.skill_name,
-        category: undefined, // Category not available without join
-      },
-      proficiency: us.proficiency,
-      years: us.years,
-    }));
-
-    // Transform preferences to match PersistedUserPreferences shape
-    const rawPriorities = (preferencesResult.data?.priorities as Record<string, number>) || {};
-    const preferences = preferencesResult.data
-      ? {
-          remote: preferencesResult.data.remote,
-          hybrid: preferencesResult.data.hybrid,
-          onsite: preferencesResult.data.onsite,
-          full_time: preferencesResult.data.full_time,
-          part_time: preferencesResult.data.part_time,
-          contract: preferencesResult.data.contract,
-          travel_tolerance: preferencesResult.data.travel_tolerance,
-          priorities: {
-            salary: rawPriorities.salary ?? 5,
-            workLifeBalance: rawPriorities.work_life_balance ?? rawPriorities.workLifeBalance ?? 5,
-            careerGrowth: rawPriorities.career_growth ?? rawPriorities.careerGrowth ?? 5,
-            location: rawPriorities.location ?? 5,
-            remoteFlexibility: rawPriorities.remote_flexibility ?? rawPriorities.remoteFlexibility ?? 5,
-            culture: rawPriorities.culture ?? 5,
-            stability: rawPriorities.stability ?? 5,
-            benefits: rawPriorities.benefits ?? 5,
-            mission: rawPriorities.mission ?? 5,
-            learning: rawPriorities.learning ?? 5,
-          },
-        }
-      : null;
-
-    return {
+    // Use pure transformation helper
+    return transformUserMatchingRows({
       onboarding: onboardingResult.data || null,
-      skills,
+      skills: (skillsResult.data || []) as RawSkillRow[],
       experiences: (experiencesResult.data as WorkExperience[]) || [],
-      preferences,
-      goals: (goalsResult.data || []).map((g) => g.goal),
-      targetRoles: (rolesResult.data || []).map((r) => r.role),
-      preferredLocations: (locationsResult.data || []).map((l) => l.location),
-    };
+      preferences: preferencesResult.data as RawPreferencesRow | null,
+      goals: (goalsResult.data || []) as RawGoalRow[],
+      roles: (rolesResult.data || []) as RawTargetRoleRow[],
+      locations: (locationsResult.data || []) as RawPreferredLocationRow[],
+    });
   } catch (error) {
     console.error("Unexpected error loading user matching data:", error);
     return null;
