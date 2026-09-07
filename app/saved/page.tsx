@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { EmptyState } from "@/components/ui/empty-state";
+import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,12 @@ import { createClient } from "@/lib/supabase/client";
 import { formatSalary } from "@/lib/utils";
 import { getSavedJobs, unsaveJob } from "@/lib/storage/job-actions";
 import type { JobMatch } from "@/types";
+import type { MatchResult } from "@/lib/matching/types";
 
 export default function SavedPage() {
   const router = useRouter();
   const [savedMatches, setSavedMatches] = useState<JobMatch[]>([]);
+  const [matchResults, setMatchResults] = useState<Map<string, MatchResult>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,59 +53,75 @@ export default function SavedPage() {
         const savedJobs = jobs.filter((job) => savedIds.includes(job.id));
 
         // Calculate current personalized matches for saved jobs
-        const matchResults = await calculatePersonalizedMatches(
+        const results = await calculatePersonalizedMatches(
           user.id,
           savedJobs
         );
 
-        // Build JobMatch objects with current match scores
+        // Store match results separately
+        const resultsMap = new Map<string, MatchResult>();
+        for (let i = 0; i < savedJobs.length; i++) {
+          resultsMap.set(savedJobs[i].id, results[i]);
+        }
+        setMatchResults(resultsMap);
+
+        // Build JobMatch objects ONLY for scored results
+        // Incomplete profiles will be shown via matchResults map
         const jobMatches: JobMatch[] = [];
 
         for (let i = 0; i < savedJobs.length; i++) {
           const job = savedJobs[i];
-          const matchResult = matchResults[i];
+          const matchResult = results[i];
 
-          // Include even incomplete profiles (user might have saved before completing profile)
-          const isIncomplete = matchResult.status === "incomplete_profile";
-
-          jobMatches.push({
-            id: `${job.id}-match`,
-            user_id: user.id,
-            job_id: job.id,
-            job,
-            overall_score: isIncomplete ? 0 : matchResult.overallScore!,
-            qualification_score: isIncomplete
-              ? 0
-              : matchResult.qualificationScore!,
-            lifestyle_score: isIncomplete ? 0 : matchResult.lifestyleScore!,
-            breakdown: {
-              skills: isIncomplete
-                ? 0
-                : matchResult.breakdown.skills.score,
-              experience: isIncomplete
-                ? 0
-                : matchResult.breakdown.experience.score,
-              salary: isIncomplete ? 0 : matchResult.breakdown.salary.score,
-              location: isIncomplete
-                ? 0
-                : matchResult.breakdown.location.score,
-              work_arrangement: isIncomplete
-                ? 0
-                : matchResult.breakdown.workArrangement.score,
-              career_goals: isIncomplete
-                ? 0
-                : matchResult.breakdown.careerGoals.score,
-            },
-            matched_skills: isIncomplete ? [] : matchResult.matchedSkills,
-            missing_skills: isIncomplete ? [] : matchResult.missingSkills,
-            reasons_fit: isIncomplete
-              ? []
-              : matchResult.reasonsFit.map((r) => r.text),
-            reasons_concern: isIncomplete
-              ? []
-              : matchResult.reasonsConcern.map((r) => r.text),
-            created_at: new Date().toISOString(),
-          });
+          // Only create JobMatch for scored results
+          if (matchResult.status === "scored") {
+            jobMatches.push({
+              id: `${job.id}-match`,
+              user_id: user.id,
+              job_id: job.id,
+              job,
+              overall_score: matchResult.overallScore!,
+              qualification_score: matchResult.qualificationScore!,
+              lifestyle_score: matchResult.lifestyleScore!,
+              breakdown: {
+                skills: matchResult.breakdown.skills.score,
+                experience: matchResult.breakdown.experience.score,
+                salary: matchResult.breakdown.salary.score,
+                location: matchResult.breakdown.location.score,
+                work_arrangement: matchResult.breakdown.workArrangement.score,
+                career_goals: matchResult.breakdown.careerGoals.score,
+              },
+              matched_skills: matchResult.matchedSkills,
+              missing_skills: matchResult.missingSkills,
+              reasons_fit: matchResult.reasonsFit.map((r) => r.text),
+              reasons_concern: matchResult.reasonsConcern.map((r) => r.text),
+              created_at: new Date().toISOString(),
+            });
+          } else {
+            // For incomplete profiles, create a minimal JobMatch with just the job data
+            jobMatches.push({
+              id: `${job.id}-match`,
+              user_id: user.id,
+              job_id: job.id,
+              job,
+              overall_score: 0, // Will not be displayed
+              qualification_score: 0,
+              lifestyle_score: 0,
+              breakdown: {
+                skills: 0,
+                experience: 0,
+                salary: 0,
+                location: 0,
+                work_arrangement: 0,
+                career_goals: 0,
+              },
+              matched_skills: [],
+              missing_skills: [],
+              reasons_fit: [],
+              reasons_concern: [],
+              created_at: new Date().toISOString(),
+            });
+          }
         }
 
         setSavedMatches(jobMatches);
@@ -161,6 +180,8 @@ export default function SavedPage() {
         <div className="space-y-4">
           {savedMatches.map((match) => {
             const { job, overall_score, matched_skills } = match;
+            const matchResult = matchResults.get(job.id);
+            const isIncomplete = matchResult?.status === "incomplete_profile";
 
             return (
               <Card key={job.id} variant="elevated" className="p-4">
@@ -197,19 +218,25 @@ export default function SavedPage() {
                           )}
                         </p>
                       )}
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={overall_score >= 90 ? "success" : "brand"}
-                          size="sm"
-                        >
-                          {overall_score}% match
-                        </Badge>
-                        {matched_skills.slice(0, 2).map((skill) => (
-                          <Badge key={skill} variant="muted" size="sm">
-                            {skill}
+                      {isIncomplete ? (
+                        <div className="mt-2">
+                          <IncompleteProfileMessage variant="inline" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={overall_score >= 90 ? "success" : "brand"}
+                            size="sm"
+                          >
+                            {overall_score}% match
                           </Badge>
-                        ))}
-                      </div>
+                          {matched_skills.slice(0, 2).map((skill) => (
+                            <Badge key={skill} variant="muted" size="sm">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2 sm:flex-col">

@@ -10,16 +10,16 @@ import type { UserMatchingData } from "../adapters";
 import type { Job } from "@/types";
 
 const mockUserData: UserMatchingData = {
-  profile: {
-    id: "user-1",
-    email: "test@example.com",
-    name: "Test User",
+  onboarding: {
     current_title: "Tower Foreman",
+    industry: "Telecommunications",
     years_experience: 4,
+    employment_status: "employed",
     location: "Madison, WI",
-    profile_strength: 85,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
+    max_commute: 30,
+    willing_to_relocate: false,
+    salary_min: 65000,
+    salary_ideal: 80000,
   },
   skills: [
     {
@@ -61,25 +61,19 @@ const mockUserData: UserMatchingData = {
     },
   ],
   preferences: {
-    id: "pref-1",
-    user_id: "user-1",
-    salary_min: 65000,
-    salary_ideal: 80000,
     remote: false,
     hybrid: true,
     onsite: true,
-    willing_to_relocate: false,
-    preferred_locations: ["Madison, WI"],
-    max_commute_minutes: 30,
     full_time: true,
     part_time: false,
     contract: false,
+    travel_tolerance: 25,
     priorities: {
       salary: 8,
-      work_life_balance: 6,
-      career_growth: 9,
+      workLifeBalance: 6,
+      careerGrowth: 9,
       location: 7,
-      remote_flexibility: 5,
+      remoteFlexibility: 5,
       culture: 6,
       stability: 7,
       benefits: 6,
@@ -89,6 +83,7 @@ const mockUserData: UserMatchingData = {
   },
   goals: ["Move into project management"],
   targetRoles: ["Project Engineer"],
+  preferredLocations: ["Madison, WI"],
 };
 
 const mockJob: Job = {

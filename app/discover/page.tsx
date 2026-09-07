@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/app-shell";
 import { JobDiscoveryCard } from "@/components/jobs/job-discovery-card";
+import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Toast } from "@/components/ui/toast";
@@ -35,6 +36,7 @@ export default function DiscoverPage() {
   // Personalized job matches
   const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -61,10 +63,16 @@ export default function DiscoverPage() {
 
         // Build JobMatch objects with real match scores
         const jobMatches: JobMatch[] = [];
+        let hasIncomplete = false;
 
         for (let i = 0; i < jobs.length; i++) {
           const job = jobs[i];
           const matchResult = matchResults[i];
+
+          // Track if user has incomplete profile
+          if (matchResult.status === "incomplete_profile") {
+            hasIncomplete = true;
+          }
 
           // Skip incomplete profiles or passed jobs
           if (
@@ -98,6 +106,7 @@ export default function DiscoverPage() {
           });
         }
 
+        setHasIncompleteProfile(hasIncomplete);
         setFilteredMatches(jobMatches);
       } catch (error) {
         console.error("Failed to load personalized matches:", error);
@@ -232,6 +241,13 @@ export default function DiscoverPage() {
                 onPass={handlePass}
                 onViewDetails={handleViewDetails}
               />
+            ) : hasIncompleteProfile ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <IncompleteProfileMessage />
+              </motion.div>
             ) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}

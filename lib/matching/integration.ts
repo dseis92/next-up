@@ -12,6 +12,7 @@ import { buildMatchProfile, adaptJobForMatching } from "./adapters";
 import { loadUserMatchingData } from "./user-matching-data";
 import type { MatchResult } from "./types";
 import type { Job } from "@/types";
+import type { UserMatchingData } from "./adapters";
 
 /**
  * Calculate personalized match for a job using authenticated user data
@@ -21,39 +22,18 @@ import type { Job } from "@/types";
  *
  * @param userId - Authenticated user ID
  * @param job - Job to match against
- * @returns MatchResult from Phase 9 engine
+ * @returns MatchResult or null if load fails
  */
 export async function calculatePersonalizedMatch(
   userId: string,
   job: Job
-): Promise<MatchResult> {
+): Promise<MatchResult | null> {
   // Load user matching data
   const userData = await loadUserMatchingData(userId);
 
   if (!userData) {
-    // User data failed to load - return incomplete profile
-    return {
-      status: "incomplete_profile",
-      overallScore: null,
-      qualificationScore: null,
-      lifestyleScore: null,
-      breakdown: {
-        skills: { score: 0, weight: 25, confidence: "unknown", metadata: {} },
-        experience: { score: 0, weight: 20, confidence: "unknown", metadata: {} },
-        salary: { score: 0, weight: 15, confidence: "unknown", metadata: {} },
-        location: { score: 0, weight: 10, confidence: "unknown", metadata: {} },
-        workArrangement: { score: 0, weight: 10, confidence: "unknown", metadata: {} },
-        careerGoals: { score: 0, weight: 10, confidence: "unknown", metadata: {} },
-        seniority: { score: 0, weight: 5, confidence: "unknown", metadata: {} },
-        userPriorities: { score: 0, weight: 5, confidence: "unknown", metadata: {} },
-      },
-      matchedSkills: [],
-      missingSkills: [],
-      hardFailures: [],
-      reasonsFit: [],
-      reasonsConcern: [],
-      missingProfileFields: ["profile"],
-    };
+    // User data failed to load
+    return null;
   }
 
   // Build MatchProfile from user data
@@ -63,6 +43,7 @@ export async function calculatePersonalizedMatch(
   const matchJob = adaptJobForMatching(job);
 
   // Calculate match using Phase 9 engine
+  // Phase 9 will return incomplete_profile if required fields are missing
   return calculateJobMatch(matchProfile, matchJob);
 }
 
@@ -74,7 +55,7 @@ export async function calculatePersonalizedMatch(
  *
  * @param userId - Authenticated user ID
  * @param jobs - Array of jobs to match against
- * @returns Array of MatchResults in same order as input jobs
+ * @returns Array of MatchResults (empty on load failure)
  */
 export async function calculatePersonalizedMatches(
   userId: string,
@@ -84,37 +65,42 @@ export async function calculatePersonalizedMatches(
   const userData = await loadUserMatchingData(userId);
 
   if (!userData) {
-    // Return incomplete profile for all jobs
-    const incompleteResult: MatchResult = {
-      status: "incomplete_profile",
-      overallScore: null,
-      qualificationScore: null,
-      lifestyleScore: null,
-      breakdown: {
-        skills: { score: 0, weight: 25, confidence: "unknown", metadata: {} },
-        experience: { score: 0, weight: 20, confidence: "unknown", metadata: {} },
-        salary: { score: 0, weight: 15, confidence: "unknown", metadata: {} },
-        location: { score: 0, weight: 10, confidence: "unknown", metadata: {} },
-        workArrangement: { score: 0, weight: 10, confidence: "unknown", metadata: {} },
-        careerGoals: { score: 0, weight: 10, confidence: "unknown", metadata: {} },
-        seniority: { score: 0, weight: 5, confidence: "unknown", metadata: {} },
-        userPriorities: { score: 0, weight: 5, confidence: "unknown", metadata: {} },
-      },
-      matchedSkills: [],
-      missingSkills: [],
-      hardFailures: [],
-      reasonsFit: [],
-      reasonsConcern: [],
-      missingProfileFields: ["profile"],
-    };
-
-    return jobs.map(() => ({ ...incompleteResult }));
+    // User data failed to load - return empty array
+    return [];
   }
 
   // Build MatchProfile once
   const matchProfile = buildMatchProfile(userData);
 
   // Calculate match for each job
+  return jobs.map((job) => {
+    const matchJob = adaptJobForMatching(job);
+    return calculateJobMatch(matchProfile, matchJob);
+  });
+}
+
+/**
+ * Helper to calculate a single match from loaded user data
+ * Useful for testing and situations where data is already loaded
+ */
+export function calculateMatchFromUserData(
+  userData: UserMatchingData,
+  job: Job
+): MatchResult {
+  const matchProfile = buildMatchProfile(userData);
+  const matchJob = adaptJobForMatching(job);
+  return calculateJobMatch(matchProfile, matchJob);
+}
+
+/**
+ * Helper to calculate multiple matches from loaded user data
+ * Useful for testing and situations where data is already loaded
+ */
+export function calculateMatchesFromUserData(
+  userData: UserMatchingData,
+  jobs: Job[]
+): MatchResult[] {
+  const matchProfile = buildMatchProfile(userData);
   return jobs.map((job) => {
     const matchJob = adaptJobForMatching(job);
     return calculateJobMatch(matchProfile, matchJob);

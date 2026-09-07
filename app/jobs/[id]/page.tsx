@@ -71,39 +71,42 @@ export default function JobDetailPage() {
         // Calculate personalized match
         const result = await calculatePersonalizedMatch(user.id, job);
 
+        // Handle load failure
+        if (!result) {
+          setLoading(false);
+          return;
+        }
+
         setMatchResult(result);
 
-        // Build JobMatch object
-        const isIncomplete = result.status === "incomplete_profile";
+        // Only build JobMatch object if we have a scored result
+        // For incomplete profiles, we keep matchResult but skip building legacy JobMatch
+        if (result.status === "scored") {
+          const jobMatch: JobMatch = {
+            id: `${job.id}-match`,
+            user_id: user.id,
+            job_id: job.id,
+            job,
+            overall_score: result.overallScore!,
+            qualification_score: result.qualificationScore!,
+            lifestyle_score: result.lifestyleScore!,
+            breakdown: {
+              skills: result.breakdown.skills.score,
+              experience: result.breakdown.experience.score,
+              salary: result.breakdown.salary.score,
+              location: result.breakdown.location.score,
+              work_arrangement: result.breakdown.workArrangement.score,
+              career_goals: result.breakdown.careerGoals.score,
+            },
+            matched_skills: result.matchedSkills,
+            missing_skills: result.missingSkills,
+            reasons_fit: result.reasonsFit.map((r) => r.text),
+            reasons_concern: result.reasonsConcern.map((r) => r.text),
+            created_at: new Date().toISOString(),
+          };
 
-        const jobMatch: JobMatch = {
-          id: `${job.id}-match`,
-          user_id: user.id,
-          job_id: job.id,
-          job,
-          overall_score: isIncomplete ? 0 : result.overallScore!,
-          qualification_score: isIncomplete ? 0 : result.qualificationScore!,
-          lifestyle_score: isIncomplete ? 0 : result.lifestyleScore!,
-          breakdown: {
-            skills: isIncomplete ? 0 : result.breakdown.skills.score,
-            experience: isIncomplete ? 0 : result.breakdown.experience.score,
-            salary: isIncomplete ? 0 : result.breakdown.salary.score,
-            location: isIncomplete ? 0 : result.breakdown.location.score,
-            work_arrangement: isIncomplete
-              ? 0
-              : result.breakdown.workArrangement.score,
-            career_goals: isIncomplete ? 0 : result.breakdown.careerGoals.score,
-          },
-          matched_skills: isIncomplete ? [] : result.matchedSkills,
-          missing_skills: isIncomplete ? [] : result.missingSkills,
-          reasons_fit: isIncomplete ? [] : result.reasonsFit.map((r) => r.text),
-          reasons_concern: isIncomplete
-            ? []
-            : result.reasonsConcern.map((r) => r.text),
-          created_at: new Date().toISOString(),
-        };
-
-        setMatch(jobMatch);
+          setMatch(jobMatch);
+        }
 
         // Check if saved
         setIsSaved(await isJobSaved(jobId));

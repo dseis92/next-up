@@ -4,18 +4,79 @@ IMPORTANT: READ THIS FILE BEFORE MAKING CHANGES
 
 You are continuing development of an existing application called NextUp.
 
-This repository already contains substantial completed work.
-
 Do not rebuild the project from scratch.
-Do not redesign working screens without a concrete product reason.
-Do not skip development phases.
-Do not assume documentation is more authoritative than the repository.
+Do not redesign working screens without a concrete reason.
+Do not skip development gates.
+Do not start a later phase because the current phase is partially implemented.
+Do not trust summaries more than the repository.
 
 The repository is the source of truth.
 
-FRAMEWORK / STACK
+PROJECT
 
-Current stack:
+Name
+
+NextUp
+
+Tagline
+
+Find what's next.
+
+Core Product Principle
+
+Job searching should feel like discovering opportunities, not digging through listings.
+
+NextUp is a modern, mobile-first career discovery platform intended to grow into a Career Operating System.
+
+Core lifecycle:
+
+Discover → Match → Save → Apply → Follow Up → Interview → Offer → Hired → Grow → Advance → Discover Again
+
+Long-term product question:
+
+What should I do next with my career?
+
+DESIGN / PRODUCT GUARDRAILS
+
+Preserve the existing visual identity:
+
+dark charcoal / near-black interface
+
+electric lime / chartreuse primary accent
+
+warm supporting accent
+
+premium consumer-app feel
+
+mobile-first behavior
+
+strong typography hierarchy
+
+subtle motion
+
+five-item mobile bottom navigation
+
+Do NOT:
+
+redesign NextUp into generic SaaS
+
+add generic blue/purple startup gradients
+
+turn screens into corporate dashboards
+
+over-cardify the UI
+
+add a sixth bottom-nav item
+
+redesign Discover without a real usability reason
+
+make Applications into another discovery page
+
+Discover is a signature surface. Preserve it.
+
+STACK
+
+Current stack includes:
 
 Next.js 16.3.4
 
@@ -41,101 +102,13 @@ Supabase
 
 Vitest
 
-Do not assume older Next.js conventions are correct.
-
-Before making framework-sensitive changes involving routing, Server Components, Client Components, cookies, redirects, route handlers, caching, authentication, proxy/middleware, or rendering behavior, consult:
+For framework-sensitive changes involving routing, Server/Client Components, cookies, redirects, route handlers, caching, auth, proxy/middleware, or rendering behavior, consult:
 
 node_modules/next/dist/docs/
 
-Follow the conventions for the installed Next.js version.
+Do not rely on outdated Next.js conventions.
 
-PROJECT
-
-Name
-
-NextUp
-
-Tagline
-
-Find what's next.
-
-Core Product Principle
-
-Job searching should feel like discovering opportunities, not digging through listings.
-
-NextUp is a modern, mobile-first career discovery and job-search platform intended to grow into a Career Operating System.
-
-Core lifecycle:
-
-Discover → Match → Save → Apply → Follow Up → Interview → Offer → Hired → Grow → Advance → Discover Again
-
-The product should optimize around the person, not merely around a database of job listings.
-
-Long-term product question:
-
-What should I do next with my career?
-
-PRODUCT EXPERIENCE
-
-NextUp blends inspiration from:
-
-Hinge / Tinder for opportunity discovery
-
-Spotify for personalized discovery
-
-Duolingo for progress and motivation
-
-Linear for clarity and polish
-
-modern consumer products rather than legacy recruiting software
-
-The existing design is strong and should be preserved.
-
-Existing Visual Identity
-
-dark charcoal / near-black UI
-
-electric lime / chartreuse primary accent
-
-warm supporting accent
-
-premium consumer-app feel
-
-mobile-first layout
-
-large salary hierarchy
-
-circular match visualization
-
-controlled rounded cards
-
-strong typography hierarchy
-
-subtle motion
-
-five-item mobile bottom navigation
-
-Do NOT
-
-redesign the product into generic SaaS
-
-introduce generic blue/purple startup gradients
-
-convert screens into corporate dashboards
-
-overuse rounded cards
-
-replace the established design system
-
-add a sixth bottom navigation tab
-
-redesign Discover without a concrete usability reason
-
-turn Applications into another discovery screen
-
-The existing Discover experience is one of the product's signature surfaces. Preserve it.
-
-SOURCE OF TRUTH
+SOURCE-OF-TRUTH STARTUP CHECK
 
 Before implementation work:
 
@@ -146,329 +119,114 @@ npm install
 
 Inspect the repository before modifying anything.
 
-If the repository has advanced beyond the checkpoint documented here, inspect the newer commits before continuing.
+If HEAD is newer than the checkpoints documented here, inspect the newer commits first.
 
-CURRENT APPROVED CHECKPOINT
+COMPLETED PHASES
 
-Phase 8.2 is complete.
+Phases 1–4 — Core Product Flow
 
-Phase 9 is complete and independently approved.
+Implemented and stable.
 
-Approved Phase 9 checkpoint:
+Phase 5 — Onboarding
+
+10-step onboarding exists and persists at controlled step boundaries.
+
+Phase 6 — Dynamic Profile
+
+Profile is driven by persisted user/onboarding data.
+
+Phase 7 — Auth
+
+Signup/login/logout/recovery/reset/protected-route flow exists.
+
+Phase 8 / 8.1 / 8.2 — Supabase Persistence + RLS Stabilization
+
+Complete.
+
+Final authenticated RLS verification:
+
+22 / 22 PASS
+
+Do not weaken RLS.
+
+Phase 9 — Deterministic Personalized Matching — COMPLETE + APPROVED
+
+Approved checkpoint:
 
 7cecc4741600b0a1cda49b84763814e40a9ce2ec
 Phase 9: Finalize matching engine audit fixes
 
-Verify with:
-
-git log -1 --oneline
-
-COMPLETED PRODUCT WORK
-
-Phases 1–4 — Core Product Flow
-
-Implemented:
-
-Discover progression
-
-Pass
-
-Undo
-
-Save
-
-Apply
-
-Applications tracker
-
-application detail
-
-application stages
-
-application timeline
-
-application notes
-
-next-action tracking
-
-Do not rebuild these systems from scratch.
-
-Phase 5 — Onboarding
-
-A mobile-first 10-step onboarding flow exists:
-
-Goals
-
-Current Career
-
-Experience
-
-Skills
-
-Target Roles
-
-Salary
-
-Work Preferences
-
-Location
-
-Priorities
-
-Review
-
-Onboarding uses controlled step-boundary persistence.
-
-Do not reintroduce autosave-on-every-keystroke behavior.
-
-Future improvements to occupation taxonomy, skill taxonomy, O*NET, location autocomplete, geocoding, and job-market intelligence remain deferred.
-
-Phase 6 — Dynamic Profile
-
-Profile data is derived from persisted onboarding/user data.
-
-Do not reintroduce hard-coded demo identity as a source of truth.
-
-Phase 7 — Authentication
-
-Authentication exists for signup, login, logout, forgot password, password recovery, reset password, protected routes, onboarding routing, and SSR auth callback.
-
-Password recovery has been manually verified end-to-end.
-
-Do not modify auth during Phase 10 unless a direct integration regression proves a real auth issue.
-
-Phase 8 / 8.1 / 8.2 — Supabase Persistence + Stabilization
-
-Current tables include:
-
-profiles
-
-onboarding_progress
-
-user_goals
-
-user_preferences
-
-preferred_locations
-
-target_roles
-
-skills
-
-user_skills
-
-work_experiences
-
-companies
-
-jobs
-
-saved_jobs
-
-passed_jobs
-
-applications
-
-application_events
-
-application_notes
-
-RLS is active.
-
-Final authenticated RLS verification:
-
-Total tests: 22
-Passed: 22
-Failed: 0
-Errors: 0
-
-Do not weaken RLS.
-
-CURRENT MIGRATIONS
-
-20260906000000_initial_schema.sql
-20260906000001_seed_mock_data.sql
-20260906000002_add_delete_policies.sql
-20260906000003_tighten_application_rls.sql
-20260906000004_auto_create_profile.sql
-20260906000005_add_passed_jobs_update_policy.sql
-
-Phase 10 should require no database migration.
-
-If you believe a schema change is required, STOP and explain why. Do not add a migration without explicit approval.
-
-PHASE 9 — DETERMINISTIC MATCHING ENGINE — COMPLETE
-
-The Phase 9 engine is an approved foundational system.
-
-Primary public API:
+Primary scoring API:
 
 calculateJobMatch(profile, job)
 
-Matching engine location:
+The Phase 9 engine is deterministic, pure, synchronous, testable, bounded, explainable, and independent of Supabase, React, AI, and network calls.
 
-lib/matching/
-
-Core files include:
-
-lib/matching/index.ts
-lib/matching/types.ts
-lib/matching/weights.ts
-lib/matching/skill-aliases.ts
-lib/matching/reasons.ts
-lib/matching/calculate-job-match.ts
-lib/matching/**tests**/calculate-job-match.test.ts
-
-The engine is deterministic, synchronous, pure, bounded, explainable, independent of Supabase, independent of React, independent of AI, and independent of network calls.
-
-PHASE 9 FUNDAMENTAL RULE
+Foundational rule:
 
 Data + deterministic matching decide facts. AI may later explain, coach, recommend, and help act.
 
-AI must never invent or override the deterministic match score.
+Do not duplicate or override Phase 9 scoring.
 
-APPROVED PHASE 9 MATCH RESULT
-
-The engine returns structured information including:
-
-status
-
-overallScore
-
-qualificationScore
-
-lifestyleScore
-
-component breakdown
-
-matched skills
-
-missing skills
-
-hard failures
-
-fit reasons
-
-concern reasons
-
-missing-profile fields where applicable
-
-For incomplete profiles:
-
-status = incomplete_profile
-overallScore = null
-
-Do not convert incomplete profiles into 0%.
-
-APPROVED PHASE 9 WEIGHTS
-
-Skills 25
-Experience 20
-Salary 15
-Location 10
-Work Arrangement 10
-Career Goals 10
-Seniority 5
-User Priorities 5
-\---
-Total 100
-
-Qualification components:
-
-Skills
-
-Experience
-
-Seniority
-
-Career Goals
-
-Lifestyle components:
-
-Salary
-
-Location
-
-Work Arrangement
-
-User Priorities
-
-Do not add a second scoring formula in Phase 10.
-
-APPROVED HARD FAILURES
-
-The Phase 9 engine can produce structured hard failures including:
-
-salary below absolute minimum
-
-exclusive work-arrangement conflict
-
-conservative relocation conflict
-
-Phase 10 must display these appropriately. Do not re-implement their logic.
-
-APPROVED TRANSFERABILITY
-
-Phase 9 includes small deterministic transfer paths including:
-
-Tower Foreman → Project Engineer
-Field Supervisor → Assistant Project Manager
-Crew Lead → Operations Manager
-
-Transferability affects qualification/experience and can produce a deterministic fit reason.
-
-Do not reimplement transferability in page code.
-
-APPROVED PRIORITY SEMANTICS
-
-Current measurable priority dimensions:
-
-salary
-
-location
-
-remoteFlexibility
-
-careerGrowth
-
-Current unsupported priority dimensions:
-
-learning
-
-culture
-
-mission
-
-benefits
-
-stability
-
-workLifeBalance
-
-Remote-flexibility evidence:
-
-remote = 100
-hybrid = 60
-onsite = 20
-
-Do not recreate this logic in the UI.
-
-CURRENT PHASE
+CURRENT PHASE STATUS
 
 PHASE 10 — DETERMINISTIC MATCHING INTEGRATION
 
-This is the ONLY product implementation phase authorized right now.
+Phase 10 implementation exists, but Phase 10 is NOT APPROVED yet.
 
-Phase 10 goal:
+Current implementation commit:
 
-Integrate the approved Phase 9 deterministic matching result throughout NextUp.
+1a5e1ea69bf4e2823a15212ec027ea130498dece
+Phase 10: Integrate personalized matching throughout NextUp
 
-Do not begin Phase 11.
-Do not begin AI.
-Do not begin O*NET.
-Do not begin geocoding.
-Do not begin resume parsing.
-Do not redesign Discover.
+That commit is pushed to main and its Vercel deployment succeeded.
+
+However, independent audit found real persistence/runtime integration defects.
+
+The current task is:
+
+PHASE 10 STABILIZATION
+
+This is the ONLY authorized implementation work right now.
+
+Do NOT start Phase 11.
+Do NOT add AI.
+Do NOT add O*NET.
+Do NOT add geocoding.
+Do NOT add resume parsing.
+Do NOT redesign Discover.
+
+PHASE 10 ARCHITECTURE — KEEP, DO NOT REBUILD
+
+The architecture is directionally correct and should be stabilized, not discarded.
+
+Existing concepts include:
+
+lib/matching/adapters.ts
+lib/matching/user-matching-data.ts
+lib/matching/integration.ts
+lib/storage/jobs.ts
+components/jobs/incomplete-profile-message.tsx
+
+Pipeline:
+
+REAL PERSISTED USER DATA
+→ CANONICAL USER MATCHING DATA
+→ buildMatchProfile(...)
+→ MatchProfile
+
+APP JOB
+→ adaptJobForMatching(...)
+→ MatchJob
+
+MatchProfile + MatchJob
+→ calculateJobMatch(...)
+→ MatchResult
+→ ALL UI SURFACES
+
+Keep this architecture.
+
+Do not return to page-specific scoring logic.
 
 PHASE 10 CORE INVARIANT
 
@@ -479,616 +237,343 @@ SAME JOB
 SAME MATCH RESULT
 EVERYWHERE
 
-Discover must not calculate one score.
-Explore must not calculate another.
-Saved must not calculate another.
-Job Detail must not calculate another.
-Applications must not calculate another.
-
-There is one matching engine:
-
-calculateJobMatch()
-
-All surfaces consume it.
-
-PHASE 10 ARCHITECTURE
-
-Target conceptual pipeline:
-
-PERSISTED USER DATA
-↓
-CANONICAL PROFILE ADAPTER
-↓
-MatchProfile
-
-APP JOB DATA
-↓
-CANONICAL JOB ADAPTER
-↓
-MatchJob
-
-MatchProfile + MatchJob
-↓
-calculateJobMatch()
-↓
-MatchResult
-↓
-ALL UI SURFACES
-
-Do not manually construct matching inputs separately per page.
-
-CANONICAL PROFILE ADAPTER
-
-Create one canonical transformation from persisted authenticated user state into MatchProfile.
-
-Expected mappings:
-
-current title → currentRole
-years experience → yearsExperience
-industry → industry
-goals → goals
-target roles → targetRoles
-skills → skills
-work experiences → experiences
-salary minimum → salaryMin
-salary ideal → salaryIdeal
-work arrangement preferences → workPreferences
-current location → location
-preferred locations → preferredLocations
-relocation willingness → willingToRelocate
-max commute → maxCommute
-priorities → priorities
-
-Use actual persisted values.
-
-Do not invent defaults that make incomplete profiles appear complete.
-
-CANONICAL JOB ADAPTER
-
-Create one canonical transformation from the application's existing Job model into Phase 9 MatchJob.
-
-Map:
-
-id
-
-title
-
-description
-
-requirements
-
-responsibilities
-
-work arrangement
-
-employment type
-
-experience level
-
-salary minimum
-
-salary maximum
-
-salary period
-
-location
-
-company name
-
-company industry
-
-Do not mutate original Job objects.
-Do not adapt jobs differently on different pages.
-
-IMPORTANT TYPE BOUNDARY
-
-Keep this separation:
-
-application domain type
-→ adapter
-→ matching input
-
-Do not replace every app Job with MatchJob.
-Do not create circular dependencies.
-Do not create a third competing match-result type.
-
-For new Phase 10 work, Phase 9 MatchResult is the scoring source of truth.
-
-CANONICAL MATCHING ORCHESTRATION
-
-Create a small reusable integration API.
-
-Acceptable concepts include:
-
-buildMatchProfile(...)
-adaptJobForMatching(...)
-calculateMatchForJob(...)
-
-Integration helpers may hydrate, adapt, orchestrate, or memoize safely.
-
-They must NOT introduce a second scoring formula, override match results, invent page-specific scoring, or use AI.
-
-PROFILE DATA LOADING
-
-Load the user's matching data efficiently.
-
-Do NOT do this per job card:
-
-fetch profile
-fetch skills
-fetch goals
-fetch preferences
-
-Preferred flow:
-
-page / feature
-→ load user matching data once
-→ build MatchProfile once
-→ calculate locally for all jobs
-
-For a list of jobs:
-
-jobs.map((job) => calculateJobMatch(matchProfile, adaptJobForMatching(job)))
-
-Do not persist match results in Phase 10.
-
-NO MATCH CACHE TABLE
-
-Do not add:
-
-job_matches
-
-match_results
-
-match_cache
-
-persisted calculated scores
-
-A profile change should naturally update future calculations.
-
-PROFILE CHANGES MUST UPDATE SCORES
-
-Examples:
-
-add relevant skill → score may change
-change salary minimum → salary compatibility may change
-change target role → career goals may change
-change work preference → work arrangement / priorities may change
-change relocation willingness → location / hard failures may change
-
-Do not permanently cache stale results.
-
-INCOMPLETE PROFILE RULE
-
-If Phase 9 returns:
-
-status = incomplete_profile
-
-Phase 10 must show no fake percentage.
-
-Use consistent consumer language:
-
-Finish your profile to see your match
-
-Where appropriate, provide a subtle existing-style CTA to /profile or /onboarding.
-
-MATCH DISPLAY RULE
-
-When status = scored, the primary percentage is:
-
-overallScore
-
-Do not substitute qualification or lifestyle for the main score.
-
-COMPACT VS DETAIL HIERARCHY
-
-Compact card:
-
-overall match only
-
-Job Detail:
-
-overall match
-
-qualification score
-
-lifestyle score
-
-fit reasons
-
-concerns
-
-matched skills
-
-missing skills
-
-hard failures
-
-Applications:
-
-overall match as secondary context only
-
-Do not overload compact discovery cards.
-
-DISCOVER INTEGRATION
-
-Discover is a signature experience.
-
-DO NOT redesign it.
-
-Find the existing match circle/badge/ring and replace hard-coded/demo/static scoring with:
-
-MatchResult.overallScore
-
-Requirements:
-
-use authenticated user's actual persisted profile
-
-use actual job data
-
-use approved Phase 9 engine
-
-no local scoring logic
-
-no mock fallback score
-
-support incomplete profile state
-
-pass unchanged
-
-undo unchanged
-
-save unchanged
-
-apply unchanged
-
-animation unchanged
-
-progression unchanged
-
-EXPLORE INTEGRATION
-
-Explore must use the same exact result.
-
-If Discover says 87% for a user/job pair, Explore must also say 87%.
-
-Preserve filtering, search, layout, and interactions.
-
-SAVED INTEGRATION
-
-Saved jobs should show current personalized match results.
-
-The score is NOT frozen when the job is saved.
-
-If the user's profile changes, Saved should recalculate.
-
-Preserve save/unsave behavior.
-
-JOB DETAIL INTEGRATION
-
-Job Detail should be the richest Phase 10 match surface.
-
-Use the same MatchResult.
-
-Where appropriate, display:
-
-overall score
-
-qualification score
-
-lifestyle score
-
-reasonsFit
-
-reasonsConcern
-
-matchedSkills
-
-missingSkills
-
-hardFailures
-
-Do not show raw implementation metadata such as transferabilityBonus, matchRatio, or confidence values unless deliberately designed.
-
-HARD FAILURE PRESENTATION
-
-Hard failures are guidance, not bans.
-
-Do not hide them.
-Do not show internal codes.
-Do not block Apply solely because a hard failure exists.
-
-Use clear consumer language.
-
-FIT / CONCERN REASONS
-
-Use:
-
-reasonsFit
-reasonsConcern
-
-Do not regenerate explanations in React components.
-Do not create page-specific interpretations.
-
-SKILL PRESENTATION
-
-Use:
-
-matchedSkills
-missingSkills
-
-Apply display formatting only.
-Do not alter the underlying matching result.
-
-APPLICATIONS INTEGRATION
-
-Applications remains primarily an application-management experience.
-
-Show matching context only where it adds value.
-
-Do not let match information overwhelm:
-
-stage
-
-next action
-
-timeline
-
-notes
-
-Application match is current-state matching. Do not persist historical match scores during Phase 10.
-
-MATCH DISPLAY COMPONENTS
-
-Audit existing match visual components.
-
-A small shared display primitive may be created if it reduces drift.
-
-Possible concepts:
-
-MatchBadge
-MatchRing
-MatchScore
-
-Display components must not calculate the match.
-
-PRESENTATION TIERS
-
-If the product already has match colors/labels, reuse them.
-
-Presentation tiers may be centralized as UI-only mapping.
-
-Do not change numeric MatchResult values.
-
-LOADING STATE
-
-Do not render mock scores while actual profile data loads.
-
-Avoid flicker such as:
-
-95% → loading → 78%
-
-Use existing skeleton/loading patterns.
-
-ERROR STATE
-
-Differentiate:
-
-profile incomplete
-
-from:
-
-profile failed to load
-
-If profile hydration fails:
-
-do not fake a score
-
-do not expose raw Supabase errors
-
-use existing app error conventions
-
-AUTH / RLS SAFETY
-
-Only authenticated user profile data may be used for personalized matching.
-
-Do not:
-
-add service-role access
-
-weaken RLS
-
-change Phase 8.2 policies
-
-rewrite auth flow
-
-SERVER / CLIENT BOUNDARY
-
-The matching engine is pure and can run server-side or client-side.
-
-Choose the integration point that best fits the existing architecture.
-
-Prioritize:
-
-no N+1 profile requests
-
-no hydration mismatch
-
-responsive interactions
-
-maintainability
-
-Do not perform a broad Server Component / Client Component rewrite.
-
-TANSTACK QUERY / ZUSTAND
-
-Inspect actual current usage before adding state.
-
-Do not introduce a parallel state architecture solely for matching.
-Do not perform an unrelated state-management refactor.
-
-ACCESSIBILITY
-
-Match visualizations must have accessible text.
-
-Examples:
-
-aria-label="87% job match"
-
-Incomplete profile:
-
-aria-label="Complete your profile to calculate job match"
-
-Do not rely on color alone.
-
-RESPONSIVE DESIGN
-
-Preserve mobile-first behavior.
-
-New matching UI must not cause horizontal scrolling, card overflow, cramped buttons, broken mobile layouts, or unreadable detail sections.
-
-Check mobile and desktop.
-
-MOCK SCORE CLEANUP
-
-Search the repository for old prototype/demo scores.
-
-Potential patterns include:
-
-match
-match_score
-matchScore
-matchPercentage
-overall_score
-qualification_score
-lifestyle_score
-JobMatch
-85
-87
-90
-92
-95
-
-Do not mechanically remove every numeric literal.
-Understand context.
-
-The fallback for missing personalized data is the incomplete-profile state, not a demo score.
-
-LEGACY JOBMATCH TYPE
-
-The general domain types may still contain an older JobMatch interface.
-
-Audit actual usage.
-
-Do not delete it blindly.
-
-For Phase 10 scoring, Phase 9 MatchResult remains the source of truth.
-
-PHASE 10 TEST REQUIREMENTS
-
-Phase 10 tests are mandatory.
-
-At minimum cover:
-
-profile adapter maps current title
-
-profile adapter maps years experience
-
-profile adapter maps skills/proficiency
-
-profile adapter maps work experiences
-
-profile adapter maps goals
-
-profile adapter maps target roles
-
-profile adapter maps salary minimum
-
-profile adapter maps salary ideal
-
-profile adapter maps work arrangements
-
-profile adapter maps current location
-
-profile adapter maps preferred locations
-
-profile adapter maps relocation willingness
-
-profile adapter maps priorities
-
-job adapter maps company
-
-job adapter maps industry
-
-job adapter maps title
-
-job adapter maps description
-
-job adapter maps requirements
-
-job adapter maps responsibilities
-
-job adapter maps work arrangement
-
-job adapter maps employment type
-
-job adapter maps experience level
-
-job adapter maps salary fields
-
-job adapter maps salary period
-
-job adapter maps location
-
-adapters do not mutate inputs
-
-incomplete profile remains incomplete
-
-incomplete profile does not become zero score
-
-same user/job returns same result repeatedly
-
-profile skill change updates score/result
-
-salary preference change updates score/result
-
-work preference change updates score/result
-
-target role change updates score/result
-
-saved job calculation uses current profile
-
-canonical integration helper returns Phase 9 MatchResult
-
-representative job receives same result through all shared integration paths
-
-no page-specific scoring logic exists in tested helpers
-
-Add more tests if implementation details justify them.
-
-CROSS-SURFACE CONSISTENCY TEST
-
-For one fixed profile and one fixed job, Discover, Explore, Saved, Job Detail, and Applications must resolve to the same deterministic result.
-
-The same user/job pair must not drift by page.
-
-PROFILE-CHANGE TEST
-
-Use deterministic local fixtures.
-
-Create Profile A, calculate match, then create Profile B with one meaningful relevant change and calculate again.
-
-Assert the result changes appropriately.
-
-Also test at least one preference change.
-
-MANUAL BROWSER VERIFICATION
-
-After automated tests pass, manually verify the real app with an authenticated user.
+Relevant surfaces:
 
 Discover
 
-real personalized score visible
+Explore
+
+Saved
+
+Job Detail
+
+Applications where matching context is actually shown
+
+There is one scoring engine:
+
+calculateJobMatch()
+
+All surfaces consume that result.
+
+AUTHORITATIVE PERSISTENCE SOURCES
+
+The authoritative current persistence behavior is in:
+
+supabase/migrations/20260906000000_initial_schema.sql
+lib/storage/onboarding.ts
+
+Current persisted sources:
+
+onboarding_progress
+
+current_title
+
+industry
+
+years_experience
+
+employment_status
+
+location
+
+max_commute
+
+willing_to_relocate
+
+salary_min
+
+salary_ideal
+
+completed
+
+user_preferences
+
+remote
+
+hybrid
+
+onsite
+
+full_time
+
+part_time
+
+contract
+
+travel_tolerance
+
+priorities
+
+preferred_locations
+
+location
+
+target_roles
+
+role
+
+user_skills
+
+skill_name
+
+proficiency
+
+years
+
+skill_id may be NULL
+
+work_experiences
+
+title
+
+company
+
+start_date
+
+end_date
+
+current
+
+description
+
+user_goals
+
+goal
+
+Do not pretend these values live on different tables/types just because an application-domain type has similarly named properties.
+
+STABILIZATION REQUIREMENTS
+
+1. Canonical UserMatchingData must represent actual hydrated matching data
+
+Refactor UserMatchingData away from stale/invented UserProfile / UserPreferences assumptions when those types do not match current persistence.
+
+The canonical hydrated shape should contain actual matching concepts such as:
+
+currentTitle
+
+industry
+
+yearsExperience
+
+goals
+
+targetRoles
+
+skills
+
+experiences
+
+salaryMin
+
+salaryIdeal
+
+workPreferences
+
+location
+
+preferredLocations
+
+maxCommute
+
+willingToRelocate
+
+priorities
+
+Do not invent defaults that make an incomplete profile appear complete.
+
+2. Correct target-role mapping
+
+Current incorrect assumption:
+
+target_roles.role_name
+
+Actual column:
+
+target_roles.role
+
+Fix and test it.
+
+3. Correct skill mapping
+
+Current onboarding persists:
+
+user_skills.skill_name
+user_skills.proficiency
+
+skill_id may be null.
+
+skill_name is the canonical current persisted user skill name.
+
+Never turn a valid persisted skill into "Unknown" merely because skill_id is null.
+
+4. Correct matching-data loader
+
+loadUserMatchingData() must hydrate from:
+
+onboarding_progress
+
+user_skills
+
+work_experiences
+
+user_preferences
+
+user_goals
+
+target_roles
+
+preferred_locations
+
+Use .maybeSingle() where missing rows are a valid incomplete-user state.
+
+Parallelize independent reads when clean.
+
+No per-job profile hydration.
+
+5. Load error must differ from incomplete profile
+
+These are separate states:
+
+PROFILE INCOMPLETE
+
+= successful hydration, missing required matching data.
+
+PROFILE LOAD ERROR
+
+= query/network/RLS/hydration failure.
+
+Do not convert a real load error into status = "incomplete_profile".
+
+Use a typed integration-layer error/result contract.
+
+Do not expose raw Supabase errors in user-facing UI.
+
+6. Remove duplicated empty MatchResult construction
+
+integration.ts must not manually manufacture incomplete MatchResult objects with copied Phase 9 weights.
+
+For successfully loaded but incomplete data:
+
+build MatchProfile
+→ calculateJobMatch()
+→ Phase 9 returns incomplete_profile
+
+For load failure:
+
+typed integration error
+
+7. Saved must never display fake 0%
+
+Saved jobs should remain visible for incomplete users.
+
+Show:
+
+Finish your profile to see your match
+
+Do not convert null to zero.
+
+Refactor away from legacy numeric JobMatch where needed.
+
+8. Job Detail must never manufacture zero scores
+
+Prefer:
+
+job
+matchResult
+
+as separate state.
+
+Only create legacy numeric score data when result status is "scored".
+
+Apply/save should depend on Job data, not fake match scores.
+
+9. Discover / Explore incomplete state must be explicit
+
+Do not silently filter all incomplete-profile results and make the user think there are no opportunities.
+
+Show:
+
+Finish your profile to see your match
+
+with an appropriate CTA.
+
+Do not redesign Discover.
+
+TEST REQUIREMENTS
+
+Tests must use actual persistence-shaped fixtures, not only synthetic application-domain fixtures.
+
+At minimum prove:
+
+onboarding_progress.current_title → currentRole
+
+onboarding_progress.industry → industry
+
+onboarding_progress.years_experience → yearsExperience
+
+onboarding_progress.salary_min → salaryMin
+
+onboarding_progress.salary_ideal → salaryIdeal
+
+onboarding_progress.location → location
+
+onboarding_progress.max_commute → maxCommute
+
+onboarding_progress.willing_to_relocate → willingToRelocate
+
+target_roles.role → targetRoles
+
+preferred_locations.location → preferredLocations
+
+user_skills.skill_name works with skill_id = null
+
+user_preferences.priorities map correctly
+
+missing onboarding row produces genuine incomplete profile
+
+query/load failure is NOT treated as incomplete profile
+
+incomplete profile remains incomplete
+
+incomplete profile is never converted to 0%
+
+relevant skill change updates result
+
+salary preference change updates result
+
+work preference change updates result
+
+target role change updates result
+
+saved-job matching uses current profile
+
+same user/job gives identical result through canonical integration path
+
+one hydrated profile + N jobs produces N MatchResults without per-job hydration
+
+If useful, extract pure helpers such as:
+
+calculateMatchFromUserData(userData, job)
+calculateMatchesFromUserData(userData, jobs)
+
+to make the integration layer directly testable without live Supabase.
+
+RUNTIME / BROWSER VERIFICATION IS MANDATORY
+
+The first Phase 10 report deferred real runtime verification.
+
+That is not acceptable for approval.
+
+After stabilization, verify with a real authenticated test user.
+
+Discover
+
+Verify:
+
+real jobs load
+
+personalized score appears
 
 pass works
 
@@ -1100,31 +585,43 @@ apply works
 
 progression works
 
-no hard-coded old percentage
+no Supabase/PostgREST errors
 
 Explore
 
-same job = same score as Discover
+Verify:
 
-filters work
+jobs load
 
 search works
 
+filters work
+
+same job = same score as Discover
+
 Saved
 
-current score visible
+Verify:
 
-score recalculates from current profile
+saved jobs load
+
+same score as other surfaces
+
+incomplete user never sees 0%
 
 unsave works
 
 Job Detail
 
+Verify:
+
+job loads
+
 overall score
 
-qualification score
+qualification
 
-lifestyle score
+lifestyle
 
 fit reasons
 
@@ -1134,79 +631,105 @@ matched skills
 
 missing skills
 
-hard failure presentation
-
-save/apply still work
+save/apply works
 
 Applications
 
-stage management unchanged
+Verify no regressions to:
 
-notes unchanged
+stage changes
 
-next action unchanged
+notes
 
-match context remains secondary
+next action
 
-Incomplete Profile
+timeline
 
-Show:
+REAL CROSS-SURFACE CHECK
 
-Finish your profile to see your match
+Choose one real persisted job ID.
 
-No fake percentage.
-
-MANUAL CROSS-SURFACE CHECK
-
-Choose one real job ID and record:
+Record:
 
 Job ID:
-Discover score:
-Explore score:
-Saved score:
-Job Detail score:
-Applications score:
+Discover:
+Explore:
+Saved:
+Job Detail:
+Applications: if applicable
 
-They must match for the same user.
+Do not provide hypothetical numbers.
 
-Do not claim this was verified unless it actually was.
+REAL PROFILE-CHANGE CHECK
 
-MANUAL PROFILE-CHANGE CHECK
-
-For a real test account:
+Using a safe test account:
 
 record one job's score
 
-change one relevant profile field
+change one relevant persisted profile field
 
-revisit/reload the job
+revisit same job
 
 confirm score changes
 
-restore original data when appropriate
+restore original value
 
-Do not corrupt production-like data.
+Report:
 
-PERFORMANCE CHECK
+field changed:
+before:
+after:
+score before:
+score after:
+restored: yes/no
 
-Inspect network behavior.
+PERFORMANCE / QUERY CHECK
 
-For a list page with many jobs, Phase 10 must not cause per-card profile hydration.
+Inspect actual browser/network behavior.
 
-Report approximately:
+Requirement:
 
-profile-related requests per page load:
-job-related requests per page load:
+NO matching-profile fetch per job card
 
-Expected architecture is roughly:
+Report the actual approximate number of matching-profile requests per page load.
 
-profile once
-jobs once / normal existing pagination behavior
-local deterministic matching per job
+If hydration makes multiple table requests once per page, report the real count.
+
+Do not call several requests "one query."
+
+NO MATCH RESULT PERSISTENCE
+
+Do not add:
+
+job_matches
+
+match_results
+
+match_cache
+
+persisted calculated scores
+
+Scores remain current-state calculations.
+
+AUTH / RLS / SCHEMA SAFETY
+
+Do not:
+
+add service-role access
+
+weaken RLS
+
+rewrite auth
+
+modify schema/migrations just to make Phase 10 pass
+
+If a schema/auth/RLS change appears unavoidable:
+
+STOP and explain before making it.
 
 QUALITY GATE
 
-Before Phase 10 is complete:
+Before Phase 10 stabilization can be reported complete:
 
 npm run typecheck
 npm run lint
@@ -1227,8 +750,7 @@ GIT RULES
 Before committing:
 
 git status --short
-
-Review every changed file.
+git diff
 
 Do not commit:
 
@@ -1236,9 +758,7 @@ Do not commit:
 
 credentials
 
-Supabase secrets
-
-verification passwords
+passwords
 
 screenshots
 
@@ -1248,147 +768,95 @@ temporary scripts
 
 generated junk
 
-Expected commit message:
+Expected stabilization commit:
 
-Phase 10: Integrate personalized matching throughout NextUp
+Phase 10: Stabilize real matching data integration
 
-Push to main.
+Push to:
 
-VERCEL
+main
 
-After pushing, verify deployment status for the Phase 10 commit.
+Then verify Vercel for the exact commit.
 
-Phase 10 is not ready for review if Vercel is failing.
+FINAL REPORT REQUIREMENTS
 
-Report explicitly:
-
-Vercel: SUCCESS
-
-or:
-
-Vercel: FAILURE
-
-or:
-
-Vercel: NOT VERIFIED
-
-Do not fabricate deployment success.
-
-PHASE 10 FINAL REPORT
-
-When complete, report:
+Report:
 
 exact commit SHA
 
-exact files created
+exact files changed
 
-exact files modified
+corrected persisted data sources
 
-profile adapter architecture
+corrected target-role mapping
 
-job adapter architecture
+corrected skill-name mapping
 
-matching integration helper architecture
+load-error vs incomplete-profile architecture
 
-how user matching data is loaded
+Saved incomplete-profile behavior
 
-confirmation profile is not fetched once per job card
+Discover incomplete-profile behavior
 
-Discover integration
+Explore incomplete-profile behavior
 
-Explore integration
+Job Detail incomplete-profile behavior
 
-Saved integration
+persistence-shaped tests added
 
-Job Detail integration
+integration-helper tests added
 
-Applications integration
-
-incomplete-profile behavior
-
-loading behavior
-
-error behavior
-
-primary score presentation
-
-qualification/lifestyle presentation
-
-hard-failure presentation
-
-matched/missing skill presentation
-
-legacy/mock score code removed or retained, with explanation
-
-new Phase 10 test count
+profile-change tests added
 
 Phase 9 matching test count
 
-pre-existing test count
+Phase 10 test count
 
 total test count
 
-typecheck result
+typecheck
 
-lint result
+lint
 
-test result
+tests
 
-build result
+build
 
-Vercel result
+Vercel
 
-manual Discover result
+real browser Discover result
 
-manual Explore result
+real browser Explore result
 
-manual Saved result
+real browser Saved result
 
-manual Job Detail result
+real browser Job Detail result
 
-manual Applications result
+real browser Applications regression result
 
-cross-surface consistency job ID
+real cross-surface job ID and scores
 
-Discover score
+real profile-change before/after result
 
-Explore score
+actual approximate matching-profile query count per page
 
-Saved score
+browser console errors observed, if any
 
-Job Detail score
-
-Applications score if applicable
-
-profile-change field used
-
-score before
-
-score after
-
-confirmation test data restored if applicable
-
-approximate profile-query behavior
-
-approximate job-query behavior
-
-confirmation no database migration
+confirmation no schema migration
 
 confirmation auth/RLS unchanged
 
-confirmation no AI
+confirmation no AI/embeddings/network scoring
 
-confirmation no embeddings
-
-confirmation Phase 11 was not started
+confirmation Phase 11 was NOT started
 
 STOP CONDITION
 
-After adapters, deterministic matching integration, automated tests, manual browser verification, cross-surface verification, performance/network audit, quality gates, commit, push, Vercel verification, and final report:
+After stabilization, tests, runtime verification, cross-surface verification, profile-change verification, query inspection, quality gates, commit, push, Vercel verification, and final report:
 
 STOP.
 
-Do not begin another phase.
+Do not begin Phase 11.
 
 PHASE 11 — LOCKED
 
@@ -1406,7 +874,7 @@ interview coach
 
 follow-up AI
 
-O*NET taxonomy
+O*NET
 
 geocoding
 
@@ -1415,16 +883,6 @@ location provider integration
 social features
 
 employer tooling
-
-Wait for independent Phase 10 audit and explicit approval.
-
-FUTURE AI RULE
-
-Deterministic systems decide facts. AI explains and helps the user act.
-
-AI may later explain a match, coach the user, tailor resume wording, prepare interview answers, or suggest follow-up language.
-
-AI must not invent experience, invent qualifications, fabricate match scores, override deterministic hard failures, auto-apply without confirmation, or auto-message employers without confirmation.
 
 PRODUCT TRUST PRINCIPLES
 
@@ -1440,45 +898,46 @@ invent job requirements
 
 fabricate match percentages
 
+turn incomplete profile into 0%
+
+hide data-load errors as profile incompleteness
+
 auto-apply without confirmation
 
 auto-message employers without confirmation
 
-expose private user data across accounts
-
 weaken RLS for convenience
 
-show stale persisted scores as though current
+expose private user data across accounts
 
-hide important match concerns
+persist stale match scores as current truth
 
-Matching should remain explainable and trustworthy.
+Matching must remain deterministic, explainable, current, and trustworthy.
 
-PHASE 10 DEFINITION OF DONE
+PHASE 10 STABILIZATION DEFINITION OF DONE
 
-Phase 10 is successful when a real authenticated NextUp user can view the same job anywhere in the product and get one consistent personalized answer:
+Phase 10 is ready for approval only when a real authenticated NextUp user can view the same real job across the product and receive one consistent personalized answer derived from:
 
-How well does this job fit me?
-
-Across:
-
-Discover
-Explore
-Saved
-Job Detail
-Applications
-
-the answer must come from:
-
-current persisted user data +
-current job data +
+actual persisted user data +
+actual job data +
 approved Phase 9 deterministic engine
 
-No mocks.
-No AI.
-No duplicate formulas.
-No stale stored percentages.
-No fake scores for incomplete profiles.
-No per-card profile fetch explosion.
+with:
 
-That is the Phase 10 standard.
+no schema mismatch
+
+no mock scoring
+
+no page-specific formulas
+
+no stale persisted scores
+
+no fake zero for incomplete users
+
+no silent profile-load failure
+
+no per-card profile-fetch explosion
+
+successful real browser verification
+
+Until then, Phase 10 remains in stabilization.

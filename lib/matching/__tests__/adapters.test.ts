@@ -5,27 +5,29 @@
 
 import { describe, it, expect } from "vitest";
 import { buildMatchProfile, adaptJobForMatching } from "../adapters";
-import type { UserMatchingData } from "../adapters";
 import type {
-  UserProfile,
+  UserMatchingData,
+  OnboardingProgress,
+  PersistedUserPreferences,
+} from "../adapters";
+import type {
   UserSkill,
   WorkExperience,
-  UserPreferences,
   Job,
   Company,
 } from "@/types";
 
 describe("buildMatchProfile", () => {
-  const mockProfile: UserProfile = {
-    id: "user-1",
-    email: "test@example.com",
-    name: "Test User",
+  const mockOnboarding: OnboardingProgress = {
     current_title: "Tower Foreman",
+    industry: "Telecommunications",
     years_experience: 4,
+    employment_status: "employed",
     location: "Madison, WI",
-    profile_strength: 85,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
+    max_commute: 30,
+    willing_to_relocate: false,
+    salary_min: 65000,
+    salary_ideal: 80000,
   };
 
   const mockSkills: UserSkill[] = [
@@ -59,26 +61,20 @@ describe("buildMatchProfile", () => {
     },
   ];
 
-  const mockPreferences: UserPreferences = {
-    id: "pref-1",
-    user_id: "user-1",
-    salary_min: 65000,
-    salary_ideal: 80000,
+  const mockPreferences: PersistedUserPreferences = {
     remote: false,
     hybrid: true,
     onsite: true,
-    willing_to_relocate: false,
-    preferred_locations: ["Madison, WI", "Milwaukee, WI"],
-    max_commute_minutes: 30,
     full_time: true,
     part_time: false,
     contract: false,
+    travel_tolerance: 25,
     priorities: {
       salary: 8,
-      work_life_balance: 6,
-      career_growth: 9,
+      workLifeBalance: 6,
+      careerGrowth: 9,
       location: 7,
-      remote_flexibility: 5,
+      remoteFlexibility: 5,
       culture: 6,
       stability: 7,
       benefits: 6,
@@ -89,12 +85,13 @@ describe("buildMatchProfile", () => {
 
   it("should map current title correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: null,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -104,12 +101,13 @@ describe("buildMatchProfile", () => {
 
   it("should map years experience correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: null,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -119,12 +117,13 @@ describe("buildMatchProfile", () => {
 
   it("should map skills with proficiency correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: mockSkills,
       experiences: [],
       preferences: null,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -138,12 +137,13 @@ describe("buildMatchProfile", () => {
 
   it("should map work experiences correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: mockExperiences,
       preferences: null,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -157,12 +157,13 @@ describe("buildMatchProfile", () => {
 
   it("should map goals correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: null,
       goals: ["Move into project management", "Career advancement"],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -172,12 +173,13 @@ describe("buildMatchProfile", () => {
 
   it("should map target roles correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: null,
       goals: [],
       targetRoles: ["Project Engineer", "Assistant Project Manager"],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -187,12 +189,13 @@ describe("buildMatchProfile", () => {
 
   it("should map salary minimum correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: mockPreferences,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -202,12 +205,13 @@ describe("buildMatchProfile", () => {
 
   it("should map salary ideal correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: mockPreferences,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -217,12 +221,13 @@ describe("buildMatchProfile", () => {
 
   it("should map work arrangements correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: mockPreferences,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -239,12 +244,13 @@ describe("buildMatchProfile", () => {
 
   it("should map current location correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: null,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -254,12 +260,13 @@ describe("buildMatchProfile", () => {
 
   it("should map preferred locations correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: mockPreferences,
       goals: [],
       targetRoles: [],
+      preferredLocations: ["Madison, WI", "Milwaukee, WI"],
     };
 
     const result = buildMatchProfile(data);
@@ -269,12 +276,13 @@ describe("buildMatchProfile", () => {
 
   it("should map relocation willingness correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: mockPreferences,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -284,12 +292,13 @@ describe("buildMatchProfile", () => {
 
   it("should map priorities correctly", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: mockPreferences,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
@@ -310,18 +319,19 @@ describe("buildMatchProfile", () => {
 
   it("should handle missing preferences gracefully", () => {
     const data: UserMatchingData = {
-      profile: mockProfile,
+      onboarding: mockOnboarding,
       skills: [],
       experiences: [],
       preferences: null,
       goals: [],
       targetRoles: [],
+      preferredLocations: [],
     };
 
     const result = buildMatchProfile(data);
 
-    expect(result.salaryMin).toBeUndefined();
-    expect(result.salaryIdeal).toBeUndefined();
+    expect(result.salaryMin).toBe(65000); // From onboarding now
+    expect(result.salaryIdeal).toBe(80000); // From onboarding now
     expect(result.workPreferences).toBeUndefined();
     expect(result.priorities).toBeUndefined();
     expect(result.preferredLocations).toEqual([]);
@@ -330,12 +340,13 @@ describe("buildMatchProfile", () => {
 
   it("should not mutate input data", () => {
     const data: UserMatchingData = {
-      profile: { ...mockProfile },
+      onboarding: { ...mockOnboarding },
       skills: [...mockSkills],
       experiences: [...mockExperiences],
       preferences: mockPreferences,
       goals: ["Goal 1"],
       targetRoles: ["Role 1"],
+      preferredLocations: ["Madison, WI"],
     };
 
     const originalData = JSON.parse(JSON.stringify(data));

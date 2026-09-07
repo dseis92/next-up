@@ -19,16 +19,60 @@ import type {
 } from "@/types";
 
 /**
+ * Persisted onboarding progress data
+ * Represents actual data from onboarding_progress table
+ */
+export interface OnboardingProgress {
+  current_title?: string;
+  industry?: string;
+  years_experience?: number;
+  employment_status?: string;
+  location?: string;
+  max_commute?: number;
+  willing_to_relocate: boolean;
+  salary_min?: number;
+  salary_ideal?: number;
+}
+
+/**
+ * Persisted user preferences data
+ * Represents actual data from user_preferences table
+ */
+export interface PersistedUserPreferences {
+  remote: boolean;
+  hybrid: boolean;
+  onsite: boolean;
+  full_time: boolean;
+  part_time: boolean;
+  contract: boolean;
+  travel_tolerance?: number;
+  priorities: {
+    salary: number;
+    workLifeBalance: number;
+    careerGrowth: number;
+    location: number;
+    remoteFlexibility: number;
+    culture: number;
+    stability: number;
+    benefits: number;
+    mission: number;
+    learning: number;
+  };
+}
+
+/**
  * User matching data
  * Consolidated data needed to build MatchProfile
+ * Maps to actual persisted structure, not application domain types
  */
 export interface UserMatchingData {
-  profile: UserProfile;
+  onboarding: OnboardingProgress | null;
   skills: UserSkill[];
   experiences: WorkExperience[];
-  preferences: UserPreferences | null;
+  preferences: PersistedUserPreferences | null;
   goals: string[];
   targetRoles: string[];
+  preferredLocations: string[];
 }
 
 /**
@@ -41,13 +85,13 @@ export interface UserMatchingData {
  * @returns MatchProfile for matching engine
  */
 export function buildMatchProfile(data: UserMatchingData): MatchProfile {
-  const { profile, skills, experiences, preferences, goals, targetRoles } = data;
+  const { onboarding, skills, experiences, preferences, goals, targetRoles, preferredLocations } = data;
 
   return {
     // Identity
-    currentRole: profile.current_title,
-    yearsExperience: profile.years_experience,
-    industry: undefined, // Not currently stored in profile
+    currentRole: onboarding?.current_title,
+    yearsExperience: onboarding?.years_experience,
+    industry: onboarding?.industry,
 
     // Goals and career direction
     goals: goals,
@@ -70,8 +114,8 @@ export function buildMatchProfile(data: UserMatchingData): MatchProfile {
     })),
 
     // Compensation expectations
-    salaryMin: preferences?.salary_min,
-    salaryIdeal: preferences?.salary_ideal,
+    salaryMin: onboarding?.salary_min,
+    salaryIdeal: onboarding?.salary_ideal,
 
     // Work arrangement preferences
     workPreferences: preferences
@@ -86,19 +130,19 @@ export function buildMatchProfile(data: UserMatchingData): MatchProfile {
       : undefined,
 
     // Location preferences
-    location: profile.location,
-    preferredLocations: preferences?.preferred_locations || [],
-    willingToRelocate: preferences?.willing_to_relocate ?? false,
-    maxCommute: preferences?.max_commute_minutes,
+    location: onboarding?.location,
+    preferredLocations: preferredLocations,
+    willingToRelocate: onboarding?.willing_to_relocate ?? false,
+    maxCommute: onboarding?.max_commute,
 
     // User priorities (0-10 scale)
     priorities: preferences
       ? {
           salary: preferences.priorities.salary,
-          workLifeBalance: preferences.priorities.work_life_balance,
-          careerGrowth: preferences.priorities.career_growth,
+          workLifeBalance: preferences.priorities.workLifeBalance,
+          careerGrowth: preferences.priorities.careerGrowth,
           location: preferences.priorities.location,
-          remoteFlexibility: preferences.priorities.remote_flexibility,
+          remoteFlexibility: preferences.priorities.remoteFlexibility,
           culture: preferences.priorities.culture,
           stability: preferences.priorities.stability,
           benefits: preferences.priorities.benefits,

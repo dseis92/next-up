@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { Search, MapPin, ArrowRight, SlidersHorizontal } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
@@ -27,6 +28,7 @@ export default function ExplorePage() {
   // Load personalized job matches
   const [allMatches, setAllMatches] = useState<JobMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -50,10 +52,16 @@ export default function ExplorePage() {
 
         // Build JobMatch objects with real match scores
         const jobMatches: JobMatch[] = [];
+        let hasIncomplete = false;
 
         for (let i = 0; i < jobs.length; i++) {
           const job = jobs[i];
           const matchResult = matchResults[i];
+
+          // Track if user has incomplete profile
+          if (matchResult.status === "incomplete_profile") {
+            hasIncomplete = true;
+          }
 
           // Skip incomplete profiles
           if (matchResult.status === "incomplete_profile") {
@@ -84,6 +92,7 @@ export default function ExplorePage() {
           });
         }
 
+        setHasIncompleteProfile(hasIncomplete);
         setAllMatches(jobMatches);
       } catch (error) {
         console.error("Failed to load personalized matches:", error);
@@ -219,11 +228,15 @@ export default function ExplorePage() {
 
         {/* Results */}
         {filteredJobs.length === 0 ? (
-          <EmptyState
-            icon={<Search className="h-6 w-6" />}
-            title="No jobs found"
-            description="Try adjusting your filters or search terms"
-          />
+          hasIncompleteProfile && allMatches.length === 0 ? (
+            <IncompleteProfileMessage />
+          ) : (
+            <EmptyState
+              icon={<Search className="h-6 w-6" />}
+              title="No jobs found"
+              description="Try adjusting your filters or search terms"
+            />
+          )
         ) : (
           <div className="space-y-3">
             {filteredJobs.map((match) => {
