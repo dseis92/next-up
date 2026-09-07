@@ -96,8 +96,12 @@ export default function ApplicationDetailPage() {
   }, [appId]);
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
   const handleStageChange = async (newStage: ApplicationStage) => {
+    if (actionPending) return;
+
+    setActionPending(true);
     try {
       const updated = await updateApplicationStage(appId, newStage);
       if (updated) {
@@ -114,37 +118,55 @@ export default function ApplicationDetailPage() {
       console.error("Failed to update stage:", error);
       setActionError("Failed to update stage. Please try again.");
       setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
   };
 
   const handleAddNote = async () => {
-    if (newNote.trim()) {
-      try {
-        await createApplicationNote(appId, newNote.trim());
-        setNotes(await getApplicationNotes(appId));
-        setNewNote("");
-        setNotesError(false);
-      } catch (error) {
-        console.error("Failed to add note:", error);
-        setActionError("Failed to add note. Please try again.");
-        setTimeout(() => setActionError(null), 5000);
-      }
+    if (!newNote.trim() || actionPending) return;
+
+    setActionPending(true);
+    try {
+      // Write succeeds or throws - no ambiguity
+      const createdNote = await createApplicationNote(appId, newNote.trim());
+
+      // Write succeeded - clear input and update local state
+      setNewNote("");
+      setNotes((prev) => [createdNote, ...prev]);
+      setNotesError(false);
+    } catch (error) {
+      console.error("Failed to add note:", error);
+      setActionError("Failed to add note. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
   };
 
   const handleEditNote = async (noteId: string) => {
-    if (editingNoteText.trim()) {
-      try {
-        await updateApplicationNote(appId, noteId, editingNoteText.trim());
-        setNotes(await getApplicationNotes(appId));
+    if (!editingNoteText.trim() || actionPending) return;
+
+    setActionPending(true);
+    try {
+      // Write succeeds or throws - no ambiguity
+      const updatedNote = await updateApplicationNote(appId, noteId, editingNoteText.trim());
+
+      if (updatedNote) {
+        // Write succeeded - update local state
+        setNotes((prev) =>
+          prev.map((note) => (note.id === updatedNote.id ? updatedNote : note))
+        );
         setEditingNoteId(null);
         setEditingNoteText("");
         setNotesError(false);
-      } catch (error) {
-        console.error("Failed to edit note:", error);
-        setActionError("Failed to edit note. Please try again.");
-        setTimeout(() => setActionError(null), 5000);
       }
+    } catch (error) {
+      console.error("Failed to edit note:", error);
+      setActionError("Failed to edit note. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
   };
 
@@ -278,11 +300,12 @@ export default function ApplicationDetailPage() {
                 <button
                   key={option.value}
                   onClick={() => handleStageChange(option.value)}
+                  disabled={actionPending}
                   className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${
                     application.stage === option.value
                       ? "border-brand bg-brand/10 text-brand"
                       : "border-border bg-surface text-foreground-secondary hover:border-foreground-muted"
-                  }`}
+                  } ${actionPending ? "cursor-not-allowed opacity-50" : ""}`}
                 >
                   {option.label}
                 </button>
@@ -379,16 +402,17 @@ export default function ApplicationDetailPage() {
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+                  if (e.key === "Enter" && !actionPending) {
                     handleAddNote();
                   }
                 }}
+                disabled={actionPending}
               />
               <Button
                 variant="primary"
                 size="sm"
                 onClick={handleAddNote}
-                disabled={!newNote.trim()}
+                disabled={!newNote.trim() || actionPending}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -417,18 +441,20 @@ export default function ApplicationDetailPage() {
                           value={editingNoteText}
                           onChange={(e) => setEditingNoteText(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                            if (e.key === "Enter" && !actionPending) {
                               handleEditNote(note.id);
                             } else if (e.key === "Escape") {
                               cancelEditNote();
                             }
                           }}
+                          disabled={actionPending}
                           autoFocus
                         />
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditNote(note.id)}
+                          disabled={actionPending}
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -436,6 +462,7 @@ export default function ApplicationDetailPage() {
                           variant="ghost"
                           size="sm"
                           onClick={cancelEditNote}
+                          disabled={actionPending}
                         >
                           <X className="h-4 w-4" />
                         </Button>
