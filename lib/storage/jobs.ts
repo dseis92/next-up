@@ -9,6 +9,9 @@ import type { Job } from "@/types";
 /**
  * Load all jobs with company details
  * Jobs are publicly readable, no user filter needed
+ *
+ * @throws Error if the database query fails
+ * @returns Array of jobs (may be empty if no jobs exist)
  */
 export async function getJobs(): Promise<Job[]> {
   const supabase = createClient();
@@ -25,7 +28,7 @@ export async function getJobs(): Promise<Job[]> {
 
   if (error) {
     console.error("Failed to load jobs:", error);
-    return [];
+    throw new Error("Unable to load jobs. Please try again.");
   }
 
   return (data as Job[]) || [];
@@ -33,6 +36,9 @@ export async function getJobs(): Promise<Job[]> {
 
 /**
  * Load a single job by ID with company details
+ *
+ * @throws Error if the database query fails
+ * @returns Job if found, null if job doesn't exist
  */
 export async function getJob(jobId: string): Promise<Job | null> {
   const supabase = createClient();
@@ -46,12 +52,12 @@ export async function getJob(jobId: string): Promise<Job | null> {
     `
     )
     .eq("id", jobId)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Failed to load job:", error);
-    return null;
+    throw new Error("Unable to load job details. Please try again.");
   }
 
-  return data as Job;
+  return data as Job | null;
 }

@@ -15,6 +15,12 @@ export interface ApplicationNote {
 }
 
 // Applications
+/**
+ * Get all applications for the current user
+ *
+ * @throws Error if the database query fails
+ * @returns Array of applications (may be empty if no applications)
+ */
 export async function getApplications(): Promise<Application[]> {
   const supabase = createClient();
   const {
@@ -39,7 +45,7 @@ export async function getApplications(): Promise<Application[]> {
 
   if (error) {
     console.error("Failed to fetch applications:", { userId: user.id, error: error.message });
-    return [];
+    throw new Error("Unable to load applications. Please try again.");
   }
 
   return (
@@ -66,6 +72,12 @@ export async function getApplications(): Promise<Application[]> {
   );
 }
 
+/**
+ * Get a single application by ID
+ *
+ * @throws Error if the database query fails
+ * @returns Application if found, null if not found
+ */
 export async function getApplicationById(id: string): Promise<Application | null> {
   const supabase = createClient();
   const {
@@ -91,7 +103,7 @@ export async function getApplicationById(id: string): Promise<Application | null
 
   if (error) {
     console.error("Failed to fetch application by id:", { applicationId: id, error: error.message });
-    return null;
+    throw new Error("Unable to load application details. Please try again.");
   }
 
   if (!data) return null;
@@ -118,6 +130,12 @@ export async function getApplicationById(id: string): Promise<Application | null
   };
 }
 
+/**
+ * Get an application by job ID
+ *
+ * @throws Error if the database query fails
+ * @returns Application if found, null if not found
+ */
 export async function getApplicationByJobId(jobId: string): Promise<Application | null> {
   const supabase = createClient();
   const {
@@ -143,7 +161,7 @@ export async function getApplicationByJobId(jobId: string): Promise<Application 
 
   if (error) {
     console.error("Failed to fetch application by job id:", { jobId, error: error.message });
-    return null;
+    throw new Error("Unable to load application. Please try again.");
   }
 
   if (!data) return null;

@@ -11,30 +11,26 @@ import type { Job } from "@/types";
  *
  * @param supabase - Server Supabase client (from createClient in app/api)
  * @param jobId - Job ID to load
- * @returns Job or null if not found
+ * @throws Error if the database query fails
+ * @returns Job if found, null if job doesn't exist
  */
 export async function getJobServer(
   supabase: SupabaseClient,
   jobId: string
 ): Promise<Job | null> {
-  try {
-    const { data: job, error } = await supabase
-      .from("jobs")
-      .select(`
-        *,
-        company:companies(*)
-      `)
-      .eq("id", jobId)
-      .single();
+  const { data: job, error } = await supabase
+    .from("jobs")
+    .select(`
+      *,
+      company:companies(*)
+    `)
+    .eq("id", jobId)
+    .maybeSingle();
 
-    if (error) {
-      console.error("Failed to load job:", error);
-      return null;
-    }
-
-    return job as Job;
-  } catch (error) {
-    console.error("Unexpected error loading job:", error);
-    return null;
+  if (error) {
+    console.error("Failed to load job:", error);
+    throw new Error("Unable to load job details. Please try again.");
   }
+
+  return job as Job | null;
 }

@@ -32,6 +32,7 @@ export default function DiscoverPage() {
     index: number;
   } | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Personalized job matches
   const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>([]);
@@ -145,20 +146,28 @@ export default function DiscoverPage() {
   }, [showToast]);
 
   const handleSave = async () => {
-    if (currentMatch) {
+    if (!currentMatch) return;
+
+    try {
       await saveJob(currentMatch.job.id);
       incrementDailyProgress();
       setDailyProgress((prev) => ({
         ...prev,
         reviewed: Math.min(prev.reviewed + 1, prev.target),
       }));
+      // Advance on success
+      setCurrentIndex((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to save job:", error);
+      setActionError("Failed to save job. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
     }
-    // Always advance
-    setCurrentIndex((prev) => prev + 1);
   };
 
   const handlePass = async () => {
-    if (currentMatch) {
+    if (!currentMatch) return;
+
+    try {
       await passJob(currentMatch.job.id);
       incrementDailyProgress();
       setDailyProgress((prev) => ({
@@ -173,18 +182,29 @@ export default function DiscoverPage() {
         index: currentIndex,
       });
       setShowToast(true);
+      // Advance on success
+      setCurrentIndex((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to pass job:", error);
+      setActionError("Failed to pass job. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
     }
-    // Always advance
-    setCurrentIndex((prev) => prev + 1);
   };
 
   const handleUndo = async () => {
-    if (lastPassedJob) {
+    if (!lastPassedJob) return;
+
+    try {
       await undoPass(lastPassedJob.id);
       setShowToast(false);
       // Go back to that job
       setCurrentIndex(lastPassedJob.index);
       setLastPassedJob(null);
+    } catch (error) {
+      console.error("Failed to undo pass:", error);
+      setActionError("Failed to undo. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+      setShowToast(false);
     }
   };
 
@@ -312,6 +332,15 @@ export default function DiscoverPage() {
             onClick: handleUndo,
           }}
           onClose={() => setShowToast(false)}
+        />
+      )}
+
+      {/* Error Toast */}
+      {actionError && (
+        <Toast
+          visible={!!actionError}
+          message={actionError}
+          onClose={() => setActionError(null)}
         />
       )}
     </AppShell>

@@ -12,6 +12,12 @@ export interface PassedJob {
 }
 
 // Saved Jobs
+/**
+ * Get all saved job IDs for the current user
+ *
+ * @throws Error if the database query fails
+ * @returns Array of saved job IDs (may be empty if no saved jobs)
+ */
 export async function getSavedJobs(): Promise<string[]> {
   const supabase = createClient();
   const {
@@ -20,11 +26,16 @@ export async function getSavedJobs(): Promise<string[]> {
 
   if (!user) return [];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("saved_jobs")
     .select("job_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load saved jobs:", error);
+    throw new Error("Unable to load saved jobs. Please try again.");
+  }
 
   return data?.map((row) => row.job_id) || [];
 }
@@ -77,6 +88,12 @@ export async function unsaveJob(jobId: string): Promise<void> {
   }
 }
 
+/**
+ * Check if a job is saved
+ *
+ * @throws Error if the database query fails
+ * @returns true if job is saved, false if not saved
+ */
 export async function isJobSaved(jobId: string): Promise<boolean> {
   const supabase = createClient();
   const {
@@ -85,17 +102,28 @@ export async function isJobSaved(jobId: string): Promise<boolean> {
 
   if (!user) return false;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("saved_jobs")
     .select("id")
     .eq("user_id", user.id)
     .eq("job_id", jobId)
     .maybeSingle();
 
+  if (error) {
+    console.error("Failed to check if job is saved:", error);
+    throw new Error("Unable to check save status. Please try again.");
+  }
+
   return !!data;
 }
 
 // Passed Jobs
+/**
+ * Get all passed jobs for the current user
+ *
+ * @throws Error if the database query fails
+ * @returns Array of passed jobs (may be empty if no passed jobs)
+ */
 export async function getPassedJobs(): Promise<PassedJob[]> {
   const supabase = createClient();
   const {
@@ -104,11 +132,16 @@ export async function getPassedJobs(): Promise<PassedJob[]> {
 
   if (!user) return [];
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("passed_jobs")
     .select("job_id, reason, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load passed jobs:", error);
+    throw new Error("Unable to load passed jobs. Please try again.");
+  }
 
   return (
     data?.map((row) => ({
@@ -168,6 +201,12 @@ export async function undoPass(jobId: string): Promise<void> {
   }
 }
 
+/**
+ * Check if a job is passed
+ *
+ * @throws Error if the database query fails
+ * @returns true if job is passed, false if not passed
+ */
 export async function isJobPassed(jobId: string): Promise<boolean> {
   const supabase = createClient();
   const {
@@ -176,12 +215,17 @@ export async function isJobPassed(jobId: string): Promise<boolean> {
 
   if (!user) return false;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("passed_jobs")
     .select("id")
     .eq("user_id", user.id)
     .eq("job_id", jobId)
     .maybeSingle();
+
+  if (error) {
+    console.error("Failed to check if job is passed:", error);
+    throw new Error("Unable to check pass status. Please try again.");
+  }
 
   return !!data;
 }
