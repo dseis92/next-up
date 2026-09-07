@@ -1619,7 +1619,8 @@ Storage contract hardening:
 - getPassedJobs/isJobPassed now throw on query failure
 - getApplications/getApplicationById/getApplicationByJobId now throw on query failure
 - getApplicationEvents/getApplicationNotes now throw on query failure
-- All read helpers use .maybeSingle() to distinguish missing row from query error
+- Read helpers now distinguish query/database failures from legitimate empty or null results
+- Single-row lookup helpers use .maybeSingle() where appropriate to distinguish a genuinely missing row from a query failure
 - JSDoc added documenting error vs empty semantics
 
 Page-level error state hardening:
@@ -1677,7 +1678,8 @@ This is a KNOWN LIMITATION, not an active bug-fix authorization.
 
 A true atomic solution may require transactional server/RPC/schema design and requires explicit future approval.
 
-PHASE 11 — GROUNDED AI JOB MATCH EXPLANATION — COMPLETE
+PHASE 11 — GROUNDED AI JOB MATCH EXPLANATION
+IMPLEMENTATION COMPLETE / PRODUCTION RUNTIME BLOCKED
 
 Phase 11 implementation: COMPLETE
 
@@ -1709,7 +1711,7 @@ AI MUST NOT manufacture facts absent from trusted context.
 
 CURRENT AUTHORIZED PHASE
 
-NONE — ALL IMPLEMENTATION PHASES COMPLETE
+NONE — NO IMPLEMENTATION PHASE CURRENTLY AUTHORIZED
 
 Phase 11 implementation is COMPLETE.
 
