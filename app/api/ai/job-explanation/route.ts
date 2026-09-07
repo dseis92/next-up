@@ -147,6 +147,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<JobExplan
         text: {
           format: zodTextFormat(AIJobExplanationSchema, "job_explanation"),
         },
+        store: false,
       });
     } catch (error) {
       // Safe error handling - no raw provider errors to client

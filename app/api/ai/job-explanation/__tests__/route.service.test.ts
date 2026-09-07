@@ -382,6 +382,7 @@ describe("POST /api/ai/job-explanation - Responses API", () => {
     expect(callArgs.input[1].role).toBe("user");
     expect(callArgs.text).toBeDefined();
     expect(callArgs.text.format).toBeDefined(); // zodTextFormat configuration
+    expect(callArgs.store).toBe(false); // Privacy: disable provider-side response storage
   });
 
   it("should use server-safe loaders with server Supabase client", async () => {
