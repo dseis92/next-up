@@ -80,31 +80,67 @@ export default function ApplicationsPage() {
     offer: [],
     closed: [],
   });
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const loadApplications = async () => {
-      const apps = await getApplications();
-      setApplications(apps);
+      try {
+        const apps = await getApplications();
+        setApplications(apps);
 
-      // Group by stage
-      const groups: Record<StageGroup, Application[]> = {
-        preparing: [],
-        applied: [],
-        interviewing: [],
-        offer: [],
-        closed: [],
-      };
+        // Group by stage
+        const groups: Record<StageGroup, Application[]> = {
+          preparing: [],
+          applied: [],
+          interviewing: [],
+          offer: [],
+          closed: [],
+        };
 
-      apps.forEach((app) => {
-        const group = getStageGroup(app.stage);
-        groups[group].push(app);
-      });
+        apps.forEach((app) => {
+          const group = getStageGroup(app.stage);
+          groups[group].push(app);
+        });
 
-      setGrouped(groups);
+        setGrouped(groups);
+      } catch (error) {
+        console.error("Failed to load applications:", error);
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadApplications();
   }, []);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading applications...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <div className="text-center">
+            <p className="text-foreground mb-2">
+              Unable to load your applications right now.
+            </p>
+            <p className="text-foreground-secondary text-sm">
+              Please try again later.
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (applications.length === 0) {
     return (

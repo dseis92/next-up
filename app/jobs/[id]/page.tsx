@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { MatchScore } from "@/components/jobs/match-score";
 import { Progress } from "@/components/ui/progress";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { Toast } from "@/components/ui/toast";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { formatSalary } from "@/lib/utils";
 import { getJob } from "@/lib/storage/jobs";
@@ -53,6 +54,8 @@ export default function JobDetailPage() {
   const [aiExplanation, setAiExplanation] = useState<AIJobExplanation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadJobData = async () => {
@@ -136,12 +139,23 @@ export default function JobDetailPage() {
   }, [jobId]);
 
   const handleSave = async () => {
-    if (isSaved) {
-      await unsaveJob(jobId);
-      setIsSaved(false);
-    } else {
-      await saveJob(jobId);
-      setIsSaved(true);
+    if (actionPending) return;
+
+    setActionPending(true);
+    try {
+      if (isSaved) {
+        await unsaveJob(jobId);
+        setIsSaved(false);
+      } else {
+        await saveJob(jobId);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error("Failed to save/unsave job:", error);
+      setActionError("Failed to update saved status. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
   };
 
@@ -159,27 +173,36 @@ export default function JobDetailPage() {
   };
 
   const handleConfirmApply = async () => {
-    if (!job) return;
+    if (!job || actionPending) return;
 
-    // Create application
-    const newApp = await createApplication({
-      jobId: job.id,
-      job: job,
-      stage: "applied",
-      source: "nextup_job_detail",
-    });
+    setActionPending(true);
+    try {
+      // Create application
+      const newApp = await createApplication({
+        jobId: job.id,
+        job: job,
+        stage: "applied",
+        source: "nextup_job_detail",
+      });
 
-    setApplication(newApp);
+      setApplication(newApp);
 
-    // If external URL exists, open it
-    if (job.external_url) {
-      window.open(job.external_url, "_blank", "noopener,noreferrer");
+      // If external URL exists, open it
+      if (job.external_url) {
+        window.open(job.external_url, "_blank", "noopener,noreferrer");
+      }
+
+      // Navigate to applications
+      setTimeout(() => {
+        router.push("/applications");
+      }, 500);
+    } catch (error) {
+      console.error("Failed to create application:", error);
+      setActionError("Failed to create application. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
-
-    // Navigate to applications
-    setTimeout(() => {
-      router.push("/applications");
-    }, 500);
   };
 
   const handleGetAiExplanation = async () => {
@@ -229,28 +252,28 @@ export default function JobDetailPage() {
     );
   }
 
-  if (!job) {
-    return (
-      <AppShell>
-        <div className="flex h-full items-center justify-center p-4">
-          <p className="text-foreground-secondary">Job not found</p>
-        </div>
-      </AppShell>
-    );
-  }
-
   if (loadError) {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center p-4">
           <div className="text-center">
             <p className="text-foreground mb-2">
-              Unable to load your personalized match right now.
+              Unable to load job details right now.
             </p>
             <p className="text-foreground-secondary text-sm">
               Please try again later.
             </p>
           </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!job) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Job not found</p>
         </div>
       </AppShell>
     );
@@ -281,6 +304,7 @@ export default function JobDetailPage() {
               variant={isSaved ? "primary" : "secondary"}
               size="sm"
               onClick={handleSave}
+              disabled={actionPending}
               className="gap-2"
             >
               {isSaved ? (
@@ -693,6 +717,7 @@ export default function JobDetailPage() {
               variant={isSaved ? "secondary" : "ghost"}
               className="flex-1"
               onClick={handleSave}
+              disabled={actionPending}
               size="lg"
             >
               {isSaved ? (
@@ -712,6 +737,7 @@ export default function JobDetailPage() {
               className="flex-1"
               size="lg"
               onClick={handleApply}
+              disabled={actionPending}
             >
               {application ? (
                 "View application"
@@ -738,6 +764,15 @@ export default function JobDetailPage() {
         confirmLabel="Continue to employer"
         cancelLabel="Cancel"
       />
+
+      {/* Action Error Toast */}
+      {actionError && (
+        <Toast
+          visible={!!actionError}
+          message={actionError}
+          onClose={() => setActionError(null)}
+        />
+      )}
     </AppShell>
   );
 }

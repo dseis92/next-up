@@ -33,6 +33,7 @@ export default function DiscoverPage() {
   } | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
   // Personalized job matches
   const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>([]);
@@ -146,8 +147,9 @@ export default function DiscoverPage() {
   }, [showToast]);
 
   const handleSave = async () => {
-    if (!currentMatch) return;
+    if (!currentMatch || actionPending) return;
 
+    setActionPending(true);
     try {
       await saveJob(currentMatch.job.id);
       incrementDailyProgress();
@@ -161,12 +163,15 @@ export default function DiscoverPage() {
       console.error("Failed to save job:", error);
       setActionError("Failed to save job. Please try again.");
       setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
   };
 
   const handlePass = async () => {
-    if (!currentMatch) return;
+    if (!currentMatch || actionPending) return;
 
+    setActionPending(true);
     try {
       await passJob(currentMatch.job.id);
       incrementDailyProgress();
@@ -188,23 +193,28 @@ export default function DiscoverPage() {
       console.error("Failed to pass job:", error);
       setActionError("Failed to pass job. Please try again.");
       setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setActionPending(false);
     }
   };
 
   const handleUndo = async () => {
-    if (!lastPassedJob) return;
+    if (!lastPassedJob || actionPending) return;
 
+    setActionPending(true);
     try {
       await undoPass(lastPassedJob.id);
-      setShowToast(false);
       // Go back to that job
       setCurrentIndex(lastPassedJob.index);
       setLastPassedJob(null);
+      setShowToast(false);
     } catch (error) {
       console.error("Failed to undo pass:", error);
       setActionError("Failed to undo. Please try again.");
       setTimeout(() => setActionError(null), 5000);
-      setShowToast(false);
+      // Keep lastPassedJob and toast visible for retry
+    } finally {
+      setActionPending(false);
     }
   };
 
@@ -289,6 +299,7 @@ export default function DiscoverPage() {
                 onSave={handleSave}
                 onPass={handlePass}
                 onViewDetails={handleViewDetails}
+                disabled={actionPending}
               />
             ) : hasIncompleteProfile ? (
               <motion.div

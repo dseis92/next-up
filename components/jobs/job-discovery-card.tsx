@@ -17,6 +17,7 @@ export interface JobDiscoveryCardProps {
   onSave?: () => void;
   onPass?: () => void;
   onViewDetails?: () => void;
+  disabled?: boolean;
 }
 
 export function JobDiscoveryCard({
@@ -24,6 +25,7 @@ export function JobDiscoveryCard({
   onSave,
   onPass,
   onViewDetails,
+  disabled = false,
 }: JobDiscoveryCardProps) {
   const { job, overall_score, matched_skills, reasons_fit } = match;
 
@@ -125,6 +127,7 @@ export function JobDiscoveryCard({
               variant="secondary"
               className="flex-1"
               onClick={onPass}
+              disabled={disabled}
               size="md"
             >
               <X className="h-4 w-4" />
@@ -133,6 +136,7 @@ export function JobDiscoveryCard({
               variant="ghost"
               className="flex-1"
               onClick={onSave}
+              disabled={disabled}
               size="md"
             >
               <Bookmark className="mr-1.5 h-4 w-4" />
@@ -143,6 +147,7 @@ export function JobDiscoveryCard({
                 variant="primary"
                 className="w-full"
                 onClick={onViewDetails}
+                disabled={disabled}
                 size="md"
               >
                 Details

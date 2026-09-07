@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Toast } from "@/components/ui/toast";
 import {
   getApplicationById,
   updateApplicationStage,
@@ -55,43 +56,95 @@ export default function ApplicationDetailPage() {
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [eventsError, setEventsError] = useState(false);
+  const [notesError, setNotesError] = useState(false);
 
   useEffect(() => {
     const loadApplication = async () => {
-      const app = await getApplicationById(appId);
-      setApplication(app);
+      try {
+        const app = await getApplicationById(appId);
+        setApplication(app);
 
-      if (app) {
-        setEvents(await getApplicationEvents(appId));
-        setNotes(await getApplicationNotes(appId));
+        if (app) {
+          // Load events with isolated error handling
+          try {
+            setEvents(await getApplicationEvents(appId));
+          } catch (error) {
+            console.error("Failed to load application events:", error);
+            setEventsError(true);
+          }
+
+          // Load notes with isolated error handling
+          try {
+            setNotes(await getApplicationNotes(appId));
+          } catch (error) {
+            console.error("Failed to load application notes:", error);
+            setNotesError(true);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load application:", error);
+        setLoadError(true);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadApplication();
   }, [appId]);
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const handleStageChange = async (newStage: ApplicationStage) => {
-    const updated = await updateApplicationStage(appId, newStage);
-    if (updated) {
-      setApplication(updated);
-      setEvents(await getApplicationEvents(appId));
+    try {
+      const updated = await updateApplicationStage(appId, newStage);
+      if (updated) {
+        setApplication(updated);
+        try {
+          setEvents(await getApplicationEvents(appId));
+          setEventsError(false);
+        } catch (error) {
+          console.error("Failed to reload events:", error);
+          setEventsError(true);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update stage:", error);
+      setActionError("Failed to update stage. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
   const handleAddNote = async () => {
     if (newNote.trim()) {
-      await createApplicationNote(appId, newNote.trim());
-      setNotes(await getApplicationNotes(appId));
-      setNewNote("");
+      try {
+        await createApplicationNote(appId, newNote.trim());
+        setNotes(await getApplicationNotes(appId));
+        setNewNote("");
+        setNotesError(false);
+      } catch (error) {
+        console.error("Failed to add note:", error);
+        setActionError("Failed to add note. Please try again.");
+        setTimeout(() => setActionError(null), 5000);
+      }
     }
   };
 
   const handleEditNote = async (noteId: string) => {
     if (editingNoteText.trim()) {
-      await updateApplicationNote(appId, noteId, editingNoteText.trim());
-      setNotes(await getApplicationNotes(appId));
-      setEditingNoteId(null);
-      setEditingNoteText("");
+      try {
+        await updateApplicationNote(appId, noteId, editingNoteText.trim());
+        setNotes(await getApplicationNotes(appId));
+        setEditingNoteId(null);
+        setEditingNoteText("");
+        setNotesError(false);
+      } catch (error) {
+        console.error("Failed to edit note:", error);
+        setActionError("Failed to edit note. Please try again.");
+        setTimeout(() => setActionError(null), 5000);
+      }
     }
   };
 
@@ -104,6 +157,33 @@ export default function ApplicationDetailPage() {
     setEditingNoteId(null);
     setEditingNoteText("");
   };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading application...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <div className="text-center">
+            <p className="text-foreground mb-2">
+              Unable to load application details right now.
+            </p>
+            <p className="text-foreground-secondary text-sm">
+              Please try again later.
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!application) {
     return (
@@ -254,31 +334,37 @@ export default function ApplicationDetailPage() {
           {/* Timeline */}
           <Card className="mb-6 p-6">
             <h2 className="text-heading mb-4">Timeline</h2>
-            <div className="space-y-3">
-              {events
-                .slice()
-                .reverse()
-                .map((event, idx) => (
-                  <div key={event.id} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/20">
-                        <div className="h-2 w-2 rounded-full bg-brand" />
+            {eventsError ? (
+              <p className="text-center text-sm text-foreground-muted">
+                Unable to load timeline. Please refresh to try again.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {events
+                  .slice()
+                  .reverse()
+                  .map((event, idx) => (
+                    <div key={event.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/20">
+                          <div className="h-2 w-2 rounded-full bg-brand" />
+                        </div>
+                        {idx < events.length - 1 && (
+                          <div className="w-px flex-1 bg-border" />
+                        )}
                       </div>
-                      {idx < events.length - 1 && (
-                        <div className="w-px flex-1 bg-border" />
-                      )}
+                      <div className="flex-1 pb-4">
+                        <p className="text-sm font-medium text-foreground">
+                          {event.description || event.event_type}
+                        </p>
+                        <p className="text-xs text-foreground-muted">
+                          {formatRelativeDate(new Date(event.event_date))}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 pb-4">
-                      <p className="text-sm font-medium text-foreground">
-                        {event.description || event.event_type}
-                      </p>
-                      <p className="text-xs text-foreground-muted">
-                        {formatRelativeDate(new Date(event.event_date))}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-            </div>
+                  ))}
+              </div>
+            )}
           </Card>
 
           {/* Notes */}
@@ -310,7 +396,11 @@ export default function ApplicationDetailPage() {
 
             {/* Notes list */}
             <div className="space-y-3">
-              {notes.length === 0 ? (
+              {notesError ? (
+                <p className="text-center text-sm text-foreground-muted">
+                  Unable to load notes. Please refresh to try again.
+                </p>
+              ) : notes.length === 0 ? (
                 <p className="text-center text-sm text-foreground-muted">
                   No notes yet
                 </p>
@@ -376,6 +466,15 @@ export default function ApplicationDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Action Error Toast */}
+      {actionError && (
+        <Toast
+          visible={!!actionError}
+          message={actionError}
+          onClose={() => setActionError(null)}
+        />
+      )}
     </AppShell>
   );
 }

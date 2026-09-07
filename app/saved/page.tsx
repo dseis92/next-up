@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { Toast } from "@/components/ui/toast";
 import { Bookmark, MapPin, ArrowRight, X } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
@@ -28,6 +29,8 @@ export default function SavedPage() {
   const [savedJobs, setSavedJobs] = useState<SavedJobWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [removingJobId, setRemovingJobId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadSavedJobs = async () => {
@@ -91,8 +94,19 @@ export default function SavedPage() {
   }, []);
 
   const handleRemove = async (jobId: string) => {
-    await unsaveJob(jobId);
-    setSavedJobs(savedJobs.filter((item) => item.job.id !== jobId));
+    if (removingJobId) return;
+
+    setRemovingJobId(jobId);
+    try {
+      await unsaveJob(jobId);
+      setSavedJobs(savedJobs.filter((item) => item.job.id !== jobId));
+    } catch (error) {
+      console.error("Failed to unsave job:", error);
+      setActionError("Failed to remove job. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setRemovingJobId(null);
+    }
   };
 
   if (loading) {
@@ -215,6 +229,7 @@ export default function SavedPage() {
                       variant="secondary"
                       size="sm"
                       onClick={() => handleRemove(job.id)}
+                      disabled={removingJobId === job.id}
                       className="flex-1 gap-2 sm:flex-none"
                     >
                       <X className="h-4 w-4" />
@@ -236,6 +251,15 @@ export default function SavedPage() {
           })}
         </div>
       </div>
+
+      {/* Action Error Toast */}
+      {actionError && (
+        <Toast
+          visible={!!actionError}
+          message={actionError}
+          onClose={() => setActionError(null)}
+        />
+      )}
     </AppShell>
   );
 }

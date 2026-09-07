@@ -406,6 +406,12 @@ export async function updateApplication(
 }
 
 // Application Events
+/**
+ * Get all events for an application
+ *
+ * @throws Error if the database query fails
+ * @returns Array of events (may be empty if no events)
+ */
 export async function getApplicationEvents(
   applicationId: string
 ): Promise<ApplicationEvent[]> {
@@ -425,7 +431,7 @@ export async function getApplicationEvents(
 
   if (error) {
     console.error("Failed to fetch application events:", { applicationId, error: error.message });
-    return [];
+    throw new Error("Unable to load application timeline. Please try again.");
   }
 
   return (
@@ -487,6 +493,12 @@ export async function createApplicationEvent(data: {
 }
 
 // Application Notes
+/**
+ * Get all notes for an application
+ *
+ * @throws Error if the database query fails
+ * @returns Array of notes (may be empty if no notes)
+ */
 export async function getApplicationNotes(
   applicationId: string
 ): Promise<ApplicationNote[]> {
@@ -506,7 +518,7 @@ export async function getApplicationNotes(
 
   if (error) {
     console.error("Failed to fetch application notes:", { applicationId, error: error.message });
-    return [];
+    throw new Error("Unable to load application notes. Please try again.");
   }
 
   return (
