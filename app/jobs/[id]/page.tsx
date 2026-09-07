@@ -30,6 +30,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import type { JobMatch, Application } from "@/types";
 import type { MatchResult } from "@/lib/matching/types";
@@ -47,6 +49,9 @@ export default function JobDetailPage() {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadJobData = async () => {
@@ -174,6 +179,36 @@ export default function JobDetailPage() {
     setTimeout(() => {
       router.push("/applications");
     }, 500);
+  };
+
+  const handleGetAiExplanation = async () => {
+    if (!job || aiLoading || aiExplanation) return;
+
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const response = await fetch("/api/ai/job-explanation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ jobId: job.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || "Failed to generate explanation");
+      }
+
+      const data = await response.json();
+      setAiExplanation(data.explanation);
+    } catch (error) {
+      console.error("AI explanation error:", error);
+      setAiError(error instanceof Error ? error.message : "Failed to generate explanation");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   if (loading) {
@@ -334,6 +369,53 @@ export default function JobDetailPage() {
                   </div>
                 ))}
               </div>
+            </Card>
+          )}
+
+          {/* AI Explanation */}
+          {matchResult?.status !== "incomplete_profile" && match && (
+            <Card className="mb-6 p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-brand" />
+                  <h2 className="text-heading">AI career advisor</h2>
+                </div>
+                {!aiExplanation && !aiLoading && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleGetAiExplanation}
+                  >
+                    Explain this match
+                  </Button>
+                )}
+              </div>
+
+              {aiLoading && (
+                <div className="flex items-center gap-2 text-foreground-secondary">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <p>Analyzing your match...</p>
+                </div>
+              )}
+
+              {aiError && (
+                <div className="rounded-lg border border-warning/20 bg-warning/5 p-4">
+                  <p className="text-sm text-warning">{aiError}</p>
+                </div>
+              )}
+
+              {aiExplanation && (
+                <div className="prose prose-sm max-w-none text-foreground-secondary">
+                  <p className="whitespace-pre-line">{aiExplanation}</p>
+                </div>
+              )}
+
+              {!aiExplanation && !aiLoading && !aiError && (
+                <p className="text-sm text-foreground-muted">
+                  Get a personalized explanation of why this job matches your profile,
+                  what to consider, and actionable next steps.
+                </p>
+              )}
             </Card>
           )}
 
