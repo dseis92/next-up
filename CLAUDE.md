@@ -1485,9 +1485,25 @@ That is the Phase 10 standard.
 
 CURRENT PHASE STATUS
 
+CURRENT APPROVED REPOSITORY BASELINE
+
+3be6d51b39f8a7f12eff528973bdcf2d94c6fc30
+maintenance: finalize application mutation safety
+
+This is the CURRENT approved repository checkpoint incorporating all completed phases and approved maintenance work.
+
+Historical phase checkpoints remain below for reference.
+
+PHASE 9 — DETERMINISTIC MATCHING ENGINE — COMPLETE + APPROVED
+
+Approved Phase 9 checkpoint:
+
+7cecc4741600b0a1cda49b84763814e40a9ce2ec
+Phase 9: Finalize matching engine audit fixes
+
 PHASE 10 — DETERMINISTIC MATCHING INTEGRATION — COMPLETE + APPROVED
 
-Approved production baseline:
+Approved Phase 10 checkpoint:
 
 e023730fb0a13ff2d44db4b5d96742526118064f
 Phase 10: Finalize Saved error-state handling
@@ -1593,6 +1609,93 @@ Vercel SUCCESS
 
 Phase 10 is frozen unless a real bug is discovered.
 
+PRODUCTION QA / MAINTENANCE — COMPLETE + INDEPENDENTLY APPROVED
+
+Maintenance work completed after Phase 10/11 integration:
+
+Storage contract hardening:
+- getJobs/getJob now throw on query failure (not return []/null)
+- getSavedJobs/isJobSaved now throw on query failure
+- getPassedJobs/isJobPassed now throw on query failure
+- getApplications/getApplicationById/getApplicationByJobId now throw on query failure
+- getApplicationEvents/getApplicationNotes now throw on query failure
+- All read helpers use .maybeSingle() to distinguish missing row from query error
+- JSDoc added documenting error vs empty semantics
+
+Page-level error state hardening:
+- Applications list: loading → error | empty | data semantics
+- Application Detail: loading → error → not-found → detail ordering
+- Application Detail: section-level eventsError/notesError states
+- Job Detail: loading → error → not-found → detail ordering
+- Discover: actionPending guards prevent duplicate save/pass/undo
+- Discover: undo failure preserves retry path (no silent clear)
+- Saved: per-job removingJobId guards prevent concurrent remove
+- Job Detail: actionPending guards prevent concurrent save/apply
+
+Application Detail mutation safety:
+- handleAddNote: write returns note, updates local state directly (no refresh)
+- handleEditNote: write returns note, updates matching item via map (no refresh)
+- handleStageChange: actionPending guard added
+- All mutation controls disabled during actionPending
+- Prevents write-success + refresh-failure conflation
+- Prevents duplicate-note scenarios from rapid clicks
+
+Manual test documentation:
+- MANUAL_TESTS_APPLICATION_MUTATIONS.md created
+- Documents 5 mutation behavior test cases
+- Includes test execution log template
+
+Current automated baseline:
+
+Test Files: 15
+Tests: 230 PASS
+Typecheck: PASS
+Lint: 0 errors, 22 warnings
+Build: PASS
+Vercel: SUCCESS (3be6d51b39f8a7f12eff528973bdcf2d94c6fc30)
+
+Manual browser regression testing:
+
+PENDING
+
+Expected code behavior reviewed, but network-level rapid-click behavior not yet independently executed in browser.
+
+KNOWN APPLICATION TIMELINE LIMITATION
+
+Application creation/stage mutation and application_event creation are currently separate database writes.
+
+Examples:
+
+createApplication() inserts application, then inserts initial application_event
+updateApplicationStage() updates application, then inserts stage_change event
+
+These operations are not currently atomic.
+
+A primary write could theoretically succeed while the timeline-event write fails.
+
+This is a KNOWN LIMITATION, not an active bug-fix authorization.
+
+A true atomic solution may require transactional server/RPC/schema design and requires explicit future approval.
+
+PHASE 11 — GROUNDED AI JOB MATCH EXPLANATION — COMPLETE
+
+Phase 11 implementation: COMPLETE
+
+Phase 11 code/security/privacy: APPROVED + FROZEN
+
+Approved Phase 11 baseline:
+
+3b15680ca7ee4856a592e0b8886137ebe66158fe
+Phase 11: Disable AI response storage
+
+OpenAI production credentials: UNAVAILABLE
+
+Real OpenAI production runtime verification: BLOCKED EXTERNALLY
+
+Reason: No OPENAI_API_KEY currently available
+
+Phase 11 remains frozen. Do NOT modify to bypass credential unavailability.
+
 FOUNDATIONAL PRODUCT TRUST RULE
 
 Data + deterministic matching decide facts.
@@ -1606,13 +1709,19 @@ AI MUST NOT manufacture facts absent from trusted context.
 
 CURRENT AUTHORIZED PHASE
 
-PHASE 11 — GROUNDED AI JOB MATCH EXPLANATION
+NONE — ALL IMPLEMENTATION PHASES COMPLETE
 
-Phase 11 is UNLOCKED.
+Phase 11 implementation is COMPLETE.
 
-This is the ONLY authorized implementation phase.
+Phase 12 is LOCKED.
 
-Goal:
+No further implementation work is authorized without explicit approval.
+
+Planning for Phase 12 is allowed if explicitly requested.
+
+PHASE 11 IMPLEMENTATION REFERENCE
+
+Phase 11 goal (COMPLETED):
 
 Add an on-demand AI explanation layer to Job Detail that explains the already-approved deterministic MatchResult in useful natural language.
 
@@ -2525,3 +2634,19 @@ degrades safely if the provider fails
 The deterministic MatchResult remains the factual source of truth.
 
 AI exists only to make that truth more understandable and actionable.
+
+CURRENT PROJECT STATUS SUMMARY
+
+Phase 9 deterministic matching             COMPLETE + APPROVED
+Phase 10 matching integration              COMPLETE + APPROVED
+Phase 11 implementation                    COMPLETE
+Phase 11 code/security/privacy             APPROVED + FROZEN
+Production QA maintenance                  COMPLETE + APPROVED
+
+Current approved repository SHA            3be6d51b39f8a7f12eff528973bdcf2d94c6fc30
+
+Automated tests                            230 PASS
+Manual browser regression                  PENDING
+OpenAI production runtime                  BLOCKED — NO API KEY
+
+Phase 12                                   LOCKED
