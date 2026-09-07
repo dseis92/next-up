@@ -10,15 +10,20 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
-import { Search, MapPin, ArrowRight, SlidersHorizontal } from "lucide-react";
+import { OpportunityDeck } from "@/components/explore/opportunity-deck";
+import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
+import { getSavedJobs, getPassedJobIds } from "@/lib/storage/job-actions";
 import { createClient } from "@/lib/supabase/client";
 import { formatSalary } from "@/lib/utils";
 import type { JobMatch } from "@/types";
 
+type ViewMode = "list" | "deck";
+
 export default function ExplorePage() {
   const router = useRouter();
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArrangement, setSelectedArrangement] = useState<string | null>(
     null
@@ -30,6 +35,10 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
   const [loadError, setLoadError] = useState(false);
+
+  // Deck mode persistence state
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
+  const [passedJobIds, setPassedJobIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -105,6 +114,17 @@ export default function ExplorePage() {
 
         setHasIncompleteProfile(hasIncomplete);
         setAllMatches(jobMatches);
+
+        // Load saved/passed for Deck mode
+        try {
+          const savedIds = await getSavedJobs();
+          const passedIds = await getPassedJobIds();
+          setSavedJobIds(new Set(savedIds));
+          setPassedJobIds(new Set(passedIds));
+        } catch (error) {
+          console.error("Failed to load saved/passed jobs:", error);
+          // Non-critical for List mode, Deck will show error if needed
+        }
       } catch (error) {
         console.error("Failed to load personalized matches:", error);
         setLoadError(true);
@@ -180,11 +200,37 @@ export default function ExplorePage() {
   return (
     <AppShell>
       <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
-        <div className="mb-6">
-          <h1 className="text-heading-lg mb-2">Explore jobs</h1>
-          <p className="text-foreground-secondary">
-            Search and filter through all opportunities
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-heading-lg mb-2">Explore jobs</h1>
+            <p className="text-foreground-secondary">
+              {viewMode === "list"
+                ? "Search and filter through all opportunities"
+                : "Swipe to review opportunities"}
+            </p>
+          </div>
+
+          {/* View Mode Selector */}
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === "list" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="gap-2"
+            >
+              <List className="h-4 w-4" />
+              List
+            </Button>
+            <Button
+              variant={viewMode === "deck" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => setViewMode("deck")}
+              className="gap-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Deck
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -249,109 +295,136 @@ export default function ExplorePage() {
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="mb-4 text-sm text-foreground-secondary">
-          {filteredJobs.length} {filteredJobs.length === 1 ? "job" : "jobs"}{" "}
-          found
-        </div>
+        {/* List Mode Results */}
+        {viewMode === "list" && (
+          <>
+            {/* Results Count */}
+            <div className="mb-4 text-sm text-foreground-secondary">
+              {filteredJobs.length} {filteredJobs.length === 1 ? "job" : "jobs"}{" "}
+              found
+            </div>
 
-        {/* Results */}
-        {filteredJobs.length === 0 ? (
-          hasIncompleteProfile && allMatches.length === 0 ? (
-            <IncompleteProfileMessage />
-          ) : (
-            <EmptyState
-              icon={<Search className="h-6 w-6" />}
-              title="No jobs found"
-              description="Try adjusting your filters or search terms"
-            />
-          )
-        ) : (
-          <div className="space-y-3">
-            {filteredJobs.map((match) => {
-              const { job, overall_score, matched_skills } = match;
+            {/* Results */}
+            {filteredJobs.length === 0 ? (
+              hasIncompleteProfile && allMatches.length === 0 ? (
+                <IncompleteProfileMessage />
+              ) : (
+                <EmptyState
+                  icon={<Search className="h-6 w-6" />}
+                  title="No jobs found"
+                  description="Try adjusting your filters or search terms"
+                />
+              )
+            ) : (
+              <div className="space-y-3">
+                {filteredJobs.map((match) => {
+                  const { job, overall_score, matched_skills } = match;
 
-              return (
-                <Card
-                  key={job.id}
-                  variant="elevated"
-                  className="cursor-pointer p-4 transition-all hover:shadow-lg"
-                  onClick={() => router.push(`/jobs/${job.id}`)}
-                >
-                  <div className="flex gap-3">
-                    <Avatar
-                      name={job.company.name}
-                      size="lg"
-                      className="shrink-0 bg-gradient-to-br from-blue-500 to-blue-600"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-start justify-between gap-2">
-                        <h3 className="text-lg font-semibold text-foreground">
-                          {job.title}
-                        </h3>
-                        <Badge
-                          variant={overall_score >= 90 ? "success" : "brand"}
+                  return (
+                    <Card
+                      key={job.id}
+                      variant="elevated"
+                      className="cursor-pointer p-4 transition-all hover:shadow-lg"
+                      onClick={() => router.push(`/jobs/${job.id}`)}
+                    >
+                      <div className="flex gap-3">
+                        <Avatar
+                          name={job.company.name}
+                          size="lg"
+                          className="shrink-0 bg-gradient-to-br from-blue-500 to-blue-600"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-start justify-between gap-2">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {job.title}
+                            </h3>
+                            <Badge
+                              variant={overall_score >= 90 ? "success" : "brand"}
+                              size="sm"
+                              className="shrink-0"
+                            >
+                              {overall_score}%
+                            </Badge>
+                          </div>
+                          <p className="mb-2 text-sm text-foreground-secondary">
+                            {job.company.name}
+                          </p>
+                          <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs text-foreground-muted">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              <span>{job.location}</span>
+                            </div>
+                            <span>•</span>
+                            <span className="capitalize">
+                              {job.work_arrangement.replace("_", " ")}
+                            </span>
+                            <span>•</span>
+                            <span className="capitalize">
+                              {job.employment_type.replace("_", " ")}
+                            </span>
+                          </div>
+                          {job.salary_min && (
+                            <p className="mb-2 text-lg font-bold text-foreground">
+                              {formatSalary(
+                                job.salary_min,
+                                job.salary_max,
+                                job.salary_period
+                              )}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap gap-1.5">
+                            {matched_skills.slice(0, 3).map((skill) => (
+                              <Badge key={skill} variant="muted" size="sm">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {matched_skills.length > 3 && (
+                              <Badge variant="muted" size="sm">
+                                +{matched_skills.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/jobs/${job.id}`);
+                          }}
                         >
-                          {overall_score}%
-                        </Badge>
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <p className="mb-2 text-sm text-foreground-secondary">
-                        {job.company.name}
-                      </p>
-                      <div className="mb-2 flex flex-wrap items-center gap-1.5 text-xs text-foreground-muted">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>{job.location}</span>
-                        </div>
-                        <span>•</span>
-                        <span className="capitalize">
-                          {job.work_arrangement.replace("_", " ")}
-                        </span>
-                        <span>•</span>
-                        <span className="capitalize">
-                          {job.employment_type.replace("_", " ")}
-                        </span>
-                      </div>
-                      {job.salary_min && (
-                        <p className="mb-2 text-lg font-bold text-foreground">
-                          {formatSalary(
-                            job.salary_min,
-                            job.salary_max,
-                            job.salary_period
-                          )}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap gap-1.5">
-                        {matched_skills.slice(0, 3).map((skill) => (
-                          <Badge key={skill} variant="muted" size="sm">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {matched_skills.length > 3 && (
-                          <Badge variant="muted" size="sm">
-                            +{matched_skills.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/jobs/${job.id}`);
-                      }}
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Deck Mode */}
+        {viewMode === "deck" && (
+          <>
+            {hasIncompleteProfile && allMatches.length === 0 ? (
+              <IncompleteProfileMessage />
+            ) : filteredJobs.length === 0 ? (
+              <EmptyState
+                icon={<Search className="h-6 w-6" />}
+                title="No jobs found"
+                description="Try adjusting your filters or search terms"
+              />
+            ) : (
+              <OpportunityDeck
+                filteredMatches={filteredJobs}
+                savedJobIds={savedJobIds}
+                passedJobIds={passedJobIds}
+                onSwitchToList={() => setViewMode("list")}
+              />
+            )}
+          </>
         )}
       </div>
     </AppShell>
