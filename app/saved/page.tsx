@@ -82,6 +82,7 @@ export default function SavedPage() {
         setSavedJobs(jobsWithMatches);
       } catch (error) {
         console.error("Failed to load saved jobs:", error);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
