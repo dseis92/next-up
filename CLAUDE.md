@@ -1717,9 +1717,34 @@ Phase 11 implementation is COMPLETE.
 
 Phase 12 is LOCKED.
 
-No further implementation work is authorized without explicit approval.
+No further Phase 12 implementation work is authorized without explicit approval.
 
 Planning for Phase 12 is allowed if explicitly requested.
+
+PRODUCT EXPANSION TRACK — ACTIVE
+
+This is a SEPARATE additive product expansion track.
+
+Product Expansion Track is NOT Phase 12.
+
+Phase 11 remains FROZEN.
+Phase 12 remains LOCKED.
+
+Current authorized expansion:
+
+E1 — EXPLORE OPPORTUNITY DECK
+
+Roadmap location:
+
+PRODUCT_EXPANSION_ROADMAP.md
+
+Expansion principle:
+
+DO NOT CHANGE OR REPLACE WHAT NEXTUP ALREADY DOES.
+
+Expansion work is ADDITIVE ONLY.
+
+Expansions E2–E35 are roadmap planning only and are NOT implementation-authorized.
 
 PHASE 11 IMPLEMENTATION REFERENCE
 

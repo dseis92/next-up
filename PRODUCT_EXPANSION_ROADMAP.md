@@ -1,0 +1,456 @@
+# NextUp — Product Expansion Roadmap
+
+This document defines the canonical roadmap for additive product expansions to NextUp.
+
+## Roadmap Principles
+
+All expansion work is ADDITIVE.
+
+Existing core functionality is presumed correct and must not be replaced or removed.
+
+New features may:
+- Add optional modes
+- Add new routes
+- Add new components
+- Add new sections
+- Add new persisted data only when separately approved
+- Consume the approved deterministic MatchResult
+
+New features may NOT:
+- Replace existing functionality
+- Redesign existing working screens unnecessarily
+- Modify approved Phase 9 scoring
+- Change Phase 10 matching architecture
+- Alter MatchResult semantics
+- Remove existing routes
+- Alter the five-tab mobile navigation
+- Redesign Discover
+- Modify Phase 11 AI
+- Start Phase 12
+
+---
+
+## DISCOVERY
+
+### E1 — Opportunity Deck
+
+**Status**: IMPLEMENTATION AUTHORIZED
+
+Tinder-style / swipe-card job discovery INSIDE Explore.
+
+Existing List view remains intact.
+
+- Right swipe = Save
+- Left swipe = Pass
+- Details button = Job Detail
+- Undo = reverse last action
+
+Mode selector: [List] [Deck]
+
+Default: List
+
+Deck shows unreviewed opportunities matching current filters.
+
+---
+
+### E2 — Opportunity Compare
+
+**Status**: PLANNING ONLY
+
+Compare 2–4 roles using deterministic evidence:
+- Salary
+- Lifestyle
+- Qualification
+- Concerns
+- Growth potential
+- Dealbreakers
+
+---
+
+### E3 — Dealbreaker Engine
+
+**Status**: PLANNING ONLY
+
+User-defined non-negotiables kept separate from MatchResult score.
+
+---
+
+### E4 — Opportunity Radar
+
+**Status**: PLANNING ONLY
+
+Personalized categories:
+- Best Matches
+- New
+- High Salary
+- Stretch Opportunities
+- Career Changers
+- Fast-Growing Roles
+- Worth Relocating For
+
+---
+
+### E5 — Discovery Diversity
+
+**Status**: PLANNING ONLY
+
+User-controlled discovery spectrum:
+
+Safe ←————————→ Explore
+
+Future recommendation mix may contain:
+- Strong matches
+- Adjacent careers
+- Wildcards
+
+---
+
+### E6 — Daily Opportunity Drop
+
+**Status**: PLANNING ONLY
+
+Finite high-quality daily opportunity set rather than endless scrolling.
+
+---
+
+## CAREER IDENTITY
+
+### E7 — Career Passport
+
+**Status**: PLANNING ONLY
+
+Private structured career identity containing:
+- Experience
+- Skills
+- Certifications
+- Achievements
+- Projects
+- Education
+- Career goals
+- Salary goals
+- Location
+- Work preferences
+- Career interests
+
+This becomes a foundational source for future systems.
+
+---
+
+### E8 — Opportunity Genome
+
+**Status**: PLANNING ONLY
+
+Structured job DNA including:
+- Skills
+- Experience
+- Seniority
+- Compensation
+- Schedule
+- Location
+- Travel
+- Leadership
+- Physical requirements
+- Autonomy
+- Technical depth
+- Growth potential
+
+---
+
+### E9 — Career Capital
+
+**Status**: PLANNING ONLY
+
+Private self-development indicator.
+
+NEVER employer-facing.
+NEVER used as hiring eligibility.
+NEVER replace deterministic matching.
+
+---
+
+### E10 — Professional Proof Graph
+
+**Status**: PLANNING ONLY
+
+Skill
+→ Where learned
+→ Where used
+→ Achievement
+→ Evidence
+
+---
+
+## MATCH INTELLIGENCE
+
+### E11 — What-If Match Simulator
+
+**Status**: PLANNING ONLY
+
+Temporarily modify hypothetical user attributes and recalculate using the SAME deterministic matching engine.
+
+Must NOT modify the actual user profile.
+
+Examples:
+- Certification
+- Skill
+- Experience
+- Relocation
+- Salary change
+- Work arrangement
+
+---
+
+### E12 — Why My Score Changed
+
+**Status**: PLANNING ONLY
+
+Show deterministic before/after component changes after a user changes their profile.
+
+---
+
+### E13 — Skill & Certification ROI
+
+**Status**: PLANNING ONLY
+
+Estimate how a skill/certification affects:
+- Jobs unlocked
+- Match improvement
+- Salary opportunity
+- Career paths
+- Market demand
+- Time/cost to obtain
+
+Must use trustworthy data and deterministic calculations where possible.
+
+---
+
+## CAREER NAVIGATION
+
+### E14 — Career GPS
+
+**Status**: PLANNING ONLY
+
+Graph/map from current role to realistic future roles.
+
+---
+
+### E15 — Hidden Career Paths
+
+**Status**: PLANNING ONLY
+
+Find occupations users are qualified for but would probably never search.
+
+---
+
+### E16 — Career Arbitrage
+
+**Status**: PLANNING ONLY
+
+Identify industries/roles where existing skills may have greater market value.
+
+---
+
+### E17 — Career Experiments
+
+**Status**: PLANNING ONLY
+
+Temporary discovery experiments such as:
+
+"Explore Project Management for 14 days"
+
+Use behavior to help the user learn what they actually prefer.
+
+---
+
+### E18 — Career Missions
+
+**Status**: PLANNING ONLY
+
+Goal-driven progression toward a career outcome.
+
+---
+
+### E19 — Career Time Machine
+
+**Status**: PLANNING ONLY
+
+Visual history/future view showing how opportunity access changes as the Career Passport evolves.
+
+---
+
+## MARKET INTELLIGENCE
+
+### E20 — Opportunity Trust
+
+**Status**: PLANNING ONLY
+
+Separate trust/freshness intelligence from match score.
+
+Signals may include:
+- Posting age
+- Original employer listing
+- Source
+- Reposting frequency
+- Salary transparency
+- Description completeness
+- Company verification
+
+Never make unsupported accusations.
+
+---
+
+### E21 — Ghost Job / Scam Signals
+
+**Status**: PLANNING ONLY
+
+Evidence-based caution signals only.
+
+Do not label an employer fraudulent without sufficient evidence.
+
+---
+
+### E22 — Compensation Intelligence
+
+**Status**: PLANNING ONLY
+
+- Market salary
+- User target
+- Comparable roles
+- Geographic comparisons
+- Estimated total compensation when supported
+
+---
+
+### E23 — Career Weather
+
+**Status**: PLANNING ONLY
+
+Labor-market environment for a career/location.
+
+Potential signals:
+- Hiring demand
+- Salary movement
+- Remote availability
+- Fast-growing skills
+- Job volume
+
+---
+
+### E24 — Opportunity Heat Map
+
+**Status**: PLANNING ONLY
+
+Geographic visualization of:
+- Job density
+- Salary
+- Match density
+- Career demand
+- Relocation attractiveness
+
+---
+
+## AI / FUTURE INTELLIGENCE
+
+**All AI expansions remain PLANNING ONLY while Phase 11 production runtime is blocked.**
+
+### E25 — Career Digital Twin
+
+**Status**: PLANNING ONLY
+
+Private structured professional model.
+
+Not a personality clone.
+
+---
+
+### E26 — Future Self Simulator
+
+**Status**: PLANNING ONLY
+
+Evidence-based 1/3/5-year professional paths.
+
+---
+
+### E27 — Career Chief of Staff
+
+**Status**: PLANNING ONLY
+
+Proactive AI career assistant.
+
+---
+
+### E28 — Career Board Meeting
+
+**Status**: PLANNING ONLY
+
+Periodic career performance/review experience.
+
+---
+
+### E29 — Interview Memory
+
+**Status**: PLANNING ONLY
+
+Capture interview questions, commitments, contacts and recurring patterns.
+
+---
+
+### E30 — Rejection Intelligence
+
+**Status**: PLANNING ONLY
+
+Analyze outcomes across the application funnel.
+
+---
+
+### E31 — Truthful Resume Autopilot
+
+**Status**: PLANNING ONLY
+
+Use verified user achievements.
+
+Never invent experience.
+
+---
+
+## NETWORK / MARKETPLACE
+
+### E32 — Career Circles
+
+**Status**: PLANNING ONLY
+
+Small useful communities around actual career transitions.
+
+---
+
+### E33 — Employer Reality
+
+**Status**: PLANNING ONLY
+
+Structured anonymous employer/job reality signals.
+
+---
+
+### E34 — Ask Someone Who Does This Job
+
+**Status**: PLANNING ONLY
+
+Short conversations with verified professionals.
+
+---
+
+### E35 — Opt-In Talent Discovery
+
+**Status**: PLANNING ONLY
+
+Employer → candidate compatibility.
+
+This must remain user-controlled and privacy-first.
+
+---
+
+## Document Information
+
+**Created**: 2026-09-07
+**Last Updated**: 2026-09-07
+**Current Authorized Expansion**: E1 — Opportunity Deck
