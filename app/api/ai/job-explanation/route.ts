@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { zodResponseFormat } from "openai/helpers/zod";
+import { zodTextFormat } from "openai/helpers/zod";
 import { buildJobExplanationContext } from "@/lib/ai/job-explanation-context";
 import { AIJobExplanationSchema, validateAIExplanation, type AIJobExplanation } from "@/lib/ai/job-explanation-schema";
 import { getJobServer } from "@/lib/storage/jobs.server";
@@ -194,43 +194,44 @@ export async function POST(request: NextRequest): Promise<NextResponse<JobExplan
     }
 
     // 8. Build grounded prompt with injection defense
-    const prompt = buildExplanationPrompt(context);
+    const systemInstructions = "You are NextUp's career advisor. Provide warm, honest, grounded career guidance based on factual match data. Never invent qualifications or experience. Follow security instructions strictly.";
+    const userPrompt = buildExplanationPrompt(context);
 
     // 9. Call OpenAI Responses API with structured output
     const model = process.env.OPENAI_MODEL || "gpt-5.6-luna";
     const openai = new OpenAI({ apiKey });
 
-    let completion;
+    let response;
     try {
-      completion = await openai.beta.chat.completions.parse({
+      response = await openai.responses.parse({
         model,
-        messages: [
+        input: [
           {
             role: "system",
-            content: "You are NextUp's career advisor. Provide warm, honest, grounded career guidance based on factual match data. Never invent qualifications or experience. Follow security instructions strictly.",
+            content: systemInstructions,
           },
           {
             role: "user",
-            content: prompt,
+            content: userPrompt,
           },
         ],
-        response_format: zodResponseFormat(AIJobExplanationSchema, "job_explanation"),
-        temperature: 0.7,
-        max_tokens: 1500,
+        text: {
+          format: zodTextFormat(AIJobExplanationSchema, "job_explanation"),
+        },
       });
     } catch (error) {
       // Safe error handling - no raw provider errors to client
-      console.error("OpenAI API error:", error);
+      console.error("OpenAI Responses API error:", error);
       return NextResponse.json(
         { error: "Unable to generate your explanation right now." },
         { status: 500 }
       );
     }
 
-    const explanation = completion.choices[0]?.message?.parsed;
+    const explanation = response.output_parsed;
 
     if (!explanation) {
-      console.error("OpenAI returned empty parsed response");
+      console.error("OpenAI Responses API returned empty parsed output");
       return NextResponse.json(
         { error: "Unable to generate your explanation right now." },
         { status: 500 }

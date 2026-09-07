@@ -2,7 +2,7 @@
  * AI Job Explanation API Route - Service Tests
  *
  * Real service-level tests proving actual POST route behavior.
- * Mocks Supabase and OpenAI to avoid paid network calls.
+ * Mocks Supabase and OpenAI Responses API to avoid paid network calls.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -10,6 +10,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "../route";
 import { NextRequest } from "next/server";
+
+// Shared mock for OpenAI responses.parse
+const mockResponsesParse = vi.fn();
 
 // Mock modules BEFORE imports
 vi.mock("@/lib/supabase/server", () => ({
@@ -26,15 +29,11 @@ vi.mock("@/lib/matching/user-matching-data.server", () => ({
 
 vi.mock("openai", () => {
   return {
-    default: vi.fn().mockImplementation(() => ({
-      beta: {
-        chat: {
-          completions: {
-            parse: vi.fn(),
-          },
-        },
-      },
-    })),
+    default: class MockOpenAI {
+      responses = {
+        parse: mockResponsesParse,
+      };
+    },
   };
 });
 
@@ -42,7 +41,6 @@ vi.mock("openai", () => {
 import { createClient } from "@/lib/supabase/server";
 import { getJobServer } from "@/lib/storage/jobs.server";
 import { loadUserMatchingDataServer } from "@/lib/matching/user-matching-data.server";
-import OpenAI from "openai";
 
 // Test fixtures
 const mockJob = {
@@ -177,7 +175,7 @@ const mockValidAIResponse = {
   limitations: [],
 };
 
-describe("POST /api/ai/job-explanation", () => {
+describe("POST /api/ai/job-explanation - Responses API", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set OPENAI_API_KEY for tests
@@ -196,6 +194,9 @@ describe("POST /api/ai/job-explanation", () => {
 
     const data = await response.json();
     expect(data.error).toBe("Invalid request body");
+
+    // Provider should NOT be called
+    expect(mockResponsesParse).toHaveBeenCalledTimes(0);
   });
 
   it("should return 400 for missing jobId", async () => {
@@ -210,9 +211,12 @@ describe("POST /api/ai/job-explanation", () => {
 
     const data = await response.json();
     expect(data.error).toBe("Missing or invalid jobId");
+
+    // Provider should NOT be called
+    expect(mockResponsesParse).toHaveBeenCalledTimes(0);
   });
 
-  it("should return 401 for unauthenticated user", async () => {
+  it("should return 401 for unauthenticated user and NOT call provider", async () => {
     const mockSupabase = {
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
@@ -232,6 +236,9 @@ describe("POST /api/ai/job-explanation", () => {
 
     const data = await response.json();
     expect(data.error).toBe("Unauthorized");
+
+    // CRITICAL: Provider should NOT be called for unauthenticated
+    expect(mockResponsesParse).toHaveBeenCalledTimes(0);
   });
 
   it("should return 404 for non-existent job", async () => {
@@ -258,9 +265,12 @@ describe("POST /api/ai/job-explanation", () => {
 
     const data = await response.json();
     expect(data.error).toBe("Job not found");
+
+    // Provider should NOT be called
+    expect(mockResponsesParse).toHaveBeenCalledTimes(0);
   });
 
-  it("should return 422 for incomplete profile", async () => {
+  it("should return 422 for incomplete profile and NOT call provider", async () => {
     const mockSupabase = {
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -285,9 +295,12 @@ describe("POST /api/ai/job-explanation", () => {
 
     const data = await response.json();
     expect(data.error).toBe("Cannot explain incomplete profile");
+
+    // CRITICAL: OpenAI Responses API should NOT be called for incomplete profiles
+    expect(mockResponsesParse).toHaveBeenCalledTimes(0);
   });
 
-  it("should return 503 when OPENAI_API_KEY not configured (after auth)", async () => {
+  it("should return 503 when OPENAI_API_KEY not configured and NOT call provider", async () => {
     delete process.env.OPENAI_API_KEY;
 
     const mockSupabase = {
@@ -315,15 +328,14 @@ describe("POST /api/ai/job-explanation", () => {
     const data = await response.json();
     expect(data.error).toBe("AI service not configured");
 
+    // Provider should NOT be called when API key missing
+    expect(mockResponsesParse).toHaveBeenCalledTimes(0);
+
     // Restore for other tests
     process.env.OPENAI_API_KEY = "sk-test-key";
   });
 
-
-  it("should use server-safe loaders with complete profile", async () => {
-    // This test proves the flow works up to OpenAI call
-    // OpenAI itself will fail (no real API key), but we verify loaders were called correctly
-
+  it("should return 200 with structured explanation for valid request and call provider ONCE", async () => {
     const mockSupabase = {
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -337,24 +349,69 @@ describe("POST /api/ai/job-explanation", () => {
     vi.mocked(getJobServer).mockResolvedValue(mockJob);
     vi.mocked(loadUserMatchingDataServer).mockResolvedValue(mockUserData);
 
+    // Mock OpenAI Responses API response
+    mockResponsesParse.mockResolvedValue({
+      output_parsed: mockValidAIResponse,
+    });
+
     const request = new NextRequest("http://localhost/api/ai/job-explanation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobId: "job-1" }),
     });
 
-    // Call will fail at OpenAI (expected), but we verify flow up to that point
     const response = await POST(request);
+    expect(response.status).toBe(200);
+
+    const data = await response.json();
+    expect(data).toHaveProperty("explanation");
+    expect(data.explanation).toEqual(mockValidAIResponse);
+    expect(data.explanation.headline).toBe("Strong match with growth potential");
+    expect(data.explanation.strengths).toHaveLength(1);
+    expect(data.explanation.concerns).toHaveLength(1);
+    expect(data.explanation.nextSteps).toHaveLength(1);
+
+    // CRITICAL: Verify OpenAI Responses API was called exactly ONCE
+    expect(mockResponsesParse).toHaveBeenCalledTimes(1);
+
+    // Verify call signature
+    const callArgs = mockResponsesParse.mock.calls[0][0];
+    expect(callArgs.model).toBe("gpt-5.6-luna"); // Uses OPENAI_MODEL
+    expect(callArgs.input).toHaveLength(2); // System + user messages
+    expect(callArgs.input[0].role).toBe("system");
+    expect(callArgs.input[1].role).toBe("user");
+    expect(callArgs.text).toBeDefined();
+    expect(callArgs.text.format).toBeDefined(); // zodTextFormat configuration
+  });
+
+  it("should use server-safe loaders with server Supabase client", async () => {
+    const mockSupabase = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "user-1" } },
+          error: null,
+        }),
+      },
+    };
+
+    vi.mocked(createClient).mockResolvedValue(mockSupabase as any);
+    vi.mocked(getJobServer).mockResolvedValue(mockJob);
+    vi.mocked(loadUserMatchingDataServer).mockResolvedValue(mockUserData);
+
+    mockResponsesParse.mockResolvedValue({
+      output_parsed: mockValidAIResponse,
+    });
+
+    const request = new NextRequest("http://localhost/api/ai/job-explanation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: "job-1" }),
+    });
+
+    await POST(request);
 
     // Verify server-safe loaders were called with server Supabase client
     expect(getJobServer).toHaveBeenCalledWith(mockSupabase, "job-1");
     expect(loadUserMatchingDataServer).toHaveBeenCalledWith(mockSupabase, "user-1");
-
-    // Should fail at OpenAI provider (safe error returned)
-    expect(response.status).toBe(500);
-    const data = await response.json();
-    expect(data.error).toBe("Unable to generate your explanation right now.");
   });
-
-
 });
