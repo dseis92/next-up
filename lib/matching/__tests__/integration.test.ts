@@ -6,6 +6,10 @@
 import { describe, it, expect } from "vitest";
 import { buildMatchProfile, adaptJobForMatching } from "../adapters";
 import { calculateJobMatch } from "../calculate-job-match";
+import {
+  calculateMatchFromUserData,
+  calculateMatchesFromUserData,
+} from "../integration";
 import type { UserMatchingData } from "../adapters";
 import type { Job } from "@/types";
 
@@ -189,5 +193,54 @@ describe("Cross-surface consistency", () => {
 
     expect(mockUserData).toEqual(originalUserData);
     expect(mockJob).toEqual(originalJob);
+  });
+});
+
+describe("Integration helpers", () => {
+  it("calculateMatchFromUserData should produce correct result", () => {
+    const result = calculateMatchFromUserData(mockUserData, mockJob);
+
+    // Verify this matches the manual adapter path
+    const matchProfile = buildMatchProfile(mockUserData);
+    const matchJob = adaptJobForMatching(mockJob);
+    const directResult = calculateJobMatch(matchProfile, matchJob);
+
+    expect(result.overallScore).toBe(directResult.overallScore);
+    expect(result.qualificationScore).toBe(directResult.qualificationScore);
+    expect(result.lifestyleScore).toBe(directResult.lifestyleScore);
+    expect(result.status).toBe(directResult.status);
+  });
+
+  it("calculateMatchesFromUserData should produce N results for N jobs", () => {
+    const job2: Job = { ...mockJob, id: "job-2", title: "Senior Engineer" };
+    const job3: Job = { ...mockJob, id: "job-3", title: "Lead Engineer" };
+    const jobs = [mockJob, job2, job3];
+
+    const results = calculateMatchesFromUserData(mockUserData, jobs);
+
+    expect(results).toHaveLength(3);
+    expect(results[0].status).toBe("scored");
+    expect(results[1].status).toBe("scored");
+    expect(results[2].status).toBe("scored");
+  });
+
+  it("calculateMatchesFromUserData should use same profile for all jobs", () => {
+    const job2: Job = { ...mockJob, id: "job-2" };
+    const jobs = [mockJob, job2];
+
+    const results = calculateMatchesFromUserData(mockUserData, jobs);
+
+    // Both should be scored (same complete profile)
+    expect(results[0].status).toBe("scored");
+    expect(results[1].status).toBe("scored");
+  });
+
+  it("calculateMatchFromUserData should return identical result for same input", () => {
+    const result1 = calculateMatchFromUserData(mockUserData, mockJob);
+    const result2 = calculateMatchFromUserData(mockUserData, mockJob);
+
+    expect(result1.overallScore).toBe(result2.overallScore);
+    expect(result1.qualificationScore).toBe(result2.qualificationScore);
+    expect(result1.lifestyleScore).toBe(result2.lifestyleScore);
   });
 });

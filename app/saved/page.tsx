@@ -23,6 +23,7 @@ export default function SavedPage() {
   const [savedMatches, setSavedMatches] = useState<JobMatch[]>([]);
   const [matchResults, setMatchResults] = useState<Map<string, MatchResult>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const loadSavedJobs = async () => {
@@ -53,10 +54,20 @@ export default function SavedPage() {
         const savedJobs = jobs.filter((job) => savedIds.includes(job.id));
 
         // Calculate current personalized matches for saved jobs
-        const results = await calculatePersonalizedMatches(
+        const matchResult = await calculatePersonalizedMatches(
           user.id,
           savedJobs
         );
+
+        // Handle load failure
+        if (matchResult.status === "error") {
+          console.error("Failed to load matching data:", matchResult.error);
+          setLoadError(true);
+          setLoading(false);
+          return;
+        }
+
+        const results = matchResult.results;
 
         // Store match results separately
         const resultsMap = new Map<string, MatchResult>();
@@ -65,46 +76,43 @@ export default function SavedPage() {
         }
         setMatchResults(resultsMap);
 
-        // Build JobMatch objects ONLY for scored results
-        // Incomplete profiles will be shown via matchResults map
-        const jobMatches: JobMatch[] = [];
+        // Build JobMatch objects with just the job data
+        // Match scores will be determined from matchResults map
+        const jobMatches: JobMatch[] = savedJobs.map((job, i) => {
+          const result = results[i];
 
-        for (let i = 0; i < savedJobs.length; i++) {
-          const job = savedJobs[i];
-          const matchResult = results[i];
-
-          // Only create JobMatch for scored results
-          if (matchResult.status === "scored") {
-            jobMatches.push({
+          if (result.status === "scored") {
+            return {
               id: `${job.id}-match`,
               user_id: user.id,
               job_id: job.id,
               job,
-              overall_score: matchResult.overallScore!,
-              qualification_score: matchResult.qualificationScore!,
-              lifestyle_score: matchResult.lifestyleScore!,
+              overall_score: result.overallScore!,
+              qualification_score: result.qualificationScore!,
+              lifestyle_score: result.lifestyleScore!,
               breakdown: {
-                skills: matchResult.breakdown.skills.score,
-                experience: matchResult.breakdown.experience.score,
-                salary: matchResult.breakdown.salary.score,
-                location: matchResult.breakdown.location.score,
-                work_arrangement: matchResult.breakdown.workArrangement.score,
-                career_goals: matchResult.breakdown.careerGoals.score,
+                skills: result.breakdown.skills.score,
+                experience: result.breakdown.experience.score,
+                salary: result.breakdown.salary.score,
+                location: result.breakdown.location.score,
+                work_arrangement: result.breakdown.workArrangement.score,
+                career_goals: result.breakdown.careerGoals.score,
               },
-              matched_skills: matchResult.matchedSkills,
-              missing_skills: matchResult.missingSkills,
-              reasons_fit: matchResult.reasonsFit.map((r) => r.text),
-              reasons_concern: matchResult.reasonsConcern.map((r) => r.text),
+              matched_skills: result.matchedSkills,
+              missing_skills: result.missingSkills,
+              reasons_fit: result.reasonsFit.map((r) => r.text),
+              reasons_concern: result.reasonsConcern.map((r) => r.text),
               created_at: new Date().toISOString(),
-            });
+            };
           } else {
             // For incomplete profiles, create a minimal JobMatch with just the job data
-            jobMatches.push({
+            // Do NOT create fake zero scores - they won't be displayed
+            return {
               id: `${job.id}-match`,
               user_id: user.id,
               job_id: job.id,
               job,
-              overall_score: 0, // Will not be displayed
+              overall_score: 0, // Not displayed for incomplete profiles
               qualification_score: 0,
               lifestyle_score: 0,
               breakdown: {
@@ -120,9 +128,9 @@ export default function SavedPage() {
               reasons_fit: [],
               reasons_concern: [],
               created_at: new Date().toISOString(),
-            });
+            };
           }
-        }
+        });
 
         setSavedMatches(jobMatches);
       } catch (error) {
@@ -144,6 +152,23 @@ export default function SavedPage() {
       <AppShell>
         <div className="flex h-full items-center justify-center p-4">
           <p className="text-foreground-secondary">Loading saved jobs...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <div className="text-center">
+            <p className="text-foreground mb-2">
+              Unable to load your personalized matches right now.
+            </p>
+            <p className="text-foreground-secondary text-sm">
+              Please try again later.
+            </p>
+          </div>
         </div>
       </AppShell>
     );

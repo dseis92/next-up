@@ -37,6 +37,7 @@ export default function DiscoverPage() {
   const [filteredMatches, setFilteredMatches] = useState<JobMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -56,7 +57,17 @@ export default function DiscoverPage() {
         const jobs = await getJobs();
 
         // Calculate personalized matches
-        const matchResults = await calculatePersonalizedMatches(user.id, jobs);
+        const matchResult = await calculatePersonalizedMatches(user.id, jobs);
+
+        // Handle load failure
+        if (matchResult.status === "error") {
+          console.error("Failed to load matching data:", matchResult.error);
+          setLoadError(true);
+          setLoading(false);
+          return;
+        }
+
+        const matchResults = matchResult.results;
 
         // Filter out passed jobs
         const passedIds = await getPassedJobIds();
@@ -67,16 +78,16 @@ export default function DiscoverPage() {
 
         for (let i = 0; i < jobs.length; i++) {
           const job = jobs[i];
-          const matchResult = matchResults[i];
+          const result = matchResults[i];
 
           // Track if user has incomplete profile
-          if (matchResult.status === "incomplete_profile") {
+          if (result.status === "incomplete_profile") {
             hasIncomplete = true;
           }
 
           // Skip incomplete profiles or passed jobs
           if (
-            matchResult.status === "incomplete_profile" ||
+            result.status === "incomplete_profile" ||
             passedIds.includes(job.id)
           ) {
             continue;
@@ -87,21 +98,21 @@ export default function DiscoverPage() {
             user_id: user.id,
             job_id: job.id,
             job,
-            overall_score: matchResult.overallScore!,
-            qualification_score: matchResult.qualificationScore!,
-            lifestyle_score: matchResult.lifestyleScore!,
+            overall_score: result.overallScore!,
+            qualification_score: result.qualificationScore!,
+            lifestyle_score: result.lifestyleScore!,
             breakdown: {
-              skills: matchResult.breakdown.skills.score,
-              experience: matchResult.breakdown.experience.score,
-              salary: matchResult.breakdown.salary.score,
-              location: matchResult.breakdown.location.score,
-              work_arrangement: matchResult.breakdown.workArrangement.score,
-              career_goals: matchResult.breakdown.careerGoals.score,
+              skills: result.breakdown.skills.score,
+              experience: result.breakdown.experience.score,
+              salary: result.breakdown.salary.score,
+              location: result.breakdown.location.score,
+              work_arrangement: result.breakdown.workArrangement.score,
+              career_goals: result.breakdown.careerGoals.score,
             },
-            matched_skills: matchResult.matchedSkills,
-            missing_skills: matchResult.missingSkills,
-            reasons_fit: matchResult.reasonsFit.map((r) => r.text),
-            reasons_concern: matchResult.reasonsConcern.map((r) => r.text),
+            matched_skills: result.matchedSkills,
+            missing_skills: result.missingSkills,
+            reasons_fit: result.reasonsFit.map((r) => r.text),
+            reasons_concern: result.reasonsConcern.map((r) => r.text),
             created_at: new Date().toISOString(),
           });
         }
@@ -110,6 +121,7 @@ export default function DiscoverPage() {
         setFilteredMatches(jobMatches);
       } catch (error) {
         console.error("Failed to load personalized matches:", error);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -189,6 +201,23 @@ export default function DiscoverPage() {
       <AppShell>
         <div className="flex h-full items-center justify-center p-4">
           <p className="text-foreground-secondary">Loading opportunities...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <div className="text-center">
+            <p className="text-foreground mb-2">
+              Unable to load your personalized matches right now.
+            </p>
+            <p className="text-foreground-secondary text-sm">
+              Please try again later.
+            </p>
+          </div>
         </div>
       </AppShell>
     );

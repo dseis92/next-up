@@ -39,12 +39,14 @@ export default function JobDetailPage() {
   const router = useRouter();
   const jobId = params.id as string;
 
+  const [job, setJob] = useState<import("@/types").Job | null>(null);
   const [match, setMatch] = useState<JobMatch | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [application, setApplication] = useState<Application | null>(null);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const loadJobData = async () => {
@@ -61,51 +63,53 @@ export default function JobDetailPage() {
         }
 
         // Load the job
-        const job = await getJob(jobId);
+        const loadedJob = await getJob(jobId);
 
-        if (!job) {
+        if (!loadedJob) {
           setLoading(false);
           return;
         }
+
+        // Store job separately from match data
+        setJob(loadedJob);
 
         // Calculate personalized match
-        const result = await calculatePersonalizedMatch(user.id, job);
+        try {
+          const result = await calculatePersonalizedMatch(user.id, loadedJob);
+          setMatchResult(result);
 
-        // Handle load failure
-        if (!result) {
-          setLoading(false);
-          return;
-        }
+          // Only build JobMatch object if we have a scored result
+          // For incomplete profiles, we keep matchResult but skip building legacy JobMatch
+          if (result.status === "scored") {
+            const jobMatch: JobMatch = {
+              id: `${loadedJob.id}-match`,
+              user_id: user.id,
+              job_id: loadedJob.id,
+              job: loadedJob,
+              overall_score: result.overallScore!,
+              qualification_score: result.qualificationScore!,
+              lifestyle_score: result.lifestyleScore!,
+              breakdown: {
+                skills: result.breakdown.skills.score,
+                experience: result.breakdown.experience.score,
+                salary: result.breakdown.salary.score,
+                location: result.breakdown.location.score,
+                work_arrangement: result.breakdown.workArrangement.score,
+                career_goals: result.breakdown.careerGoals.score,
+              },
+              matched_skills: result.matchedSkills,
+              missing_skills: result.missingSkills,
+              reasons_fit: result.reasonsFit.map((r) => r.text),
+              reasons_concern: result.reasonsConcern.map((r) => r.text),
+              created_at: new Date().toISOString(),
+            };
 
-        setMatchResult(result);
-
-        // Only build JobMatch object if we have a scored result
-        // For incomplete profiles, we keep matchResult but skip building legacy JobMatch
-        if (result.status === "scored") {
-          const jobMatch: JobMatch = {
-            id: `${job.id}-match`,
-            user_id: user.id,
-            job_id: job.id,
-            job,
-            overall_score: result.overallScore!,
-            qualification_score: result.qualificationScore!,
-            lifestyle_score: result.lifestyleScore!,
-            breakdown: {
-              skills: result.breakdown.skills.score,
-              experience: result.breakdown.experience.score,
-              salary: result.breakdown.salary.score,
-              location: result.breakdown.location.score,
-              work_arrangement: result.breakdown.workArrangement.score,
-              career_goals: result.breakdown.careerGoals.score,
-            },
-            matched_skills: result.matchedSkills,
-            missing_skills: result.missingSkills,
-            reasons_fit: result.reasonsFit.map((r) => r.text),
-            reasons_concern: result.reasonsConcern.map((r) => r.text),
-            created_at: new Date().toISOString(),
-          };
-
-          setMatch(jobMatch);
+            setMatch(jobMatch);
+          }
+        } catch (error) {
+          // Matching data load failure - distinguish from job not found
+          console.error("Failed to load matching data:", error);
+          setLoadError(true);
         }
 
         // Check if saved
@@ -116,6 +120,7 @@ export default function JobDetailPage() {
         setApplication(existingApp);
       } catch (error) {
         console.error("Failed to load job data:", error);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -138,7 +143,7 @@ export default function JobDetailPage() {
     if (application) {
       // Already applied, go to application detail
       router.push(`/applications/${application.id}`);
-    } else if (match?.job.external_url) {
+    } else if (job?.external_url) {
       // Has external URL, show confirmation
       setShowApplyDialog(true);
     } else {
@@ -148,12 +153,12 @@ export default function JobDetailPage() {
   };
 
   const handleConfirmApply = async () => {
-    if (!match) return;
+    if (!job) return;
 
     // Create application
     const newApp = await createApplication({
-      jobId: match.job.id,
-      job: match.job,
+      jobId: job.id,
+      job: job,
       stage: "applied",
       source: "nextup_job_detail",
     });
@@ -161,8 +166,8 @@ export default function JobDetailPage() {
     setApplication(newApp);
 
     // If external URL exists, open it
-    if (match.job.external_url) {
-      window.open(match.job.external_url, "_blank", "noopener,noreferrer");
+    if (job.external_url) {
+      window.open(job.external_url, "_blank", "noopener,noreferrer");
     }
 
     // Navigate to applications
@@ -181,7 +186,7 @@ export default function JobDetailPage() {
     );
   }
 
-  if (!match) {
+  if (!job) {
     return (
       <AppShell>
         <div className="flex h-full items-center justify-center p-4">
@@ -191,8 +196,28 @@ export default function JobDetailPage() {
     );
   }
 
-  const { job, overall_score, breakdown, matched_skills, missing_skills } =
-    match;
+  if (loadError) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <div className="text-center">
+            <p className="text-foreground mb-2">
+              Unable to load your personalized match right now.
+            </p>
+            <p className="text-foreground-secondary text-sm">
+              Please try again later.
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Extract match data only if available
+  const overall_score = match?.overall_score;
+  const breakdown = match?.breakdown;
+  const matched_skills = match?.matched_skills || [];
+  const missing_skills = match?.missing_skills || [];
 
   return (
     <AppShell>
@@ -283,15 +308,15 @@ export default function JobDetailPage() {
             {/* Match Score or Incomplete Profile Message */}
             {matchResult?.status === "incomplete_profile" ? (
               <IncompleteProfileMessage />
-            ) : (
+            ) : overall_score !== undefined ? (
               <Card variant="elevated" className="p-4">
                 <MatchScore score={overall_score} size="lg" />
               </Card>
-            )}
+            ) : null}
           </div>
 
           {/* Match Breakdown */}
-          {matchResult?.status !== "incomplete_profile" && (
+          {matchResult?.status !== "incomplete_profile" && breakdown && (
             <Card className="mb-6 p-6">
               <h2 className="text-heading mb-4">Match breakdown</h2>
               <div className="space-y-3">
@@ -313,7 +338,7 @@ export default function JobDetailPage() {
           )}
 
           {/* Why you're a strong match */}
-          {matchResult?.status !== "incomplete_profile" && (
+          {matchResult?.status !== "incomplete_profile" && match && (
             <Card className="mb-6 p-6">
               <div className="mb-4 flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -339,6 +364,7 @@ export default function JobDetailPage() {
 
           {/* Things to consider */}
           {matchResult?.status !== "incomplete_profile" &&
+            match &&
             (missing_skills.length > 0 || match.reasons_concern.length > 0) && (
               <Card className="mb-6 p-6">
                 <div className="mb-4 flex items-center gap-2">
