@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import type { JobMatch, Application } from "@/types";
 import type { MatchResult } from "@/lib/matching/types";
+import type { AIJobExplanation } from "@/lib/ai/job-explanation-schema";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -49,7 +50,7 @@ export default function JobDetailPage() {
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [aiExplanation, setAiExplanation] = useState<AIJobExplanation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
@@ -198,17 +199,24 @@ export default function JobDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || errorData.error || "Failed to generate explanation");
+        // Use safe error message (no raw provider errors)
+        throw new Error(errorData.error || "Unable to generate explanation");
       }
 
       const data = await response.json();
       setAiExplanation(data.explanation);
     } catch (error) {
       console.error("AI explanation error:", error);
-      setAiError(error instanceof Error ? error.message : "Failed to generate explanation");
+      setAiError(error instanceof Error ? error.message : "Unable to generate explanation");
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleRetryAiExplanation = () => {
+    setAiError(null);
+    setAiExplanation(null);
+    handleGetAiExplanation();
   };
 
   if (loading) {
@@ -372,15 +380,15 @@ export default function JobDetailPage() {
             </Card>
           )}
 
-          {/* AI Explanation */}
+          {/* AI Match Explanation */}
           {matchResult?.status !== "incomplete_profile" && match && (
             <Card className="mb-6 p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-brand" />
-                  <h2 className="text-heading">AI career advisor</h2>
+                  <h2 className="text-heading">AI Match Explanation</h2>
                 </div>
-                {!aiExplanation && !aiLoading && (
+                {!aiExplanation && !aiLoading && !aiError && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -391,6 +399,7 @@ export default function JobDetailPage() {
                 )}
               </div>
 
+              {/* Loading State */}
               {aiLoading && (
                 <div className="flex items-center gap-2 text-foreground-secondary">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -398,18 +407,120 @@ export default function JobDetailPage() {
                 </div>
               )}
 
+              {/* Error State */}
               {aiError && (
                 <div className="rounded-lg border border-warning/20 bg-warning/5 p-4">
-                  <p className="text-sm text-warning">{aiError}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-warning">{aiError}</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRetryAiExplanation}
+                    >
+                      Retry
+                    </Button>
+                  </div>
                 </div>
               )}
 
+              {/* Structured Explanation */}
               {aiExplanation && (
-                <div className="prose prose-sm max-w-none text-foreground-secondary">
-                  <p className="whitespace-pre-line">{aiExplanation}</p>
+                <div className="space-y-6">
+                  {/* Headline */}
+                  <div>
+                    <p className="text-lg font-semibold text-foreground">
+                      {aiExplanation.headline}
+                    </p>
+                  </div>
+
+                  {/* Summary */}
+                  <div>
+                    <p className="text-foreground-secondary">
+                      {aiExplanation.summary}
+                    </p>
+                  </div>
+
+                  {/* Why this fits */}
+                  {aiExplanation.strengths.length > 0 && (
+                    <div>
+                      <h3 className="text-heading-sm mb-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Why this fits
+                      </h3>
+                      <ul className="space-y-3">
+                        {aiExplanation.strengths.map((strength, idx) => (
+                          <li key={idx}>
+                            <p className="font-medium text-foreground">{strength.title}</p>
+                            <p className="mt-1 text-sm text-foreground-secondary">
+                              {strength.explanation}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Things to watch */}
+                  {aiExplanation.concerns.length > 0 && (
+                    <div>
+                      <h3 className="text-heading-sm mb-3 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-warning" />
+                        Things to watch
+                      </h3>
+                      <ul className="space-y-3">
+                        {aiExplanation.concerns.map((concern, idx) => (
+                          <li key={idx}>
+                            <p className="font-medium text-foreground">{concern.title}</p>
+                            <p className="mt-1 text-sm text-foreground-secondary">
+                              {concern.explanation}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* What to do next */}
+                  {aiExplanation.nextSteps.length > 0 && (
+                    <div>
+                      <h3 className="text-heading-sm mb-3">What to do next</h3>
+                      <ul className="space-y-3">
+                        {aiExplanation.nextSteps.map((step, idx) => (
+                          <li key={idx}>
+                            <p className="font-medium text-foreground">{step.title}</p>
+                            <p className="mt-1 text-sm text-foreground-secondary">
+                              {step.explanation}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Limitations */}
+                  {aiExplanation.limitations.length > 0 && (
+                    <div className="rounded-lg border border-border bg-surface-secondary p-4">
+                      <p className="text-xs font-medium text-foreground-muted">
+                        Limitations:
+                      </p>
+                      <ul className="mt-2 space-y-1">
+                        {aiExplanation.limitations.map((limitation, idx) => (
+                          <li key={idx} className="text-xs text-foreground-muted">
+                            • {limitation}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Footer */}
+                  <p className="text-xs text-foreground-muted">
+                    Based on your current profile and this job.
+                  </p>
                 </div>
               )}
 
+              {/* Idle State */}
               {!aiExplanation && !aiLoading && !aiError && (
                 <p className="text-sm text-foreground-muted">
                   Get a personalized explanation of why this job matches your profile,

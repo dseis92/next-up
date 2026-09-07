@@ -124,6 +124,24 @@ describe("buildJobExplanationContext", () => {
     expect(context?.missingSkills).toEqual(["autocad"]);
   });
 
+  it("should include reasonsFit from Phase 9 engine", () => {
+    const context = buildJobExplanationContext(baseMatchResult, baseJob);
+
+    expect(context?.reasonsFit).toHaveLength(2);
+    expect(context?.reasonsFit[0].text).toBe("Strong leadership experience");
+    expect(context?.reasonsFit[0].priority).toBe(10);
+    expect(context?.reasonsFit[1].text).toBe("Career goals align with role");
+    expect(context?.reasonsFit[1].priority).toBe(8);
+  });
+
+  it("should include reasonsConcern from Phase 9 engine", () => {
+    const context = buildJobExplanationContext(baseMatchResult, baseJob);
+
+    expect(context?.reasonsConcern).toHaveLength(1);
+    expect(context?.reasonsConcern[0].text).toBe("May need to develop CAD skills");
+    expect(context?.reasonsConcern[0].priority).toBe(3);
+  });
+
   it("should include hard failures", () => {
     const resultWithFailures: MatchResult = {
       ...baseMatchResult,

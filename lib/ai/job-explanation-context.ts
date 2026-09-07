@@ -48,6 +48,10 @@ export interface JobExplanationContext {
   // Hard failures (dealbreakers)
   hardFailures: string[];
 
+  // Deterministic explanation evidence from Phase 9
+  reasonsFit: Array<{ text: string; priority: number }>;
+  reasonsConcern: Array<{ text: string; priority: number }>;
+
   // Profile status
   isIncompleteProfile: boolean;
 }
@@ -103,6 +107,10 @@ export function buildJobExplanationContext(
 
     // Hard failures (extract messages from HardFailure objects)
     hardFailures: matchResult.hardFailures.map((f) => f.message),
+
+    // Deterministic explanation evidence from Phase 9
+    reasonsFit: matchResult.reasonsFit.map((r) => ({ text: r.text, priority: r.priority })),
+    reasonsConcern: matchResult.reasonsConcern.map((r) => ({ text: r.text, priority: r.priority })),
 
     // Status
     isIncompleteProfile: false,
