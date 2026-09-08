@@ -628,7 +628,187 @@ This document records manual test requirements for the Explore Opportunity Deck 
 
 ---
 
-**Document Version**: 1.1
+## AD. Undo Survives Save
+
+**Test ID**: DECK-UNDO-SAVE-001
+**Objective**: Verify Undo remains available after Save action
+
+**Steps**:
+1. Open Deck mode with multiple jobs
+2. Note current job A
+3. Click Save (or swipe right)
+4. Observe next job B appears
+5. Verify Undo toast remains visible
+6. Click Undo
+
+**Expected Result**:
+- After saving A, Undo toast appears and remains visible
+- Job B appears as current card
+- Undo button/toast functional
+- Clicking Undo restores job A as current card
+- lastAction preserved until Undo completes
+
+---
+
+## AE. Undo Survives Pass
+
+**Test ID**: DECK-UNDO-PASS-001
+**Objective**: Verify Undo remains available after Pass action
+
+**Steps**:
+1. Open Deck mode
+2. Note current job A
+3. Click Pass (or swipe left)
+4. Observe next job B appears
+5. Verify Undo toast visible
+6. Click Undo
+
+**Expected Result**:
+- After passing A, Undo toast appears
+- Job B appears as current
+- Undo restores job A
+- lastAction cleared only after successful undo
+
+---
+
+## AF. Next Card State Isolation
+
+**Test ID**: DECK-ISOLATION-001
+**Objective**: Verify next card does not inherit previous card's exit state
+
+**Steps**:
+1. Open Deck mode with jobs A and B
+2. Swipe right to save A
+3. Observe A exits right
+4. Observe B appears
+
+**Expected Result**:
+- Only A exits with animation
+- B appears centered and fresh
+- B does not inherit A's exit motion or state
+- B's motion values start at zero
+
+---
+
+## AG. Swipe Persistence Before Animation
+
+**Test ID**: DECK-PERSIST-FIRST-001
+**Objective**: Verify persistence completes before exit animation
+
+**Steps**:
+1. Open Deck mode
+2. Open DevTools Network tab
+3. Swipe right on current card
+4. Observe network request timing vs animation
+
+**Expected Result**:
+- Persistence POST request starts immediately
+- If persistence fails, card snaps back to center
+- If persistence succeeds, card animates out
+- Deck does NOT advance until animation completes
+- Network request visible before animation finishes
+
+---
+
+## AH. Deck Advance After Animation
+
+**Test ID**: DECK-ADVANCE-AFTER-001
+**Objective**: Verify deck advances only after exit animation completes
+
+**Steps**:
+1. Open Deck mode with jobs A and B
+2. Swipe right on A
+3. Watch carefully during animation
+
+**Expected Result**:
+- A remains the rendered card during exit animation
+- B does NOT appear until A's animation completes
+- Deck currentIndex updates after animation
+- lastAction recorded after animation
+- Undo available after animation completes
+
+---
+
+## AI. Filter After Review
+
+**Test ID**: DECK-FILTER-REVIEW-001
+**Objective**: Verify reviewed jobs stay excluded after filter changes
+
+**Steps**:
+1. Open Deck mode
+2. Save job A
+3. Change work arrangement filter
+4. Observe Deck candidates
+
+**Expected Result**:
+- Job A remains excluded from Deck
+- Deck shows only unreviewed jobs matching new filter
+- Reviewed status persists across filter changes
+
+---
+
+## AJ. Focus Visibility
+
+**Test ID**: DECK-FOCUS-VIS-001
+**Objective**: Verify keyboard focus is visible on Deck region
+
+**Steps**:
+1. Open Deck mode
+2. Press Tab to focus Deck region
+3. Observe focus indicator
+
+**Expected Result**:
+- Deck region shows visible focus ring when focused via keyboard
+- Focus ring uses brand color
+- Focus ring has appropriate contrast
+- Focus indicator does not show on mouse click (focus-visible behavior)
+
+---
+
+## Test Execution Log
+
+| Test ID | Date | Tester | Pass/Fail | Notes |
+|---------|------|--------|-----------|-------|
+| DECK-MODE-001 | | | | |
+| DECK-SWIPE-001 | | | | |
+| DECK-SWIPE-002 | | | | |
+| DECK-BTN-001 | | | | |
+| DECK-KEY-001 | | | | |
+| DECK-NAV-001 | | | | |
+| DECK-SAVE-001 | | | | |
+| DECK-PASS-001 | | | | |
+| DECK-UNDO-001 | | | | |
+| DECK-UNDO-002 | | | | |
+| DECK-DUP-001 | | | | |
+| DECK-ERR-001 | | | | |
+| DECK-FILTER-001 | | | | |
+| DECK-SEARCH-001 | | | | |
+| DECK-EMPTY-001 | | | | |
+| DECK-EXHAUST-001 | | | | |
+| DECK-PROFILE-001 | | | | |
+| DECK-MOBILE-001 | | | | |
+| DECK-DESKTOP-001 | | | | |
+| DECK-A11Y-001 | | | | |
+| DECK-REG-001 | | | | |
+| DECK-PERF-001 | | | | |
+| DECK-SWIPE-FAIL-001 | | | | |
+| DECK-NEXT-001 | | | | |
+| DECK-TOGGLE-001 | | | | |
+| DECK-FILTER-RESET-001 | | | | |
+| DECK-AUX-FAIL-001 | | | | |
+| DECK-KEY-BTN-001 | | | | |
+| DECK-A11Y-RM-001 | | | | |
+| DECK-UNDO-SAVE-001 | | | | |
+| DECK-UNDO-PASS-001 | | | | |
+| DECK-ISOLATION-001 | | | | |
+| DECK-PERSIST-FIRST-001 | | | | |
+| DECK-ADVANCE-AFTER-001 | | | | |
+| DECK-FILTER-REVIEW-001 | | | | |
+| DECK-FOCUS-VIS-001 | | | | |
+
+---
+
+**Document Version**: 1.2
 **Last Updated**: 2026-09-07
 **Feature**: E1 — Explore Opportunity Deck
 **Related Commit**: TBD

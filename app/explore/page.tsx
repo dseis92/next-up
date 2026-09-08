@@ -39,7 +39,6 @@ export default function ExplorePage() {
   // Deck mode persistence state
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [passedJobIds, setPassedJobIds] = useState<Set<string>>(new Set());
-  const [deckStateLoading, setDeckStateLoading] = useState(false);
   const [deckStateError, setDeckStateError] = useState(false);
 
   useEffect(() => {
@@ -118,7 +117,6 @@ export default function ExplorePage() {
         setAllMatches(jobMatches);
 
         // Load saved/passed for Deck mode
-        setDeckStateLoading(true);
         try {
           const savedIds = await getSavedJobs();
           const passedIds = await getPassedJobIds();
@@ -128,8 +126,6 @@ export default function ExplorePage() {
         } catch (error) {
           console.error("Failed to load saved/passed jobs:", error);
           setDeckStateError(true);
-        } finally {
-          setDeckStateLoading(false);
         }
       } catch (error) {
         console.error("Failed to load personalized matches:", error);

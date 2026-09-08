@@ -13,6 +13,8 @@ export interface OpportunitySwipeCardProps {
   match: JobMatch;
   onSwipeLeft?: () => Promise<boolean>;
   onSwipeRight?: () => Promise<boolean>;
+  onSwipeLeftComplete?: () => void;
+  onSwipeRightComplete?: () => void;
   onDetails?: () => void;
   disabled?: boolean;
   zIndex?: number;
@@ -24,6 +26,8 @@ export function OpportunitySwipeCard({
   match,
   onSwipeLeft,
   onSwipeRight,
+  onSwipeLeftComplete,
+  onSwipeRightComplete,
   onDetails,
   disabled = false,
   zIndex = 0,
@@ -84,7 +88,6 @@ export function OpportunitySwipeCard({
 
   return (
     <motion.div
-      key={match.job.id}
       drag={!disabled && !isProcessing ? "x" : false}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={handleDragEnd}
@@ -103,6 +106,13 @@ export function OpportunitySwipeCard({
             }
           : {}
       }
+      onAnimationComplete={() => {
+        if (exitX < 0 && onSwipeLeftComplete) {
+          onSwipeLeftComplete();
+        } else if (exitX > 0 && onSwipeRightComplete) {
+          onSwipeRightComplete();
+        }
+      }}
       className="absolute w-full"
     >
       <Card variant="elevated" className="relative overflow-hidden shadow-2xl">

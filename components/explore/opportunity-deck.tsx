@@ -57,15 +57,17 @@ export function OpportunityDeck({
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  // Derive candidates (memoized to prevent unnecessary recalculations)
-  const candidates = useMemo(
+  // Derive candidates from filteredMatches only (memoized)
+  // Do NOT include savedJobIds/passedJobIds in dependencies
+  // The Deck session maintains its own reviewed state via lastAction
+  const initialCandidates = useMemo(
     () => getDeckCandidates(filteredMatches, savedJobIds, passedJobIds),
     [filteredMatches, savedJobIds, passedJobIds]
   );
 
-  // Deck state (reset when candidates change)
+  // Deck state (independent session state)
   const [deckState, setDeckState] = useState<DeckCandidates>(() =>
-    resetDeck(candidates)
+    resetDeck(initialCandidates)
   );
 
   // Action state
@@ -73,12 +75,13 @@ export function OpportunityDeck({
   const [actionError, setActionError] = useState<string | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
 
-  // Reset deck when candidates change (from filter/Set updates)
-  // This is intentional synchronization with external state
+  // Reset deck ONLY when filteredMatches changes (filter/search changes)
+  // Do NOT reset when savedJobIds/passedJobIds change from our own actions
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setDeckState(resetDeck(candidates));
-  }, [candidates]);
+    setDeckState(resetDeck(getDeckCandidates(filteredMatches, savedJobIds, passedJobIds)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredMatches]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Hide undo toast after 5 seconds
@@ -92,17 +95,31 @@ export function OpportunityDeck({
   const currentMatch = getCurrentJob(deckState);
   const nextMatch = deckState.jobs[deckState.currentIndex + 1] || null;
 
-  const handlePass = async (): Promise<boolean> => {
-    if (!currentMatch || actionPending) return false;
+  // Persist save action (does NOT finalize deck advancement yet)
+  const persistSave = async (jobId: string): Promise<boolean> => {
+    if (actionPending) return false;
 
     setActionPending(true);
     try {
-      await passJob(currentMatch.job.id);
+      await saveJob(jobId);
+      return true;
+    } catch (error) {
+      console.error("Failed to save job:", error);
+      setActionError("Failed to save job. Please try again.");
+      setTimeout(() => setActionError(null), 5000);
+      return false;
+    } finally {
+      setActionPending(false);
+    }
+  };
 
-      // Action succeeded - notify parent and record
-      onPassed?.(currentMatch.job.id);
-      setDeckState((prev) => recordAction(prev, currentMatch.job.id, "pass"));
-      setShowUndoToast(true);
+  // Persist pass action (does NOT finalize deck advancement yet)
+  const persistPass = async (jobId: string): Promise<boolean> => {
+    if (actionPending) return false;
+
+    setActionPending(true);
+    try {
+      await passJob(jobId);
       return true;
     } catch (error) {
       console.error("Failed to pass job:", error);
@@ -114,25 +131,34 @@ export function OpportunityDeck({
     }
   };
 
-  const handleSave = async (): Promise<boolean> => {
-    if (!currentMatch || actionPending) return false;
+  // Finalize save action (after animation completes)
+  const finalizeSave = (jobId: string) => {
+    onSaved?.(jobId);
+    setDeckState((prev) => recordAction(prev, jobId, "save"));
+    setShowUndoToast(true);
+  };
 
-    setActionPending(true);
-    try {
-      await saveJob(currentMatch.job.id);
+  // Finalize pass action (after animation completes)
+  const finalizePass = (jobId: string) => {
+    onPassed?.(jobId);
+    setDeckState((prev) => recordAction(prev, jobId, "pass"));
+    setShowUndoToast(true);
+  };
 
-      // Action succeeded - notify parent and record
-      onSaved?.(currentMatch.job.id);
-      setDeckState((prev) => recordAction(prev, currentMatch.job.id, "save"));
-      setShowUndoToast(true);
-      return true;
-    } catch (error) {
-      console.error("Failed to save job:", error);
-      setActionError("Failed to save job. Please try again.");
-      setTimeout(() => setActionError(null), 5000);
-      return false;
-    } finally {
-      setActionPending(false);
+  // Button action handlers (persist then immediately finalize)
+  const handleSaveButton = async () => {
+    if (!currentMatch) return;
+    const success = await persistSave(currentMatch.job.id);
+    if (success) {
+      finalizeSave(currentMatch.job.id);
+    }
+  };
+
+  const handlePassButton = async () => {
+    if (!currentMatch) return;
+    const success = await persistPass(currentMatch.job.id);
+    if (success) {
+      finalizePass(currentMatch.job.id);
     }
   };
 
@@ -190,11 +216,11 @@ export function OpportunityDeck({
     switch (e.key) {
       case "ArrowLeft":
         e.preventDefault();
-        handlePass();
+        handlePassButton();
         break;
       case "ArrowRight":
         e.preventDefault();
-        handleSave();
+        handleSaveButton();
         break;
       case "Enter":
         e.preventDefault();
@@ -223,7 +249,7 @@ export function OpportunityDeck({
       onKeyDown={handleKeyDown}
       tabIndex={0}
       aria-label="Opportunity deck. Use arrow keys to save or pass, Enter to view details"
-      className="focus:outline-none"
+      className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {/* Card Stack */}
       <div className="relative mb-6" style={{ minHeight: "500px" }}>
@@ -237,16 +263,23 @@ export function OpportunityDeck({
               zIndex: 0,
             }}
           >
-            <OpportunitySwipeCard match={nextMatch} disabled />
+            <OpportunitySwipeCard
+              key={`next-${nextMatch.job.id}`}
+              match={nextMatch}
+              disabled
+            />
           </div>
         )}
 
         {/* Current card */}
         {currentMatch && (
           <OpportunitySwipeCard
+            key={currentMatch.job.id}
             match={currentMatch}
-            onSwipeLeft={handlePass}
-            onSwipeRight={handleSave}
+            onSwipeLeft={() => persistPass(currentMatch.job.id)}
+            onSwipeRight={() => persistSave(currentMatch.job.id)}
+            onSwipeLeftComplete={() => finalizePass(currentMatch.job.id)}
+            onSwipeRightComplete={() => finalizeSave(currentMatch.job.id)}
             onDetails={handleDetails}
             disabled={actionPending}
             zIndex={1}
@@ -259,7 +292,7 @@ export function OpportunityDeck({
         <Button
           variant="secondary"
           size="lg"
-          onClick={handlePass}
+          onClick={handlePassButton}
           disabled={actionPending || !currentMatch}
           className="flex h-16 w-16 items-center justify-center rounded-full"
           aria-label="Pass (ArrowLeft)"
@@ -283,7 +316,7 @@ export function OpportunityDeck({
         <Button
           variant="primary"
           size="lg"
-          onClick={handleSave}
+          onClick={handleSaveButton}
           disabled={actionPending || !currentMatch}
           className="flex h-16 w-16 items-center justify-center rounded-full"
           aria-label="Save (ArrowRight)"
