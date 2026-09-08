@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Toast } from "@/components/ui/toast";
+import { CompareToggle } from "@/components/compare/compare-toggle";
+import { CompareTray } from "@/components/compare/compare-tray";
 import { Bookmark, MapPin, ArrowRight, X } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
@@ -222,6 +224,11 @@ export default function SavedPage() {
                           ))}
                         </div>
                       )}
+
+                      {/* Compare Toggle */}
+                      <div className="mt-2">
+                        <CompareToggle jobId={job.id} className="gap-2" />
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2 sm:flex-col">
@@ -251,6 +258,9 @@ export default function SavedPage() {
           })}
         </div>
       </div>
+
+      {/* Compare Tray */}
+      <CompareTray />
 
       {/* Action Error Toast */}
       {actionError && (

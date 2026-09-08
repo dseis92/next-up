@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Toast } from "@/components/ui/toast";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
+import { CompareToggle } from "@/components/compare/compare-toggle";
 import { formatSalary } from "@/lib/utils";
 import { getJob } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatch } from "@/lib/matching/integration";
@@ -290,7 +291,7 @@ export default function JobDetailPage() {
       <div className="mx-auto w-full max-w-4xl">
         {/* Header */}
         <div className="sticky top-0 z-10 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur-lg">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -300,25 +301,28 @@ export default function JobDetailPage() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button
-              variant={isSaved ? "primary" : "secondary"}
-              size="sm"
-              onClick={handleSave}
-              disabled={actionPending}
-              className="gap-2"
-            >
-              {isSaved ? (
-                <>
-                  <BookmarkCheck className="h-4 w-4" />
-                  Saved
-                </>
-              ) : (
-                <>
-                  <Bookmark className="h-4 w-4" />
-                  Save
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <CompareToggle jobId={jobId} size="sm" className="gap-2" />
+              <Button
+                variant={isSaved ? "primary" : "secondary"}
+                size="sm"
+                onClick={handleSave}
+                disabled={actionPending}
+                className="gap-2"
+              >
+                {isSaved ? (
+                  <>
+                    <BookmarkCheck className="h-4 w-4" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="h-4 w-4" />
+                    Save
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 

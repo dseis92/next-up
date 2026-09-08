@@ -61,3 +61,54 @@ export async function getJob(jobId: string): Promise<Job | null> {
 
   return data as Job | null;
 }
+
+/**
+ * Load multiple jobs by IDs with company details (batch query)
+ * Preserves the requested order of job IDs
+ *
+ * @throws Error if the database query fails
+ * @returns Object with jobs array (preserving order) and missingIds array
+ */
+export async function getJobsByIds(jobIds: string[]): Promise<{
+  jobs: Job[];
+  missingIds: string[];
+}> {
+  if (jobIds.length === 0) {
+    return { jobs: [], missingIds: [] };
+  }
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(
+      `
+      *,
+      company:companies(*)
+    `
+    )
+    .in("id", jobIds);
+
+  if (error) {
+    console.error("Failed to load jobs:", error);
+    throw new Error("Unable to load selected jobs. Please try again.");
+  }
+
+  const loadedJobs = (data as Job[]) || [];
+
+  // Preserve requested order and identify missing jobs
+  const jobsMap = new Map(loadedJobs.map((job) => [job.id, job]));
+  const orderedJobs: Job[] = [];
+  const missingIds: string[] = [];
+
+  for (const jobId of jobIds) {
+    const job = jobsMap.get(jobId);
+    if (job) {
+      orderedJobs.push(job);
+    } else {
+      missingIds.push(jobId);
+    }
+  }
+
+  return { jobs: orderedJobs, missingIds };
+}

@@ -11,6 +11,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { OpportunityDeck } from "@/components/explore/opportunity-deck";
+import { CompareToggle } from "@/components/compare/compare-toggle";
+import { CompareTray } from "@/components/compare/compare-tray";
 import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
@@ -409,7 +411,7 @@ export default function ExplorePage() {
                               )}
                             </p>
                           )}
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="mb-3 flex flex-wrap gap-1.5">
                             {matched_skills.slice(0, 3).map((skill) => (
                               <Badge key={skill} variant="muted" size="sm">
                                 {skill}
@@ -420,6 +422,14 @@ export default function ExplorePage() {
                                 +{matched_skills.length - 3}
                               </Badge>
                             )}
+                          </div>
+
+                          {/* Compare Toggle */}
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex gap-2"
+                          >
+                            <CompareToggle jobId={job.id} className="gap-2" />
                           </div>
                         </div>
                         <Button
@@ -478,6 +488,9 @@ export default function ExplorePage() {
           </>
         )}
       </div>
+
+      {/* Compare Tray (only in List mode) */}
+      {viewMode === "list" && <CompareTray />}
     </AppShell>
   );
 }
