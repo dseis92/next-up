@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
@@ -14,7 +14,6 @@ import {
   undoLastAction,
   resetDeck,
   type DeckCandidates,
-  type DeckAction,
 } from "@/lib/explore/deck-state";
 import { saveJob, unsaveJob, passJob, undoPass } from "@/lib/storage/job-actions";
 import type { JobMatch } from "@/types";
@@ -24,6 +23,10 @@ export interface OpportunityDeckProps {
   savedJobIds: Set<string>;
   passedJobIds: Set<string>;
   onSwitchToList: () => void;
+  onSaved?: (jobId: string) => void;
+  onPassed?: (jobId: string) => void;
+  onUndoSaved?: (jobId: string) => void;
+  onUndoPassed?: (jobId: string) => void;
 }
 
 export function OpportunityDeck({
@@ -31,24 +34,38 @@ export function OpportunityDeck({
   savedJobIds,
   passedJobIds,
   onSwitchToList,
+  onSaved,
+  onPassed,
+  onUndoSaved,
+  onUndoPassed,
 }: OpportunityDeckProps) {
   const router = useRouter();
 
   // Check for reduced motion preference
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+    return false;
+  });
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReducedMotion(mediaQuery.matches);
 
     const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  // Deck state
+  // Derive candidates (memoized to prevent unnecessary recalculations)
+  const candidates = useMemo(
+    () => getDeckCandidates(filteredMatches, savedJobIds, passedJobIds),
+    [filteredMatches, savedJobIds, passedJobIds]
+  );
+
+  // Deck state (reset when candidates change)
   const [deckState, setDeckState] = useState<DeckCandidates>(() =>
-    resetDeck(getDeckCandidates(filteredMatches, savedJobIds, passedJobIds))
+    resetDeck(candidates)
   );
 
   // Action state
@@ -56,11 +73,13 @@ export function OpportunityDeck({
   const [actionError, setActionError] = useState<string | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
 
-  // Update deck when filters change
+  // Reset deck when candidates change (from filter/Set updates)
+  // This is intentional synchronization with external state
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const candidates = getDeckCandidates(filteredMatches, savedJobIds, passedJobIds);
     setDeckState(resetDeck(candidates));
-  }, [filteredMatches, savedJobIds, passedJobIds]);
+  }, [candidates]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Hide undo toast after 5 seconds
   useEffect(() => {
@@ -73,39 +92,45 @@ export function OpportunityDeck({
   const currentMatch = getCurrentJob(deckState);
   const nextMatch = deckState.jobs[deckState.currentIndex + 1] || null;
 
-  const handlePass = async () => {
-    if (!currentMatch || actionPending) return;
+  const handlePass = async (): Promise<boolean> => {
+    if (!currentMatch || actionPending) return false;
 
     setActionPending(true);
     try {
       await passJob(currentMatch.job.id);
 
-      // Action succeeded - record and advance
+      // Action succeeded - notify parent and record
+      onPassed?.(currentMatch.job.id);
       setDeckState((prev) => recordAction(prev, currentMatch.job.id, "pass"));
       setShowUndoToast(true);
+      return true;
     } catch (error) {
       console.error("Failed to pass job:", error);
       setActionError("Failed to pass job. Please try again.");
       setTimeout(() => setActionError(null), 5000);
+      return false;
     } finally {
       setActionPending(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!currentMatch || actionPending) return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!currentMatch || actionPending) return false;
 
     setActionPending(true);
     try {
       await saveJob(currentMatch.job.id);
 
-      // Action succeeded - record and advance
+      // Action succeeded - notify parent and record
+      onSaved?.(currentMatch.job.id);
       setDeckState((prev) => recordAction(prev, currentMatch.job.id, "save"));
       setShowUndoToast(true);
+      return true;
     } catch (error) {
       console.error("Failed to save job:", error);
       setActionError("Failed to save job. Please try again.");
       setTimeout(() => setActionError(null), 5000);
+      return false;
     } finally {
       setActionPending(false);
     }
@@ -121,8 +146,10 @@ export function OpportunityDeck({
       // Reverse the persisted action
       if (action === "save") {
         await unsaveJob(jobId);
+        onUndoSaved?.(jobId);
       } else {
         await undoPass(jobId);
+        onUndoPassed?.(jobId);
       }
 
       // Undo succeeded - go back to that job
@@ -144,10 +171,16 @@ export function OpportunityDeck({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Prevent keyboard shortcuts if input is focused
+    // Only handle shortcuts when Deck region itself is focused
+    // Ignore if any interactive element is focused
+    const target = e.target;
     if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLButtonElement ||
+      target instanceof HTMLAnchorElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
     ) {
       return;
     }
@@ -176,7 +209,7 @@ export function OpportunityDeck({
       <div className="rounded-[var(--radius-lg)] bg-surface p-12 text-center">
         <h2 className="text-heading mb-2">Deck cleared</h2>
         <p className="text-foreground-secondary mb-6">
-          You've reviewed every opportunity matching these filters.
+          You&apos;ve reviewed every opportunity matching these filters.
         </p>
         <Button variant="primary" onClick={onSwitchToList}>
           View all jobs
@@ -186,7 +219,12 @@ export function OpportunityDeck({
   }
 
   return (
-    <div onKeyDown={handleKeyDown} tabIndex={-1}>
+    <div
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      aria-label="Opportunity deck. Use arrow keys to save or pass, Enter to view details"
+      className="focus:outline-none"
+    >
       {/* Card Stack */}
       <div className="relative mb-6" style={{ minHeight: "500px" }}>
         {/* Next card (background) */}

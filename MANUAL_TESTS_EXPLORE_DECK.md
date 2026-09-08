@@ -441,6 +441,157 @@ This document records manual test requirements for the Explore Opportunity Deck 
 
 ---
 
+## W. Swipe Failure Recovery
+
+**Test ID**: DECK-SWIPE-FAIL-001
+**Objective**: Verify card returns to center on persistence failure
+
+**Steps**:
+*Requires simulating offline mode or network failure*
+
+1. Open Deck mode
+2. Set DevTools to offline
+3. Swipe right (save)
+4. Observe card behavior
+
+**Expected Result**:
+- Card animates during swipe
+- Persistence fails
+- Card snaps back to center
+- Current job remains visible
+- Error toast appears
+- Deck does NOT advance
+- User can retry when online
+
+---
+
+## X. Next Card After Swipe
+
+**Test ID**: DECK-NEXT-001
+**Objective**: Verify next card appears correctly after successful swipe
+
+**Steps**:
+1. Open Deck with multiple jobs
+2. Swipe right (save) successfully
+3. Observe next card
+
+**Expected Result**:
+- Current card exits
+- Next card appears centered and fully visible
+- Next card is interactive
+- Match score displays correctly
+- No visual artifacts from previous card
+
+---
+
+## Y. Mode Toggle Consistency
+
+**Test ID**: DECK-TOGGLE-001
+**Objective**: Verify reviewed jobs don't reappear after mode toggle
+
+**Steps**:
+1. Open Deck mode
+2. Save job A
+3. Pass job B
+4. Switch to List mode
+5. Switch back to Deck mode
+6. Observe candidates
+
+**Expected Result**:
+- Job A does not appear in Deck
+- Job B does not appear in Deck
+- Job A still appears in List mode (List shows all)
+- Job B still appears in List mode
+- Deck shows only unreviewed jobs
+
+---
+
+## Z. Filter Reset Consistency
+
+**Test ID**: DECK-FILTER-RESET-001
+**Objective**: Verify reviewed jobs remain excluded after filter changes
+
+**Steps**:
+1. Open Deck mode
+2. Save job A
+3. Change work arrangement filter
+4. Observe Deck candidates
+
+**Expected Result**:
+- If job A matches new filter, it remains excluded from Deck
+- Reviewed status persists across filter changes
+- Deck resets to new filtered candidates
+- Index resets to 0
+
+---
+
+## AA. Deck Auxiliary Load Failure
+
+**Test ID**: DECK-AUX-FAIL-001
+**Objective**: Verify safe error when saved/passed data fails to load
+
+**Steps**:
+*Requires simulating saved_jobs/passed_jobs query failure*
+
+1. Simulate network failure for auxiliary queries only
+2. Load /explore page
+3. Switch to Deck mode
+
+**Expected Result**:
+- List mode works normally
+- Deck shows error message: "Unable to load your Opportunity Deck right now."
+- "Return to List" button appears
+- No cards shown based on empty Sets
+- No "Deck cleared" message
+- No raw Supabase errors
+
+---
+
+## AB. Keyboard Button Semantics
+
+**Test ID**: DECK-KEY-BTN-001
+**Objective**: Verify keyboard shortcuts don't hijack button behavior
+
+**Steps**:
+1. Open Deck mode
+2. Tab to Save button (focus visible)
+3. Press Enter
+4. Observe action
+5. Tab to Pass button
+6. Press Enter
+7. Tab to Details button
+8. Press Enter
+
+**Expected Result**:
+- Save button + Enter = Save action (normal button behavior)
+- Pass button + Enter = Pass action (normal button behavior)
+- Details button + Enter = Navigate to details (normal button behavior)
+- Deck region (when focused) + ArrowLeft = Pass
+- Deck region (when focused) + ArrowRight = Save
+- Deck region (when focused) + Enter = Details
+
+---
+
+## AC. Reduced Motion Active Card
+
+**Test ID**: DECK-A11Y-RM-001
+**Objective**: Verify active card respects reduced motion
+
+**Steps**:
+1. Enable "Reduce motion" in OS settings
+2. Open Deck mode
+3. Swipe card left/right
+4. Observe animations
+
+**Expected Result**:
+- Card rotation disabled or minimal
+- Exit animation very short or instant
+- Save/Pass indicators remain visible
+- Background card not shown (already implemented)
+- Functionality intact
+
+---
+
 ## Test Execution Log
 
 | Test ID | Date | Tester | Pass/Fail | Notes |
@@ -467,10 +618,17 @@ This document records manual test requirements for the Explore Opportunity Deck 
 | DECK-A11Y-001 | | | | |
 | DECK-REG-001 | | | | |
 | DECK-PERF-001 | | | | |
+| DECK-SWIPE-FAIL-001 | | | | |
+| DECK-NEXT-001 | | | | |
+| DECK-TOGGLE-001 | | | | |
+| DECK-FILTER-RESET-001 | | | | |
+| DECK-AUX-FAIL-001 | | | | |
+| DECK-KEY-BTN-001 | | | | |
+| DECK-A11Y-RM-001 | | | | |
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Last Updated**: 2026-09-07
 **Feature**: E1 — Explore Opportunity Deck
 **Related Commit**: TBD

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { useState } from "react";
+import { motion, useMotionValue, useTransform, PanInfo, useReducedMotion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,8 +11,8 @@ import type { JobMatch } from "@/types";
 
 export interface OpportunitySwipeCardProps {
   match: JobMatch;
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
+  onSwipeLeft?: () => Promise<boolean>;
+  onSwipeRight?: () => Promise<boolean>;
   onDetails?: () => void;
   disabled?: boolean;
   zIndex?: number;
@@ -30,34 +30,62 @@ export function OpportunitySwipeCard({
 }: OpportunitySwipeCardProps) {
   const { job, overall_score, matched_skills, reasons_fit } = match;
   const [exitX, setExitX] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const prefersReducedMotion = useReducedMotion();
 
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-15, 15]);
+  const rotate = useTransform(x, [-200, 200], prefersReducedMotion ? [0, 0] : [-15, 15]);
   const opacity = useTransform(x, [-200, -50, 0, 50, 200], [0, 1, 1, 1, 0]);
 
   // Indicator opacity for swipe direction
   const passOpacity = useTransform(x, [-200, -SWIPE_THRESHOLD, 0], [1, 0.7, 0]);
   const saveOpacity = useTransform(x, [0, SWIPE_THRESHOLD, 200], [0, 0.7, 1]);
 
-  const handleDragEnd = (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (disabled) return;
+  const handleDragEnd = async (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (disabled || isProcessing) return;
 
     const offset = info.offset.x;
     const velocity = info.velocity.x;
 
     // Determine swipe direction
     if (offset < -SWIPE_THRESHOLD || velocity < -500) {
-      setExitX(-300);
-      onSwipeLeft?.();
+      // Pass action
+      if (onSwipeLeft) {
+        setIsProcessing(true);
+        const success = await onSwipeLeft();
+        setIsProcessing(false);
+
+        if (success) {
+          // Persistence succeeded - commit exit animation
+          setExitX(-300);
+        } else {
+          // Persistence failed - snap back to center
+          x.set(0);
+        }
+      }
     } else if (offset > SWIPE_THRESHOLD || velocity > 500) {
-      setExitX(300);
-      onSwipeRight?.();
+      // Save action
+      if (onSwipeRight) {
+        setIsProcessing(true);
+        const success = await onSwipeRight();
+        setIsProcessing(false);
+
+        if (success) {
+          // Persistence succeeded - commit exit animation
+          setExitX(300);
+        } else {
+          // Persistence failed - snap back to center
+          x.set(0);
+        }
+      }
     }
   };
 
   return (
     <motion.div
-      drag={!disabled ? "x" : false}
+      key={match.job.id}
+      drag={!disabled && !isProcessing ? "x" : false}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={handleDragEnd}
       style={{
@@ -71,7 +99,7 @@ export function OpportunitySwipeCard({
           ? {
               x: exitX,
               opacity: 0,
-              transition: { duration: 0.2 },
+              transition: { duration: prefersReducedMotion ? 0.05 : 0.2 },
             }
           : {}
       }

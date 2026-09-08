@@ -39,6 +39,8 @@ export default function ExplorePage() {
   // Deck mode persistence state
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [passedJobIds, setPassedJobIds] = useState<Set<string>>(new Set());
+  const [deckStateLoading, setDeckStateLoading] = useState(false);
+  const [deckStateError, setDeckStateError] = useState(false);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -116,14 +118,18 @@ export default function ExplorePage() {
         setAllMatches(jobMatches);
 
         // Load saved/passed for Deck mode
+        setDeckStateLoading(true);
         try {
           const savedIds = await getSavedJobs();
           const passedIds = await getPassedJobIds();
           setSavedJobIds(new Set(savedIds));
           setPassedJobIds(new Set(passedIds));
+          setDeckStateError(false);
         } catch (error) {
           console.error("Failed to load saved/passed jobs:", error);
-          // Non-critical for List mode, Deck will show error if needed
+          setDeckStateError(true);
+        } finally {
+          setDeckStateLoading(false);
         }
       } catch (error) {
         console.error("Failed to load personalized matches:", error);
@@ -134,6 +140,31 @@ export default function ExplorePage() {
     };
     loadMatches();
   }, []);
+
+  // Set synchronization callbacks
+  const handleSaved = (jobId: string) => {
+    setSavedJobIds((prev) => new Set(prev).add(jobId));
+  };
+
+  const handlePassed = (jobId: string) => {
+    setPassedJobIds((prev) => new Set(prev).add(jobId));
+  };
+
+  const handleUndoSaved = (jobId: string) => {
+    setSavedJobIds((prev) => {
+      const next = new Set(prev);
+      next.delete(jobId);
+      return next;
+    });
+  };
+
+  const handleUndoPassed = (jobId: string) => {
+    setPassedJobIds((prev) => {
+      const next = new Set(prev);
+      next.delete(jobId);
+      return next;
+    });
+  };
 
   const filteredJobs = useMemo(() => {
     return allMatches.filter((match) => {
@@ -408,7 +439,16 @@ export default function ExplorePage() {
         {/* Deck Mode */}
         {viewMode === "deck" && (
           <>
-            {hasIncompleteProfile && allMatches.length === 0 ? (
+            {deckStateError ? (
+              <div className="rounded-[var(--radius-lg)] bg-surface p-12 text-center">
+                <p className="text-foreground mb-4">
+                  Unable to load your Opportunity Deck right now.
+                </p>
+                <Button variant="primary" onClick={() => setViewMode("list")}>
+                  Return to List
+                </Button>
+              </div>
+            ) : hasIncompleteProfile && allMatches.length === 0 ? (
               <IncompleteProfileMessage />
             ) : filteredJobs.length === 0 ? (
               <EmptyState
@@ -422,6 +462,10 @@ export default function ExplorePage() {
                 savedJobIds={savedJobIds}
                 passedJobIds={passedJobIds}
                 onSwitchToList={() => setViewMode("list")}
+                onSaved={handleSaved}
+                onPassed={handlePassed}
+                onUndoSaved={handleUndoSaved}
+                onUndoPassed={handleUndoPassed}
               />
             )}
           </>
