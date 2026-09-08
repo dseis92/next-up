@@ -10,6 +10,8 @@ import {
   areValuesEquivalent,
   allJobsHaveSameValue,
   getSectionOrder,
+  getSkillStatus,
+  allJobsHaveSameSkillStatus,
 } from "../comparison";
 
 // Mock JobMatch helper
@@ -264,6 +266,83 @@ describe("Comparison Logic", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = getSectionOrder("unknown" as any);
       expect(result).toEqual(["match", "compensation", "lifestyle", "skills", "strengths"]);
+    });
+  });
+
+  describe("getSkillStatus", () => {
+    it("should return matched for matched skills", () => {
+      const match = { matched_skills: ["TypeScript", "React"], missing_skills: ["Go"] };
+      expect(getSkillStatus(match, "TypeScript")).toBe("matched");
+      expect(getSkillStatus(match, "React")).toBe("matched");
+    });
+
+    it("should return missing for missing skills", () => {
+      const match = { matched_skills: ["TypeScript"], missing_skills: ["Go", "Rust"] };
+      expect(getSkillStatus(match, "Go")).toBe("missing");
+      expect(getSkillStatus(match, "Rust")).toBe("missing");
+    });
+
+    it("should return not-required for unlisted skills", () => {
+      const match = { matched_skills: ["TypeScript"], missing_skills: ["Go"] };
+      expect(getSkillStatus(match, "Python")).toBe("not-required");
+    });
+  });
+
+  describe("allJobsHaveSameSkillStatus", () => {
+    it("should return true when all jobs have skill matched", () => {
+      const matches = [
+        { matched_skills: ["TypeScript"], missing_skills: [] },
+        { matched_skills: ["TypeScript"], missing_skills: [] },
+        { matched_skills: ["TypeScript"], missing_skills: [] },
+      ];
+      expect(allJobsHaveSameSkillStatus(matches, "TypeScript")).toBe(true);
+    });
+
+    it("should return true when all jobs are missing skill", () => {
+      const matches = [
+        { matched_skills: [], missing_skills: ["Go"] },
+        { matched_skills: [], missing_skills: ["Go"] },
+        { matched_skills: [], missing_skills: ["Go"] },
+      ];
+      expect(allJobsHaveSameSkillStatus(matches, "Go")).toBe(true);
+    });
+
+    it("should return true when all jobs consider skill not-required", () => {
+      const matches = [
+        { matched_skills: ["TypeScript"], missing_skills: ["Go"] },
+        { matched_skills: ["React"], missing_skills: ["Rust"] },
+        { matched_skills: ["Node"], missing_skills: ["Python"] },
+      ];
+      expect(allJobsHaveSameSkillStatus(matches, "Java")).toBe(true);
+    });
+
+    it("should return false when jobs have different skill statuses", () => {
+      const matches = [
+        { matched_skills: ["TypeScript"], missing_skills: [] },
+        { matched_skills: [], missing_skills: ["TypeScript"] },
+        { matched_skills: ["React"], missing_skills: ["Go"] },
+      ];
+      expect(allJobsHaveSameSkillStatus(matches, "TypeScript")).toBe(false);
+    });
+
+    it("should return false when mixed matched/not-required", () => {
+      const matches = [
+        { matched_skills: ["TypeScript"], missing_skills: [] },
+        { matched_skills: ["React"], missing_skills: ["Go"] },
+      ];
+      expect(allJobsHaveSameSkillStatus(matches, "TypeScript")).toBe(false);
+    });
+
+    it("should return false when mixed missing/not-required", () => {
+      const matches = [
+        { matched_skills: [], missing_skills: ["Go"] },
+        { matched_skills: ["TypeScript"], missing_skills: [] },
+      ];
+      expect(allJobsHaveSameSkillStatus(matches, "Go")).toBe(false);
+    });
+
+    it("should handle empty matches array", () => {
+      expect(allJobsHaveSameSkillStatus([], "TypeScript")).toBe(true);
     });
   });
 });

@@ -5,8 +5,21 @@
 const MAX_COMPARE_JOBS = 4;
 
 /**
+ * UUID v4 validation regex
+ * Jobs table uses UUID primary keys
+ */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate UUID format
+ */
+function isValidUUID(id: string): boolean {
+  return UUID_REGEX.test(id);
+}
+
+/**
  * Parse job IDs from URL query parameter
- * Handles malformed input, deduplication, and maximum limit
+ * Validates UUID format, handles malformed input, deduplication, and maximum limit
  *
  * @param jobsParam - The "jobs" query parameter value (e.g., "id1,id2,id3")
  * @returns Array of unique, valid job IDs (max 4)
@@ -22,11 +35,16 @@ export function parseCompareJobIds(jobsParam: string | null | undefined): string
     .map((id) => id.trim())
     .filter((id) => id.length > 0);
 
-  // Deduplicate while preserving order
+  // Validate UUIDs and deduplicate while preserving order
   const uniqueIds: string[] = [];
   const seen = new Set<string>();
 
   for (const id of rawIds) {
+    // Reject malformed IDs before database query
+    if (!isValidUUID(id)) {
+      continue;
+    }
+
     if (!seen.has(id)) {
       seen.add(id);
       uniqueIds.push(id);

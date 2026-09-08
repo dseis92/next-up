@@ -4,7 +4,7 @@
 
 **Feature**: E2 — Opportunity Compare
 **Related Spec**: E2_OPPORTUNITY_COMPARE_SPEC.md
-**Related Commit**: TBD
+**Related Commit**: a332985afcc67e54f00099575d530a5beb75f8cc
 
 ---
 
@@ -707,4 +707,4 @@
 **Document Version**: 1.0
 **Last Updated**: 2026-09-07
 **Feature**: E2 — Opportunity Compare
-**Related Commit**: TBD
+**Related Commit**: a332985afcc67e54f00099575d530a5beb75f8cc

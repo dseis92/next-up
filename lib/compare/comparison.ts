@@ -157,6 +157,33 @@ export function areValuesEquivalent(
 }
 
 /**
+ * Skill status for difference mode comparison
+ */
+export type SkillStatus = "matched" | "missing" | "not-required";
+
+/**
+ * Get skill status for a match
+ */
+export function getSkillStatus(match: { matched_skills: string[]; missing_skills: string[] }, skill: string): SkillStatus {
+  if (match.matched_skills.includes(skill)) return "matched";
+  if (match.missing_skills.includes(skill)) return "missing";
+  return "not-required";
+}
+
+/**
+ * Check if all jobs have the same skill status
+ */
+export function allJobsHaveSameSkillStatus(
+  matches: { matched_skills: string[]; missing_skills: string[] }[],
+  skill: string
+): boolean {
+  if (matches.length === 0) return true;
+
+  const firstStatus = getSkillStatus(matches[0], skill);
+  return matches.every((match) => getSkillStatus(match, skill) === firstStatus);
+}
+
+/**
  * Check if all jobs have the same value for a specific property
  * Used for Difference Mode filtering
  */

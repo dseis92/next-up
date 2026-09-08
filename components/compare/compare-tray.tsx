@@ -46,6 +46,12 @@ export function CompareTray() {
             </p>
           )}
 
+          {selectedJobIds.length === 4 && (
+            <p className="text-foreground-secondary mb-3 text-sm">
+              Maximum 4 opportunities selected
+            </p>
+          )}
+
           <div className="mb-3 flex flex-wrap gap-2">
             {selectedJobIds.map((jobId, index) => (
               <Badge

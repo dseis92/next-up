@@ -5,6 +5,7 @@ interface CompareState {
   selectedJobIds: string[];
   addJobId: (jobId: string) => void;
   removeJobId: (jobId: string) => void;
+  replaceSelection: (jobIds: string[]) => void;
   clearSelection: () => void;
   isSelected: (jobId: string) => boolean;
   canAddMore: () => boolean;
@@ -37,6 +38,12 @@ export const useCompareStore = create<CompareState>()(
         set((state) => ({
           selectedJobIds: state.selectedJobIds.filter((id) => id !== jobId),
         }));
+      },
+
+      replaceSelection: (jobIds: string[]) => {
+        // Enforce max 4, deduplicate, preserve order
+        const uniqueIds = Array.from(new Set(jobIds)).slice(0, MAX_COMPARE_JOBS);
+        set({ selectedJobIds: uniqueIds });
       },
 
       clearSelection: () => {

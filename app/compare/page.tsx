@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense, useRef } from "react";
 
 export const dynamic = "force-dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { CompareMatrix } from "@/components/compare/compare-matrix";
 import { CompareHeader } from "@/components/compare/compare-header";
 import { ArrowLeft, Search } from "lucide-react";
-import { parseCompareJobIds } from "@/lib/compare/query";
+import { parseCompareJobIds, buildCompareUrl } from "@/lib/compare/query";
 import { getJobsByIds } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
 import { createClient } from "@/lib/supabase/client";
@@ -24,15 +23,20 @@ function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clearSelection = useCompareStore((state) => state.clearSelection);
+  const replaceSelection = useCompareStore((state) => state.replaceSelection);
+  const removeJobId = useCompareStore((state) => state.removeJobId);
 
   const [matches, setMatches] = useState<JobMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
-  const [missingJobCount, setMissingJobCount] = useState(0);
+  const [missingJobIds, setMissingJobIds] = useState<string[]>([]);
 
   const [differencesOnly, setDifferencesOnly] = useState(false);
   const [selectedLens, setSelectedLens] = useState<ComparisonLens>("balanced");
+
+  // Stale request protection: track request generation
+  const requestGenRef = useRef(0);
 
   // Parse job IDs from URL
   const jobIds = useMemo(() => {
@@ -40,10 +44,27 @@ function CompareContent() {
     return parseCompareJobIds(jobsParam);
   }, [searchParams]);
 
+  // Synchronize store with URL on mount/URL change
+  useEffect(() => {
+    if (jobIds.length > 0) {
+      replaceSelection(jobIds);
+    }
+  }, [jobIds, replaceSelection]);
+
   // Load comparison data
   useEffect(() => {
+    // Increment request generation (invalidate previous requests)
+    const currentRequest = ++requestGenRef.current;
+
     const loadComparison = async () => {
+      // Reset transient state for new request
+      setLoading(true);
+      setLoadError(false);
+      setMissingJobIds([]);
+      setHasIncompleteProfile(false);
+
       if (jobIds.length === 0) {
+        setMatches([]);
         setLoading(false);
         return;
       }
@@ -56,6 +77,7 @@ function CompareContent() {
         } = await supabase.auth.getUser();
 
         if (!user) {
+          setMatches([]);
           setLoading(false);
           return;
         }
@@ -63,12 +85,20 @@ function CompareContent() {
         // Load selected jobs (batch query)
         const { jobs, missingIds } = await getJobsByIds(jobIds);
 
-        if (missingIds.length > 0) {
-          setMissingJobCount(missingIds.length);
+        // Check if request is stale (newer request started)
+        if (currentRequest !== requestGenRef.current) {
+          return; // Ignore stale results
         }
 
+        // Track missing jobs
+        if (missingIds.length > 0) {
+          setMissingJobIds(missingIds);
+        }
+
+        // Check minimum valid jobs (distinguish missing from query error)
         if (jobs.length < 2) {
           // Not enough valid jobs for comparison
+          setMatches([]);
           setLoading(false);
           return;
         }
@@ -76,9 +106,15 @@ function CompareContent() {
         // Calculate personalized matches (single profile hydration)
         const matchResult = await calculatePersonalizedMatches(user.id, jobs);
 
+        // Check if request is stale again
+        if (currentRequest !== requestGenRef.current) {
+          return;
+        }
+
         if (matchResult.status === "error") {
           console.error("Failed to load matching data:", matchResult.error);
           setLoadError(true);
+          setMatches([]);
           setLoading(false);
           return;
         }
@@ -95,11 +131,7 @@ function CompareContent() {
 
           if (result.status === "incomplete_profile") {
             hasIncomplete = true;
-          }
-
-          // Skip incomplete profiles
-          if (result.status === "incomplete_profile") {
-            continue;
+            continue; // Skip incomplete profiles
           }
 
           jobMatches.push({
@@ -129,10 +161,19 @@ function CompareContent() {
         setHasIncompleteProfile(hasIncomplete);
         setMatches(jobMatches);
       } catch (error) {
+        // Check if request is stale
+        if (currentRequest !== requestGenRef.current) {
+          return;
+        }
+
         console.error("Failed to load comparison:", error);
         setLoadError(true);
+        setMatches([]);
       } finally {
-        setLoading(false);
+        // Only update loading if this is still the current request
+        if (currentRequest === requestGenRef.current) {
+          setLoading(false);
+        }
       }
     };
 
@@ -142,6 +183,19 @@ function CompareContent() {
   const handleClear = () => {
     clearSelection();
     router.push("/explore");
+  };
+
+  const handleRemoveJob = (jobId: string) => {
+    // Remove from store
+    removeJobId(jobId);
+
+    // Update URL with remaining jobs
+    const remaining = jobIds.filter((id) => id !== jobId);
+    if (remaining.length === 0) {
+      router.push("/compare");
+    } else {
+      router.push(buildCompareUrl(remaining));
+    }
   };
 
   // Loading state
@@ -155,7 +209,7 @@ function CompareContent() {
     );
   }
 
-  // Error state
+  // Error state (database/query failure)
   if (loadError) {
     return (
       <AppShell>
@@ -176,8 +230,11 @@ function CompareContent() {
     );
   }
 
-  // Empty state (0-1 jobs)
-  if (jobIds.length < 2 || matches.length < 2) {
+  // Missing-job minimum state (distinguish from database failure)
+  const validJobCount = jobIds.length - missingJobIds.length;
+  const showMinimumState = validJobCount < 2;
+
+  if (showMinimumState) {
     return (
       <AppShell>
         <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
@@ -194,12 +251,15 @@ function CompareContent() {
             <h1 className="text-heading-lg mb-2">Compare opportunities</h1>
           </div>
 
-          {missingJobCount > 0 && matches.length >= 1 && (
+          {missingJobIds.length > 0 && (
             <div className="mb-4 rounded-lg bg-surface-secondary p-4">
+              <p className="text-foreground mb-2 font-medium">
+                {missingJobIds.length === 1
+                  ? "1 opportunity is no longer available"
+                  : `${missingJobIds.length} opportunities are no longer available`}
+              </p>
               <p className="text-foreground-secondary text-sm">
-                {missingJobCount === 1
-                  ? "One opportunity is no longer available."
-                  : `${missingJobCount} opportunities are no longer available.`}
+                At least 2 available opportunities are required for comparison.
               </p>
             </div>
           )}
@@ -232,12 +292,12 @@ function CompareContent() {
           onClear={handleClear}
         />
 
-        {missingJobCount > 0 && (
+        {missingJobIds.length > 0 && (
           <div className="mb-4 rounded-lg bg-surface-secondary p-4">
             <p className="text-foreground-secondary text-sm">
-              {missingJobCount === 1
-                ? "One opportunity is no longer available."
-                : `${missingJobCount} opportunities are no longer available.`}
+              {missingJobIds.length === 1
+                ? "1 opportunity is no longer available"
+                : `${missingJobIds.length} opportunities are no longer available`}
             </p>
           </div>
         )}
@@ -245,53 +305,59 @@ function CompareContent() {
         {/* Controls */}
         <div className="mb-6 flex flex-wrap items-center gap-4">
           {/* Difference Mode */}
-          <div className="flex gap-2">
-            <Badge
-              variant={!differencesOnly ? "brand" : "default"}
-              className="cursor-pointer"
+          <div className="flex gap-2" role="group" aria-label="View mode">
+            <Button
+              variant={!differencesOnly ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setDifferencesOnly(false)}
+              aria-pressed={!differencesOnly}
             >
               All details
-            </Badge>
-            <Badge
-              variant={differencesOnly ? "brand" : "default"}
-              className="cursor-pointer"
+            </Button>
+            <Button
+              variant={differencesOnly ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setDifferencesOnly(true)}
+              aria-pressed={differencesOnly}
             >
               Differences only
-            </Badge>
+            </Button>
           </div>
 
           {/* Lens Selector */}
-          <div className="flex flex-wrap gap-2">
-            <Badge
-              variant={selectedLens === "balanced" ? "brand" : "default"}
-              className="cursor-pointer"
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Comparison lens">
+            <Button
+              variant={selectedLens === "balanced" ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setSelectedLens("balanced")}
+              aria-pressed={selectedLens === "balanced"}
             >
               Balanced
-            </Badge>
-            <Badge
-              variant={selectedLens === "compensation" ? "brand" : "default"}
-              className="cursor-pointer"
+            </Button>
+            <Button
+              variant={selectedLens === "compensation" ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setSelectedLens("compensation")}
+              aria-pressed={selectedLens === "compensation"}
             >
               Compensation
-            </Badge>
-            <Badge
-              variant={selectedLens === "lifestyle" ? "brand" : "default"}
-              className="cursor-pointer"
+            </Button>
+            <Button
+              variant={selectedLens === "lifestyle" ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setSelectedLens("lifestyle")}
+              aria-pressed={selectedLens === "lifestyle"}
             >
               Lifestyle
-            </Badge>
-            <Badge
-              variant={selectedLens === "qualification" ? "brand" : "default"}
-              className="cursor-pointer"
+            </Button>
+            <Button
+              variant={selectedLens === "qualification" ? "primary" : "secondary"}
+              size="sm"
               onClick={() => setSelectedLens("qualification")}
+              aria-pressed={selectedLens === "qualification"}
             >
               Qualification
-            </Badge>
+            </Button>
           </div>
         </div>
 
@@ -300,6 +366,7 @@ function CompareContent() {
           matches={matches}
           differencesOnly={differencesOnly}
           lens={selectedLens}
+          onRemoveJob={handleRemoveJob}
         />
       </div>
     </AppShell>

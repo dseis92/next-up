@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MapPin, ArrowRight, TrendingUp } from "lucide-react";
+import { MapPin, ArrowRight, TrendingUp, X } from "lucide-react";
 import { formatSalary } from "@/lib/utils";
 import type { JobMatch } from "@/types";
 import type { ComparisonLens, ComparisonLeaders } from "@/lib/compare/comparison";
@@ -14,15 +14,22 @@ import {
   getComparisonLeaders,
   getSectionOrder,
   allJobsHaveSameValue,
+  allJobsHaveSameSkillStatus,
 } from "@/lib/compare/comparison";
 
 export interface CompareMatrixProps {
   matches: JobMatch[];
   differencesOnly: boolean;
   lens: ComparisonLens;
+  onRemoveJob: (jobId: string) => void;
 }
 
-export function CompareMatrix({ matches, differencesOnly, lens }: CompareMatrixProps) {
+export function CompareMatrix({
+  matches,
+  differencesOnly,
+  lens,
+  onRemoveJob,
+}: CompareMatrixProps) {
   const router = useRouter();
 
   const leaders = useMemo(() => getComparisonLeaders(matches), [matches]);
@@ -57,6 +64,15 @@ export function CompareMatrix({ matches, differencesOnly, lens }: CompareMatrixP
                   </Badge>
                 </div>
               )}
+
+              {/* Remove button */}
+              <button
+                onClick={() => onRemoveJob(job.id)}
+                className="absolute left-4 top-4 rounded-full p-1.5 text-foreground-muted hover:bg-surface-secondary hover:text-foreground-secondary transition-colors"
+                aria-label={`Remove ${job.title} at ${job.company.name} from comparison`}
+              >
+                <X className="h-4 w-4" />
+              </button>
 
               <div className="mb-4">
                 <Avatar
@@ -372,7 +388,7 @@ function CompensationSection({ matches, leaders, shouldShowRow }: SectionProps) 
 }
 
 // Lifestyle Section
-function LifestyleSection({ matches, leaders, shouldShowRow }: SectionProps) {
+function LifestyleSection({ matches, shouldShowRow }: SectionProps) {
   return (
     <Card variant="elevated" className="p-6">
       <h2 className="text-heading mb-4">Lifestyle</h2>
@@ -492,6 +508,16 @@ function SkillsSection({ matches, leaders, shouldShowRow }: SectionProps) {
 
   const sortedSkills = Array.from(allSkills).sort();
 
+  // Determine which skills to show based on difference mode
+  const shouldShowSkill = (skill: string): boolean => {
+    // Use parent's shouldShowRow to check if we're in difference mode
+    const inDifferenceMode = !shouldShowRow(() => 0); // hack: always different primitive
+    if (!inDifferenceMode) return true;
+
+    // In difference mode: hide skill if all jobs have same status
+    return !allJobsHaveSameSkillStatus(matches, skill);
+  };
+
   return (
     <Card variant="elevated" className="p-6">
       <h2 className="text-heading mb-4">Skills</h2>
@@ -515,42 +541,47 @@ function SkillsSection({ matches, leaders, shouldShowRow }: SectionProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            <tr>
-              <td className="py-3 pr-4 text-sm font-medium text-foreground">
-                Matched Skills
-              </td>
-              {matches.map((match: JobMatch) => {
-                const isLeader = leaders.mostMatchedSkills.jobIds.includes(match.job.id);
-                return (
-                  <td
-                    key={match.job.id}
-                    className="py-3 px-4 text-center text-sm text-foreground"
-                  >
-                    <Badge variant={isLeader ? "success" : "default"}>
-                      {match.matched_skills.length}
-                    </Badge>
-                  </td>
-                );
-              })}
-            </tr>
-            <tr>
-              <td className="py-3 pr-4 text-sm font-medium text-foreground">
-                Missing Skills
-              </td>
-              {matches.map((match: JobMatch) => {
-                const isLeader = leaders.fewestMissingSkills.jobIds.includes(match.job.id);
-                return (
-                  <td
-                    key={match.job.id}
-                    className="py-3 px-4 text-center text-sm text-foreground"
-                  >
-                    <Badge variant={isLeader ? "success" : "default"}>
-                      {match.missing_skills.length}
-                    </Badge>
-                  </td>
-                );
-              })}
-            </tr>
+            {shouldShowRow((m: JobMatch) => m.matched_skills.length) && (
+              <tr>
+                <td className="py-3 pr-4 text-sm font-medium text-foreground">
+                  Matched Skills
+                </td>
+                {matches.map((match: JobMatch) => {
+                  const isLeader = leaders.mostMatchedSkills.jobIds.includes(match.job.id);
+                  return (
+                    <td
+                      key={match.job.id}
+                      className="py-3 px-4 text-center text-sm text-foreground"
+                    >
+                      <Badge variant={isLeader ? "success" : "default"}>
+                        {match.matched_skills.length}
+                      </Badge>
+                    </td>
+                  );
+                })}
+              </tr>
+            )}
+
+            {shouldShowRow((m: JobMatch) => m.missing_skills.length) && (
+              <tr>
+                <td className="py-3 pr-4 text-sm font-medium text-foreground">
+                  Missing Skills
+                </td>
+                {matches.map((match: JobMatch) => {
+                  const isLeader = leaders.fewestMissingSkills.jobIds.includes(match.job.id);
+                  return (
+                    <td
+                      key={match.job.id}
+                      className="py-3 px-4 text-center text-sm text-foreground"
+                    >
+                      <Badge variant={isLeader ? "success" : "default"}>
+                        {match.missing_skills.length}
+                      </Badge>
+                    </td>
+                  );
+                })}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -575,7 +606,7 @@ function SkillsSection({ matches, leaders, shouldShowRow }: SectionProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {sortedSkills.map((skill) => (
+              {sortedSkills.filter(shouldShowSkill).map((skill) => (
                 <tr key={skill}>
                   <td className="py-2 pr-4 text-sm text-foreground">{skill}</td>
                   {matches.map((match: JobMatch) => {
