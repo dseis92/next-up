@@ -62,7 +62,10 @@ export default function JobDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
 
   // Load dealbreaker preferences once
-  const { preferences: dealbreakerPreferences } = useDealbreakerPreferences();
+  const {
+    preferences: dealbreakerPreferences,
+    error: dealbreakerError
+  } = useDealbreakerPreferences();
 
   // Evaluate dealbreakers for this job
   const dealbreakerEvaluation = useMemo(() => {
@@ -423,11 +426,15 @@ export default function JobDetailPage() {
           )}
 
           {/* Dealbreaker Findings */}
-          {dealbreakerEvaluation && (
-            <Card className="mb-6 p-6">
+          {dealbreakerError ? (
+            <div className="mb-6">
+              <p className="text-sm text-foreground-muted">Dealbreaker preferences unavailable.</p>
+            </div>
+          ) : dealbreakerEvaluation ? (
+            <div className="mb-6">
               <DealbreakerFindings evaluation={dealbreakerEvaluation} />
-            </Card>
-          )}
+            </div>
+          ) : null}
 
           {/* AI Match Explanation */}
           {matchResult?.status !== "incomplete_profile" && match && (

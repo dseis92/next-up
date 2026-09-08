@@ -12,6 +12,7 @@ import {
   clearUserDealbreakers,
 } from "@/lib/storage/dealbreakers";
 import type { DealbreakerPreferences } from "@/lib/dealbreakers/types";
+import { parseMinimumSalaryInput } from "@/lib/dealbreakers/validation";
 
 export default function DealbreakerSettingsPage() {
   const router = useRouter();
@@ -109,21 +110,11 @@ export default function DealbreakerSettingsPage() {
   const handleSave = async () => {
     if (!userId || !loadedSuccessfully) return;
 
-    // Validate salary input
-    if (minimumSalary) {
-      const parsed = parseInt(minimumSalary, 10);
-      if (isNaN(parsed)) {
-        setError("Minimum salary must be a valid number.");
-        return;
-      }
-      if (parsed < 0) {
-        setError("Minimum salary cannot be negative.");
-        return;
-      }
-      if (parsed > 10000000) {
-        setError("Minimum salary exceeds maximum allowed value (10,000,000).");
-        return;
-      }
+    // Validate salary input using strict validation helper
+    const salaryValidation = parseMinimumSalaryInput(minimumSalary);
+    if (!salaryValidation.ok) {
+      setError(salaryValidation.error);
+      return;
     }
 
     setSaving(true);
@@ -132,7 +123,7 @@ export default function DealbreakerSettingsPage() {
     try {
       const preferences: Omit<DealbreakerPreferences, "createdAt" | "updatedAt"> = {
         userId,
-        minimumSalary: minimumSalary ? parseInt(minimumSalary, 10) : undefined,
+        minimumSalary: salaryValidation.value,
         requireSalaryDisclosure: requireDisclosure,
         allowedWorkArrangements: Array.from(selectedArrangements) as (
           | "remote"
@@ -261,7 +252,7 @@ export default function DealbreakerSettingsPage() {
         <div className="space-y-8">
           {/* Minimum Salary */}
           <div>
-            <label className="text-foreground text-body-md mb-2 block font-medium">
+            <label htmlFor="minimum-salary" className="text-foreground text-body-md mb-2 block font-medium">
               Minimum compensation
             </label>
             <p className="text-foreground-secondary text-body-sm mb-3">
@@ -270,6 +261,7 @@ export default function DealbreakerSettingsPage() {
             <div className="flex items-center gap-2">
               <span className="text-foreground-secondary">$</span>
               <input
+                id="minimum-salary"
                 type="number"
                 value={minimumSalary}
                 onChange={(e) => setMinimumSalary(e.target.value)}

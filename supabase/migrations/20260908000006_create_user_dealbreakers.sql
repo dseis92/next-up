@@ -3,7 +3,7 @@
 -- One row per user, owner-only access
 
 -- Create user_dealbreakers table
-CREATE TABLE IF NOT EXISTS user_dealbreakers (
+CREATE TABLE user_dealbreakers (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
 
   -- Minimum compensation requirement (in yearly salary)
@@ -58,9 +58,6 @@ CREATE POLICY "Users can delete their own dealbreaker preferences"
   FOR DELETE
   TO authenticated
   USING (auth.uid() = user_id);
-
--- Create index on user_id for fast lookups
-CREATE INDEX user_dealbreakers_user_id_idx ON user_dealbreakers(user_id);
 
 -- Create updated_at trigger
 CREATE OR REPLACE FUNCTION update_user_dealbreakers_updated_at()

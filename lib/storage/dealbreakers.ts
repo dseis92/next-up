@@ -105,12 +105,12 @@ function adaptDealbreakerRow(row: UserDealbreakerRow): DealbreakerPreferences {
     userId: row.user_id,
     minimumSalary: row.minimum_salary ?? undefined,
     requireSalaryDisclosure: row.require_salary_disclosure,
-    allowedWorkArrangements: row.allowed_work_arrangements as (
+    allowedWorkArrangements: (row.allowed_work_arrangements ?? []) as (
       | "remote"
       | "hybrid"
       | "onsite"
     )[],
-    allowedEmploymentTypes: row.allowed_employment_types as (
+    allowedEmploymentTypes: (row.allowed_employment_types ?? []) as (
       | "full_time"
       | "part_time"
       | "contract"

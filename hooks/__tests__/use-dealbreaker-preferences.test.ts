@@ -133,8 +133,8 @@ describe("Dealbreaker Integration Helpers", () => {
     });
   });
 
-  describe("N+1 Prevention", () => {
-    it("should evaluate 100 jobs with single preferences object", () => {
+  describe("Batch Local Evaluation", () => {
+    it("should evaluate 100 jobs locally using one supplied preferences object", () => {
       const manyJobs = Array.from({ length: 100 }, (_, i) =>
         createMockJob(`job-${i}`)
       );
@@ -142,8 +142,8 @@ describe("Dealbreaker Integration Helpers", () => {
       const results = evaluateJobsDealbreakers(mockPreferences, manyJobs);
 
       expect(results.size).toBe(100);
-      // All evaluations should have been done with same preferences
-      // (verified by mock not being called per-job for preferences loading)
+      // This test verifies batch local evaluation uses one supplied preferences object
+      // Manual browser QA is responsible for verifying actual network request count
     });
   });
 });

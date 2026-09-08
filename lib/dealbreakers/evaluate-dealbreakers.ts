@@ -91,6 +91,7 @@ function determineStatus(findings: DealbreakerFinding[]): DealbreakerStatus {
  * Evaluate minimum salary requirement
  *
  * Conservative logic:
+ * - Estimated salary: UNKNOWN (estimates are not verifiable)
  * - Job max < user min: CONFLICT
  * - Job min >= user min: PASS
  * - Range overlaps floor: UNKNOWN (range includes acceptable and unacceptable)
@@ -101,15 +102,25 @@ function evaluateMinimumSalary(
   minimumSalary: number,
   job: DealbreakerJobData
 ): DealbreakerFinding {
-  const { salaryMin, salaryMax, salaryPeriod } = job;
+  const { salaryMin, salaryMax, salaryPeriod, salaryIsEstimated } = job;
 
   // No salary data available
-  if (salaryMin === undefined && salaryMax === undefined) {
+  if (salaryMin === undefined && salaryMin === null && salaryMax === undefined && salaryMax === null) {
     return {
       ruleType: "minimum_salary",
       outcome: "unknown",
       title: "Salary minimum",
       explanation: "Compensation information is not available, so this preference can't be verified.",
+    };
+  }
+
+  // Estimated salary is weaker evidence - cannot verify minimum
+  if (salaryIsEstimated === true) {
+    return {
+      ruleType: "minimum_salary",
+      outcome: "unknown",
+      title: "Salary minimum",
+      explanation: "Compensation is estimated, so your minimum salary requirement can't be verified.",
     };
   }
 
@@ -126,7 +137,7 @@ function evaluateMinimumSalary(
   }
 
   // Job maximum is below user's minimum - clear conflict
-  if (salaryMax !== undefined && salaryMax < minimumSalary) {
+  if (salaryMax !== undefined && salaryMax !== null && salaryMax < minimumSalary) {
     return {
       ruleType: "minimum_salary",
       outcome: "conflict",
@@ -136,7 +147,7 @@ function evaluateMinimumSalary(
   }
 
   // Job minimum meets or exceeds user's minimum - clear pass
-  if (salaryMin !== undefined && salaryMin >= minimumSalary) {
+  if (salaryMin !== undefined && salaryMin !== null && salaryMin >= minimumSalary) {
     return {
       ruleType: "minimum_salary",
       outcome: "pass",
@@ -149,8 +160,8 @@ function evaluateMinimumSalary(
   // Example: min $80k, max $120k, user wants $90k
   // This could be acceptable or not depending on actual offer
   if (
-    salaryMin !== undefined &&
-    salaryMax !== undefined &&
+    salaryMin !== undefined && salaryMin !== null &&
+    salaryMax !== undefined && salaryMax !== null &&
     salaryMin < minimumSalary &&
     salaryMax >= minimumSalary
   ) {
@@ -174,15 +185,17 @@ function evaluateMinimumSalary(
 /**
  * Evaluate salary disclosure requirement
  *
- * Simple logic:
- * - No salary min AND no salary max: CONFLICT
- * - Salary information available: PASS
+ * Logic:
+ * - No salary present: CONFLICT (not disclosed)
+ * - Salary present but estimated: CONFLICT (estimate is not a disclosure)
+ * - Salary present and not estimated: PASS (truly disclosed)
+ * - Salary present but estimate status unknown: UNKNOWN (cannot verify)
  */
 function evaluateSalaryDisclosure(job: DealbreakerJobData): DealbreakerFinding {
-  const { salaryMin, salaryMax } = job;
+  const { salaryMin, salaryMax, salaryIsEstimated } = job;
 
-  // No salary disclosed
-  if (salaryMin === undefined && salaryMax === undefined) {
+  // No salary disclosed at all
+  if ((salaryMin === undefined || salaryMin === null) && (salaryMax === undefined || salaryMax === null)) {
     return {
       ruleType: "salary_disclosure",
       outcome: "conflict",
@@ -191,12 +204,32 @@ function evaluateSalaryDisclosure(job: DealbreakerJobData): DealbreakerFinding {
     };
   }
 
-  // Salary disclosed
+  // Salary is explicitly estimated (not a true disclosure)
+  if (salaryIsEstimated === true) {
+    return {
+      ruleType: "salary_disclosure",
+      outcome: "conflict",
+      title: "Salary disclosure",
+      explanation: "Compensation is estimated rather than disclosed.",
+    };
+  }
+
+  // Salary present and confirmed non-estimated (true disclosure)
+  if (salaryIsEstimated === false) {
+    return {
+      ruleType: "salary_disclosure",
+      outcome: "pass",
+      title: "Salary disclosure",
+      explanation: "Compensation is disclosed.",
+    };
+  }
+
+  // Salary present but unknown whether estimated - cannot verify disclosure
   return {
     ruleType: "salary_disclosure",
-    outcome: "pass",
+    outcome: "unknown",
     title: "Salary disclosure",
-    explanation: "Compensation is disclosed.",
+    explanation: "Compensation is listed but verification status is unclear.",
   };
 }
 

@@ -724,10 +724,108 @@
 
 ---
 
+### DB-SET-VAL-DECIMAL-001: Decimal Input Validation
+
+**Objective**: Verify decimal salary input is rejected
+
+**Steps**:
+1. Navigate to `/settings/dealbreakers`
+2. Enter "100000.5" in minimum salary
+3. Click "Save changes"
+
+**Expected**:
+- Validation error: "Minimum salary must be a whole number (no decimals)."
+- No database write
+- Form remains in edit state
+
+---
+
+### DB-SALARY-EST-001: Estimated Salary Minimum
+
+**Objective**: Verify estimated salary returns UNKNOWN for minimum salary rule
+
+**Steps**:
+1. Set dealbreaker: minimum salary $150,000
+2. Find job with `salary_is_estimated = true` and range that would normally pass/conflict
+3. View job dealbreaker evaluation
+
+**Expected**:
+- Minimum salary rule outcome: UNKNOWN
+- Explanation contains "estimated"
+
+---
+
+### DB-SALARY-EST-002: Estimated Salary Disclosure
+
+**Objective**: Verify estimated salary returns CONFLICT for disclosure requirement
+
+**Steps**:
+1. Set dealbreaker: require salary disclosure
+2. Find job with salary present AND `salary_is_estimated = true`
+3. View job dealbreaker evaluation
+
+**Expected**:
+- Salary disclosure outcome: CONFLICT
+- Explanation: "Compensation is estimated rather than disclosed."
+
+---
+
+### DB-SAVED-INCOMPLETE-001: Saved Incomplete Profile Independence
+
+**Objective**: Verify dealbreaker badge displays independently of match profile completeness
+
+**Steps**:
+1. Have incomplete matching profile (missing skills/experience/etc)
+2. Set active dealbreaker (e.g., minimum salary)
+3. Save job that conflicts with dealbreaker
+4. Navigate to `/saved`
+
+**Expected**:
+- "Finish your profile to see your match" message displays
+- AND dealbreaker conflict badge displays separately
+- Both messages visible simultaneously
+
+---
+
+### DB-DETAIL-PREF-ERROR-001: Job Detail Preference Load Error
+
+**Objective**: Verify dealbreaker preference load failure is isolated
+
+**Steps**:
+1. Simulate dealbreaker preference load failure (block network to `user_dealbreakers`)
+2. Navigate to `/jobs/[id]`
+3. Observe page functionality
+
+**Expected**:
+- "Dealbreaker preferences unavailable." displays in dealbreaker section
+- Match score still displays normally
+- Save button still works
+- Apply button still works
+- AI explanation section unaffected
+- Job facts/details render normally
+
+---
+
+### DB-NULL-EVIDENCE-001: Null Evidence Handling
+
+**Objective**: Verify null work arrangement/employment type returns UNKNOWN
+
+**Steps**:
+1. Using DB admin, set job `work_arrangement = NULL` or `employment_type = NULL`
+2. Set corresponding dealbreaker restriction
+3. View job evaluation
+
+**Expected**:
+- Affected rule outcome: UNKNOWN
+- No crash
+- Explanation indicates missing/unspecified data
+
+---
+
 ## Document Information
 
 **Created**: 2026-09-08
-**Updated**: 2026-09-08 (surface integration + hardening tests added)
+**Updated**: 2026-09-08 (trust semantics validation tests added)
 **Feature**: E3 — Dealbreaker Engine
 **Migration**: `20260908000006_create_user_dealbreakers.sql`
 **Status**: NOT YET EXECUTED — PENDING INDEPENDENT REVIEW

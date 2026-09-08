@@ -52,6 +52,7 @@ describe("Dealbreaker Engine - Core Evaluation", () => {
         salaryMin: 100000,
         salaryMax: 150000,
         salaryPeriod: "yearly",
+        salaryIsEstimated: false,
       };
 
       const result = evaluateDealbreakers(preferences, job);
@@ -306,6 +307,7 @@ describe("Dealbreaker Engine - Core Evaluation", () => {
         salaryMin: 100000,
         salaryMax: 150000,
         salaryPeriod: "yearly",
+        salaryIsEstimated: false,
       };
 
       const result = evaluateDealbreakers(preferences, job);
@@ -466,6 +468,7 @@ describe("Dealbreaker Engine - Core Evaluation", () => {
         salaryMin: 100000,
         salaryMax: 140000,
         salaryPeriod: "yearly",
+        salaryIsEstimated: false,
       };
 
       const result = evaluateDealbreakers(preferences, job);
@@ -533,6 +536,213 @@ describe("Dealbreaker Engine - Core Evaluation", () => {
 
       expect(result1).toEqual(result2);
       expect(result2).toEqual(result3);
+    });
+  });
+
+  describe("Estimated Salary Handling", () => {
+    it("should return UNKNOWN for minimum salary when salary is estimated", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        minimumSalary: 100000,
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: "remote",
+        employmentType: "full_time",
+        salaryMin: 120000,
+        salaryMax: 150000,
+        salaryPeriod: "yearly",
+        salaryIsEstimated: true,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const minSalaryFinding = result.findings.find(f => f.ruleType === "minimum_salary");
+
+      expect(minSalaryFinding?.outcome).toBe("unknown");
+      expect(minSalaryFinding?.explanation).toContain("estimated");
+    });
+
+    it("should return CONFLICT for salary disclosure when salary is estimated", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: true,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: "remote",
+        employmentType: "full_time",
+        salaryMin: 100000,
+        salaryMax: 120000,
+        salaryPeriod: "yearly",
+        salaryIsEstimated: true,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const disclosureFinding = result.findings.find(f => f.ruleType === "salary_disclosure");
+
+      expect(disclosureFinding?.outcome).toBe("conflict");
+      expect(disclosureFinding?.explanation).toContain("estimated rather than disclosed");
+    });
+
+    it("should return PASS for salary disclosure when salary is not estimated", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: true,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: "remote",
+        employmentType: "full_time",
+        salaryMin: 100000,
+        salaryMax: 120000,
+        salaryPeriod: "yearly",
+        salaryIsEstimated: false,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const disclosureFinding = result.findings.find(f => f.ruleType === "salary_disclosure");
+
+      expect(disclosureFinding?.outcome).toBe("pass");
+    });
+
+    it("should return UNKNOWN for salary disclosure when estimate status is unknown", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: true,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: "remote",
+        employmentType: "full_time",
+        salaryMin: 100000,
+        salaryMax: 120000,
+        salaryPeriod: "yearly",
+        salaryIsEstimated: null,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const disclosureFinding = result.findings.find(f => f.ruleType === "salary_disclosure");
+
+      expect(disclosureFinding?.outcome).toBe("unknown");
+    });
+  });
+
+  describe("Nullable Evidence Handling", () => {
+    it("should return UNKNOWN when workArrangement is null", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: ["remote"],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: null,
+        employmentType: "full_time",
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const arrangementFinding = result.findings.find(f => f.ruleType === "work_arrangement");
+
+      expect(arrangementFinding?.outcome).toBe("unknown");
+    });
+
+    it("should return UNKNOWN when workArrangement is undefined", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: ["remote"],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: undefined,
+        employmentType: "full_time",
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const arrangementFinding = result.findings.find(f => f.ruleType === "work_arrangement");
+
+      expect(arrangementFinding?.outcome).toBe("unknown");
+    });
+
+    it("should return UNKNOWN when employmentType is null", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: ["full_time"],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: "remote",
+        employmentType: null,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const typeFinding = result.findings.find(f => f.ruleType === "employment_type");
+
+      expect(typeFinding?.outcome).toBe("unknown");
+    });
+
+    it("should return UNKNOWN when employmentType is undefined", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: ["full_time"],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        workArrangement: "remote",
+        employmentType: undefined,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+      const typeFinding = result.findings.find(f => f.ruleType === "employment_type");
+
+      expect(typeFinding?.outcome).toBe("unknown");
     });
   });
 });

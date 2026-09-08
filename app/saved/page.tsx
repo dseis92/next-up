@@ -221,28 +221,28 @@ export default function SavedPage() {
                           )}
                         </p>
                       )}
-                      {isIncomplete ? (
-                        <div className="mt-2">
+                      <div className="mt-2 space-y-2">
+                        {isIncomplete ? (
                           <IncompleteProfileMessage variant="inline" />
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <Badge
-                              variant={matchResult.overallScore! >= 90 ? "success" : "brand"}
-                              size="sm"
-                            >
-                              {matchResult.overallScore}% match
-                            </Badge>
-                            {dealbreakerEval && <DealbreakerBadge evaluation={dealbreakerEval} size="sm" />}
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <Badge
+                                variant={matchResult.overallScore! >= 90 ? "success" : "brand"}
+                                size="sm"
+                              >
+                                {matchResult.overallScore}% match
+                              </Badge>
+                            </div>
+                            {matchResult.matchedSkills.slice(0, 2).map((skill) => (
+                              <Badge key={skill} variant="muted" size="sm">
+                                {skill}
+                              </Badge>
+                            ))}
                           </div>
-                          {matchResult.matchedSkills.slice(0, 2).map((skill) => (
-                            <Badge key={skill} variant="muted" size="sm">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                        )}
+                        {dealbreakerEval && <DealbreakerBadge evaluation={dealbreakerEval} size="sm" />}
+                      </div>
 
                       {/* Compare Toggle */}
                       <div className="mt-2">

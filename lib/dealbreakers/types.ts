@@ -77,13 +77,17 @@ export interface DealbreakerEvaluation {
 /**
  * Job data needed for dealbreaker evaluation
  * Adapted from the full Job type
+ *
+ * Nullable fields represent database reality where jobs may have
+ * incomplete or unverified data.
  */
 export interface DealbreakerJobData {
   id: string;
   title: string;
-  workArrangement: "remote" | "hybrid" | "onsite";
-  employmentType: "full_time" | "part_time" | "contract" | "temporary";
-  salaryMin?: number;
-  salaryMax?: number;
-  salaryPeriod?: "hourly" | "yearly";
+  workArrangement?: "remote" | "hybrid" | "onsite" | null;
+  employmentType?: "full_time" | "part_time" | "contract" | "temporary" | null;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  salaryPeriod?: "hourly" | "yearly" | null;
+  salaryIsEstimated?: boolean | null;
 }

@@ -22,6 +22,7 @@ export function adaptJobForDealbreakers(job: Job): DealbreakerJobData {
     salaryMin: job.salary_min,
     salaryMax: job.salary_max,
     salaryPeriod: job.salary_period,
+    salaryIsEstimated: job.salary_is_estimated,
   };
 }
 
