@@ -30,7 +30,7 @@ function CompareContent() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
-  const [missingJobIds, setMissingJobIds] = useState<string[]>([]);
+  const [unavailableNoticeCount, setUnavailableNoticeCount] = useState(0);
   const [loadedKey, setLoadedKey] = useState<string>("");
 
   const [differencesOnly, setDifferencesOnly] = useState(false);
@@ -71,14 +71,13 @@ function CompareContent() {
       // Check if this request has a pending missing-notice from normalization
       const hasPendingNotice = pendingMissingNoticeRef.current?.key === requestedKey;
       if (hasPendingNotice) {
-        // Restore missing IDs from pending notice
-        const placeholderIds = Array(pendingMissingNoticeRef.current!.count).fill("").map((_, i) => `missing-${i}`);
-        setMissingJobIds(placeholderIds);
+        // Restore unavailable count from pending notice
+        setUnavailableNoticeCount(pendingMissingNoticeRef.current!.count);
         // Clear the pending notice after restoration
         pendingMissingNoticeRef.current = null;
       } else {
-        // Clear missing IDs for unrelated comparison
-        setMissingJobIds([]);
+        // Clear unavailable count for unrelated comparison
+        setUnavailableNoticeCount(0);
         pendingMissingNoticeRef.current = null;
       }
 
@@ -113,7 +112,6 @@ function CompareContent() {
 
         // Normalize missing IDs out of comparison selection (ghost slot prevention)
         if (missingIds.length > 0) {
-          setMissingJobIds(missingIds);
           const validIds = jobIds.filter((id) => !missingIds.includes(id));
           if (validIds.length !== jobIds.length) {
             // Store missing-notice for destination key (survives normalization)
@@ -303,9 +301,9 @@ function CompareContent() {
     );
   }
 
-  // Minimum selection state (0-1 valid jobs)
-  const validJobCount = jobIds.length - missingJobIds.length;
-  const showMinimumState = validJobCount < 2;
+  // Minimum selection state (0-1 valid jobs in URL)
+  // jobIds already contains only valid IDs after normalization
+  const showMinimumState = jobIds.length < 2;
 
   if (showMinimumState) {
     return (
@@ -324,12 +322,12 @@ function CompareContent() {
             <h1 className="text-heading-lg mb-2">Compare opportunities</h1>
           </div>
 
-          {missingJobIds.length > 0 && (
+          {unavailableNoticeCount > 0 && (
             <div className="mb-4 rounded-lg bg-surface-secondary p-4">
               <p className="text-foreground mb-2 font-medium">
-                {missingJobIds.length === 1
+                {unavailableNoticeCount === 1
                   ? "1 opportunity is no longer available"
-                  : `${missingJobIds.length} opportunities are no longer available`}
+                  : `${unavailableNoticeCount} opportunities are no longer available`}
               </p>
               <p className="text-foreground-secondary text-sm">
                 At least 2 available opportunities are required for comparison.
@@ -372,12 +370,12 @@ function CompareContent() {
           onClear={handleClear}
         />
 
-        {missingJobIds.length > 0 && (
+        {unavailableNoticeCount > 0 && (
           <div className="mb-4 rounded-lg bg-surface-secondary p-4">
             <p className="text-foreground-secondary text-sm">
-              {missingJobIds.length === 1
+              {unavailableNoticeCount === 1
                 ? "1 opportunity is no longer available"
-                : `${missingJobIds.length} opportunities are no longer available`}
+                : `${unavailableNoticeCount} opportunities are no longer available`}
             </p>
           </div>
         )}

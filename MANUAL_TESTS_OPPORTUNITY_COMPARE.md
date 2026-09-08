@@ -9,7 +9,8 @@
 - Initial implementation: a332985afcc67e54f00099575d530a5beb75f8cc
 - First stabilization: 7f519b485859cb44c55e8fae382ffc24ec60b00a
 - Pre-hydration stabilization: a684a0f1f5f3f8545d74f55b779799f61aa8155e
-- Final hydration stabilization: 48917b22dec923f6f06b7038848ea56d7fc34990
+- Hydration stabilization: 53b6848f70e0f206c539c9512a98f2cef9ec2ebd
+- Current freeze-candidate SHA: See repository history / final implementation report.
 
 ---
 
@@ -880,6 +881,65 @@
 
 ---
 
+### 42. Two Valid With Multiple Unavailable
+
+**Test ID**: COMP-MISSING-NOTICE-TWO-VALID-001
+**Objective**: Verify notice count with multiple unavailable
+
+**Steps**:
+1. Construct URL: /compare?jobs=A,B,C,D (where C,D unavailable)
+2. Open URL
+3. Observe final state
+
+**Expected Result**:
+- URL normalizes to /compare?jobs=A,B
+- A/B comparison renders successfully
+- Notice displays: "2 opportunities are no longer available"
+- No minimum-selection state
+- Comparison matrix shows A and B
+
+---
+
+### 43. Pre-Hydration Early Click
+
+**Test ID**: COMP-HYDRATION-EARLY-CLICK-001
+**Objective**: Verify controls disabled during hydration
+
+**Steps**:
+1. Persist existing comparison session (A,B)
+2. Hard refresh Explore page
+3. Immediately attempt to click Compare button during initial render
+4. Observe button state
+
+**Expected Result**:
+- Compare buttons disabled during first render
+- No early mutation can occur
+- After hydration completes, buttons enable immediately
+- Session state (A,B) restores correctly
+- No interaction lost
+
+---
+
+### 44. Hydration Single-Flight
+
+**Test ID**: COMP-HYDRATION-SINGLEFLIGHT-001
+**Objective**: Verify no redundant rehydration
+
+**Steps**:
+1. Navigate to Explore List (multiple CompareToggle components visible)
+2. Hard refresh page
+3. Open browser DevTools Console
+4. Monitor for hydration behavior
+
+**Expected Result**:
+- Single rehydration operation (not N operations for N components)
+- All CompareToggle components hydrate consistently
+- No repeated side effects
+- No console warnings
+- Session state restores uniformly
+
+---
+
 ## Test Execution Log
 
 | Test ID | Date | Tester | Status | Notes |
@@ -925,6 +985,9 @@
 | COMP-HYDRATION-URL-WINS-001 | | | | |
 | COMP-MISSING-NOTICE-001 | | | | |
 | COMP-MISSING-NOTICE-MIN-001 | | | | |
+| COMP-MISSING-NOTICE-TWO-VALID-001 | | | | |
+| COMP-HYDRATION-EARLY-CLICK-001 | | | | |
+| COMP-HYDRATION-SINGLEFLIGHT-001 | | | | |
 
 ---
 

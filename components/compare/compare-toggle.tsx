@@ -35,7 +35,8 @@ export function CompareToggle({
     }
   };
 
-  const disabled = !isSelected && !canAddMore;
+  // Disable before hydration to prevent early interaction race
+  const disabled = !hasHydrated || (!isSelected && !canAddMore);
 
   return (
     <Button
