@@ -2,6 +2,57 @@ NextUp — Claude Code Project Instructions
 
 IMPORTANT: READ THIS FILE BEFORE MAKING CHANGES
 
+--------------------------------------------------
+
+CRITICAL CURRENT STATE
+
+Before making changes, read:
+
+PROJECT_STATE.md
+PROJECT_GUARDRAILS.md
+
+If working on an authorized product expansion, also read its active feature specification.
+
+Current independently approved CODE baseline:
+
+fe7253ae289155d8263bf4725cb410b728a52c84
+
+E1:
+COMPLETE + CODE APPROVED + FROZEN
+
+E2:
+COMPLETE + CODE APPROVED + FROZEN
+
+E3:
+IMPLEMENTATION AUTHORIZED
+
+E4–E35:
+PLANNING ONLY
+
+Phase 9:
+FROZEN
+
+Phase 10:
+FROZEN
+
+Phase 11:
+CODE FROZEN / REAL PROVIDER RUNTIME BLOCKED EXTERNALLY
+
+Phase 12:
+LOCKED
+
+CURRENT IMPLEMENTATION AUTHORIZATION:
+
+E3 — DEALBREAKER ENGINE ONLY
+
+Repository work is additive.
+
+Do not delete, replace, redesign, or refactor approved functionality unless an explicit authorization says to do so.
+
+PROJECT_STATE.md is the canonical concise status reference.
+
+--------------------------------------------------
+
 You are continuing development of an existing application called NextUp.
 
 This repository already contains substantial completed work.
@@ -453,13 +504,15 @@ onsite = 20
 
 Do not recreate this logic in the UI.
 
-CURRENT PHASE
+HISTORICAL PHASE 10 IMPLEMENTATION SPECIFICATION
 
-PHASE 10 — DETERMINISTIC MATCHING INTEGRATION
+PHASE 10 IS COMPLETE + FROZEN
 
-This is the ONLY product implementation phase authorized right now.
+DO NOT TREAT THIS SECTION AS CURRENT AUTHORIZATION
 
-Phase 10 goal:
+This section is preserved for historical reference and contains the original Phase 10 implementation specification.
+
+Historical Phase 10 goal:
 
 Integrate the approved Phase 9 deterministic matching result throughout NextUp.
 
@@ -1759,15 +1812,33 @@ E1 established:
 
 E1 browser QA status: PENDING (not yet executed)
 
+E2 — OPPORTUNITY COMPARE
+
+IMPLEMENTATION COMPLETE
+INDEPENDENT CODE REVIEW COMPLETE
+CODE APPROVED + FROZEN
+MANUAL BROWSER QA PENDING
+
+Approved E2 baseline:
+
+fe7253ae289155d8263bf4725cb410b728a52c84
+fix: finalize opportunity compare selection state
+
+E2 browser QA status: PENDING (not yet executed)
+
 Current authorized expansion:
 
-E2 — OPPORTUNITY COMPARE
+E3 — DEALBREAKER ENGINE
 
 IMPLEMENTATION AUTHORIZED
 
 Roadmap location:
 
 PRODUCT_EXPANSION_ROADMAP.md
+
+Specification:
+
+E3_DEALBREAKER_ENGINE_SPEC.md
 
 Expansion principle:
 
@@ -1776,10 +1847,11 @@ DO NOT CHANGE OR REPLACE WHAT NEXTUP ALREADY DOES.
 Expansion work is ADDITIVE ONLY.
 
 E1 code is FROZEN.
-Phase 11 remains FROZEN.
+E2 code is FROZEN.
+Phase 9/10/11 remain FROZEN.
 Phase 12 remains LOCKED.
 
-Expansions E3–E35 are roadmap planning only and are NOT implementation-authorized.
+Expansions E4–E35 are roadmap planning only and are NOT implementation-authorized.
 
 PHASE 11 IMPLEMENTATION REFERENCE
 

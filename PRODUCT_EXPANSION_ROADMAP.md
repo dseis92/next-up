@@ -58,9 +58,12 @@ Deck shows unreviewed opportunities matching current filters.
 
 ### E2 — Opportunity Compare
 
-**Status**: IMPLEMENTATION AUTHORIZED
+**Status**: IMPLEMENTATION COMPLETE + CODE APPROVED
+**Manual QA**: PENDING
 
 Compare 2–4 selected jobs using deterministic evidence.
+
+**Approved E2 SHA**: fe7253ae289155d8263bf4725cb410b728a52c84
 
 **E2 V1 Scope**:
 
@@ -98,9 +101,49 @@ Comparison features:
 
 ### E3 — Dealbreaker Engine
 
-**Status**: PLANNING ONLY
+**Status**: IMPLEMENTATION AUTHORIZED
 
 User-defined non-negotiables kept separate from MatchResult score.
+
+**E3 V1 Scope**:
+
+Dealbreaker Categories:
+- Minimum compensation
+- Salary disclosure requirement
+- Work arrangement restrictions (remote/hybrid/onsite)
+- Employment type restrictions (full_time/part_time/contract/temporary)
+
+Three-State Evaluation:
+- PASS: Job satisfies requirement
+- CONFLICT: Job violates requirement
+- UNKNOWN: Insufficient job data to evaluate
+
+Pure Deterministic Engine:
+- No AI inference
+- No persisted results
+- Same rules + same job = same evaluation
+
+Surface Integration (E3 V1):
+- Settings (/settings/dealbreakers)
+- Explore List (badge only)
+- Saved Jobs
+- Job Detail (full findings)
+
+NOT in E3 V1:
+- Discover integration
+- Opportunity Deck integration
+- Opportunity Compare integration
+- Applications integration
+- Auto-blocking jobs
+- Auto-hiding jobs
+- Modifying match scores
+- Travel restrictions
+- Commute restrictions
+- Company ratings
+- Culture requirements
+- AI-inferred dealbreakers
+
+Specification: E3_DEALBREAKER_ENGINE_SPEC.md
 
 ---
 
@@ -481,5 +524,5 @@ This must remain user-controlled and privacy-first.
 ## Document Information
 
 **Created**: 2026-09-07
-**Last Updated**: 2026-09-07
-**Current Authorized Expansion**: E2 — Opportunity Compare
+**Last Updated**: 2026-09-08
+**Current Authorized Expansion**: E3 — Dealbreaker Engine
