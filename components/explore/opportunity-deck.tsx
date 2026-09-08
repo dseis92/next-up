@@ -27,6 +27,7 @@ export interface OpportunityDeckProps {
   onPassed?: (jobId: string) => void;
   onUndoSaved?: (jobId: string) => void;
   onUndoPassed?: (jobId: string) => void;
+  onPendingChange?: (pending: boolean) => void;
 }
 
 export function OpportunityDeck({
@@ -38,6 +39,7 @@ export function OpportunityDeck({
   onPassed,
   onUndoSaved,
   onUndoPassed,
+  onPendingChange,
 }: OpportunityDeckProps) {
   const router = useRouter();
 
@@ -92,21 +94,30 @@ export function OpportunityDeck({
     }
   }, [showUndoToast]);
 
+  // Notify parent when pending state changes
+  useEffect(() => {
+    onPendingChange?.(actionPending);
+  }, [actionPending, onPendingChange]);
+
   const currentMatch = getCurrentJob(deckState);
   const nextMatch = deckState.jobs[deckState.currentIndex + 1] || null;
 
   // Persist save action and synchronize Set immediately
-  // For swipes: keeps actionPending locked (caller must release after animation)
+  // For successful swipes: keeps actionPending locked (caller must release after animation)
+  // For failed swipes: releases lock immediately
   // For buttons: releases lock in finally
   const persistSave = async (jobId: string, fromSwipe: boolean): Promise<boolean> => {
     if (actionPending) return false;
 
     setActionPending(true);
+    let succeeded = false;
+
     try {
       await saveJob(jobId);
 
       // Synchronize Set immediately after successful persistence
       onSaved?.(jobId);
+      succeeded = true;
       return true;
     } catch (error) {
       console.error("Failed to save job:", error);
@@ -114,26 +125,32 @@ export function OpportunityDeck({
       setTimeout(() => setActionError(null), 5000);
       return false;
     } finally {
-      // For button actions, release lock immediately
-      // For swipe actions, keep locked until animation completes
-      if (!fromSwipe) {
+      // Release lock for:
+      // - Button actions (always)
+      // - Failed swipes (must unlock for retry)
+      // Keep locked for successful swipes (unlocked in finalize)
+      if (!fromSwipe || !succeeded) {
         setActionPending(false);
       }
     }
   };
 
   // Persist pass action and synchronize Set immediately
-  // For swipes: keeps actionPending locked (caller must release after animation)
+  // For successful swipes: keeps actionPending locked (caller must release after animation)
+  // For failed swipes: releases lock immediately
   // For buttons: releases lock in finally
   const persistPass = async (jobId: string, fromSwipe: boolean): Promise<boolean> => {
     if (actionPending) return false;
 
     setActionPending(true);
+    let succeeded = false;
+
     try {
       await passJob(jobId);
 
       // Synchronize Set immediately after successful persistence
       onPassed?.(jobId);
+      succeeded = true;
       return true;
     } catch (error) {
       console.error("Failed to pass job:", error);
@@ -141,9 +158,11 @@ export function OpportunityDeck({
       setTimeout(() => setActionError(null), 5000);
       return false;
     } finally {
-      // For button actions, release lock immediately
-      // For swipe actions, keep locked until animation completes
-      if (!fromSwipe) {
+      // Release lock for:
+      // - Button actions (always)
+      // - Failed swipes (must unlock for retry)
+      // Keep locked for successful swipes (unlocked in finalize)
+      if (!fromSwipe || !succeeded) {
         setActionPending(false);
       }
     }

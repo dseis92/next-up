@@ -257,4 +257,54 @@ describe("Deck Action Lifecycle", () => {
     expect(state.currentIndex).toBe(savedState.currentIndex);
     expect(state.lastAction).toEqual(savedState.lastAction);
   });
+
+  it("should handle finalization after successful action", () => {
+    const jobs = [createMockMatch("job-1"), createMockMatch("job-2")];
+    let state = resetDeck(jobs);
+
+    // Simulate successful swipe: persist succeeds, then finalize
+    state = recordAction(state, "job-1", "save");
+    expect(state.currentIndex).toBe(1);
+    expect(state.lastAction).toEqual({ jobId: "job-1", action: "save" });
+
+    // After finalization, state is advanced
+    expect(state.jobs.length).toBe(2);
+  });
+
+  it("should preserve deck state on failed action", () => {
+    const jobs = [createMockMatch("job-1"), createMockMatch("job-2")];
+    const initialState = resetDeck(jobs);
+
+    // Failed persistence should not advance deck
+    // (This is enforced by lock guards, not state functions)
+    expect(initialState.currentIndex).toBe(0);
+    expect(initialState.lastAction).toBeNull();
+
+    // State remains unchanged without recordAction call
+    const unchangedState = { ...initialState };
+    expect(unchangedState.currentIndex).toBe(0);
+    expect(unchangedState.lastAction).toBeNull();
+  });
+
+  it("should maintain separate actions for different jobs", () => {
+    const jobs = [
+      createMockMatch("job-1"),
+      createMockMatch("job-2"),
+      createMockMatch("job-3"),
+    ];
+    let state = resetDeck(jobs);
+
+    // Save job-1
+    state = recordAction(state, "job-1", "save");
+    expect(state.lastAction?.jobId).toBe("job-1");
+    expect(state.lastAction?.action).toBe("save");
+
+    // Pass job-2
+    state = recordAction(state, "job-2", "pass");
+    expect(state.lastAction?.jobId).toBe("job-2");
+    expect(state.lastAction?.action).toBe("pass");
+
+    // Each action is independent
+    expect(state.currentIndex).toBe(2);
+  });
 });

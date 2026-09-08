@@ -856,6 +856,76 @@ This document records manual test requirements for the Explore Opportunity Deck 
 
 ---
 
+## AO. Failed Swipe Unlock
+
+**Test ID**: DECK-FAIL-SWIPE-001
+**Objective**: Verify failed swipe releases all locks for retry
+
+**Steps**:
+1. Open Deck mode
+2. Set DevTools to offline
+3. Swipe right to save job A
+4. Observe persistence failure
+5. Observe UI state
+
+**Expected Result**:
+- Card snaps back to center
+- Error toast appears
+- Save button enabled
+- Pass button enabled
+- Keyboard shortcuts work
+- Drag enabled
+- Retry possible after reconnecting
+
+---
+
+## AP. Context Control Lock During Swipe
+
+**Test ID**: DECK-CONTEXT-LOCK-001
+**Objective**: Verify context controls disabled during pending swipe
+
+**Steps**:
+1. Open Deck mode
+2. Start successful swipe on job A
+3. During exit animation, rapidly attempt:
+   - Type in Search input
+   - Click work arrangement filter
+   - Click minimum match filter
+   - Click List mode button
+   - Click Deck mode button
+
+**Expected Result**:
+- Search input disabled during animation
+- Filter badges disabled/non-responsive during animation
+- Mode buttons disabled during animation
+- Job A finishes transition
+- Job B appears
+- All controls re-enable immediately
+- No stuck Deck
+
+---
+
+## AQ. Button Failure Unlock
+
+**Test ID**: DECK-BTN-FAIL-001
+**Objective**: Verify failed button action releases lock
+
+**Steps**:
+1. Open Deck mode
+2. Set DevTools to offline
+3. Click Save or Pass button
+4. Observe failure
+
+**Expected Result**:
+- Error toast appears
+- Save button re-enabled
+- Pass button re-enabled
+- Keyboard shortcuts work
+- All controls functional
+- Retry possible after reconnecting
+
+---
+
 ## Test Execution Log
 
 | Test ID | Date | Tester | Pass/Fail | Notes |
@@ -900,10 +970,13 @@ This document records manual test requirements for the Explore Opportunity Deck 
 | DECK-FILTER-EXIT-001 | | | | |
 | DECK-SET-SYNC-001 | | | | |
 | DECK-FAIL-LOCK-001 | | | | |
+| DECK-FAIL-SWIPE-001 | | | | |
+| DECK-CONTEXT-LOCK-001 | | | | |
+| DECK-BTN-FAIL-001 | | | | |
 
 ---
 
-**Document Version**: 1.3
+**Document Version**: 1.4
 **Last Updated**: 2026-09-07
 **Feature**: E1 — Explore Opportunity Deck
 **Related Commit**: TBD

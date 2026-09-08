@@ -40,6 +40,7 @@ export default function ExplorePage() {
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [passedJobIds, setPassedJobIds] = useState<Set<string>>(new Set());
   const [deckStateError, setDeckStateError] = useState(false);
+  const [deckPending, setDeckPending] = useState(false);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -243,6 +244,7 @@ export default function ExplorePage() {
               variant={viewMode === "list" ? "primary" : "secondary"}
               size="sm"
               onClick={() => setViewMode("list")}
+              disabled={deckPending}
               className="gap-2"
             >
               <List className="h-4 w-4" />
@@ -252,6 +254,7 @@ export default function ExplorePage() {
               variant={viewMode === "deck" ? "primary" : "secondary"}
               size="sm"
               onClick={() => setViewMode("deck")}
+              disabled={deckPending}
               className="gap-2"
             >
               <LayoutGrid className="h-4 w-4" />
@@ -269,6 +272,7 @@ export default function ExplorePage() {
               placeholder="Search by title, company, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={deckPending}
               className="pl-10"
             />
           </div>
@@ -289,12 +293,14 @@ export default function ExplorePage() {
                   variant={
                     selectedArrangement === arr.value ? "brand" : "default"
                   }
-                  className="cursor-pointer"
-                  onClick={() =>
-                    setSelectedArrangement(
-                      selectedArrangement === arr.value ? null : arr.value
-                    )
-                  }
+                  className={deckPending ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
+                  onClick={() => {
+                    if (!deckPending) {
+                      setSelectedArrangement(
+                        selectedArrangement === arr.value ? null : arr.value
+                      );
+                    }
+                  }}
                 >
                   {arr.label}
                 </Badge>
@@ -312,8 +318,12 @@ export default function ExplorePage() {
                 <Badge
                   key={filter.value}
                   variant={minMatch === filter.value ? "brand" : "default"}
-                  className="cursor-pointer"
-                  onClick={() => setMinMatch(filter.value)}
+                  className={deckPending ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
+                  onClick={() => {
+                    if (!deckPending) {
+                      setMinMatch(filter.value);
+                    }
+                  }}
                 >
                   {filter.label}
                 </Badge>
@@ -462,6 +472,7 @@ export default function ExplorePage() {
                 onPassed={handlePassed}
                 onUndoSaved={handleUndoSaved}
                 onUndoPassed={handleUndoPassed}
+                onPendingChange={setDeckPending}
               />
             )}
           </>
