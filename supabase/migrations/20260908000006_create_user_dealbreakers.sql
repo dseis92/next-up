@@ -13,10 +13,14 @@ CREATE TABLE IF NOT EXISTS user_dealbreakers (
   require_salary_disclosure BOOLEAN NOT NULL DEFAULT false,
 
   -- Allowed work arrangements (empty array = no restriction)
-  allowed_work_arrangements TEXT[] NOT NULL DEFAULT '{}',
+  allowed_work_arrangements TEXT[] NOT NULL DEFAULT '{}' CHECK (
+    allowed_work_arrangements <@ ARRAY['remote', 'hybrid', 'onsite']::TEXT[]
+  ),
 
   -- Allowed employment types (empty array = no restriction)
-  allowed_employment_types TEXT[] NOT NULL DEFAULT '{}',
+  allowed_employment_types TEXT[] NOT NULL DEFAULT '{}' CHECK (
+    allowed_employment_types <@ ARRAY['full_time', 'part_time', 'contract', 'temporary']::TEXT[]
+  ),
 
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

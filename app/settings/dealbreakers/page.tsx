@@ -16,6 +16,7 @@ import type { DealbreakerPreferences } from "@/lib/dealbreakers/types";
 export default function DealbreakerSettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [loadedSuccessfully, setLoadedSuccessfully] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -50,9 +51,12 @@ export default function DealbreakerSettingsPage() {
           setSelectedArrangements(new Set(preferences.allowedWorkArrangements));
           setSelectedTypes(new Set(preferences.allowedEmploymentTypes));
         }
+
+        setLoadedSuccessfully(true);
       } catch (err) {
         console.error("Failed to load preferences:", err);
-        setError("Unable to load your preferences. Please refresh the page.");
+        setError("Unable to load your preferences.");
+        setLoadedSuccessfully(false);
       } finally {
         setLoading(false);
       }
@@ -61,8 +65,66 @@ export default function DealbreakerSettingsPage() {
     loadPreferences();
   }, [router]);
 
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setLoadedSuccessfully(false);
+
+    async function retry() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        setUserId(user.id);
+
+        const preferences = await getUserDealbreakers(user.id);
+
+        if (preferences) {
+          setMinimumSalary(preferences.minimumSalary?.toString() ?? "");
+          setRequireDisclosure(preferences.requireSalaryDisclosure);
+          setSelectedArrangements(new Set(preferences.allowedWorkArrangements));
+          setSelectedTypes(new Set(preferences.allowedEmploymentTypes));
+        }
+
+        setLoadedSuccessfully(true);
+      } catch (err) {
+        console.error("Failed to load preferences:", err);
+        setError("Unable to load your preferences.");
+        setLoadedSuccessfully(false);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    retry();
+  };
+
   const handleSave = async () => {
-    if (!userId) return;
+    if (!userId || !loadedSuccessfully) return;
+
+    // Validate salary input
+    if (minimumSalary) {
+      const parsed = parseInt(minimumSalary, 10);
+      if (isNaN(parsed)) {
+        setError("Minimum salary must be a valid number.");
+        return;
+      }
+      if (parsed < 0) {
+        setError("Minimum salary cannot be negative.");
+        return;
+      }
+      if (parsed > 10000000) {
+        setError("Minimum salary exceeds maximum allowed value (10,000,000).");
+        return;
+      }
+    }
 
     setSaving(true);
     setError(null);
@@ -98,7 +160,7 @@ export default function DealbreakerSettingsPage() {
   };
 
   const handleClear = async () => {
-    if (!userId) return;
+    if (!userId || !loadedSuccessfully) return;
     if (!confirm("Are you sure you want to clear all dealbreakers?")) return;
 
     setSaving(true);
@@ -174,9 +236,24 @@ export default function DealbreakerSettingsPage() {
 
         {/* Error */}
         {error && (
-          <div className="bg-error/10 text-error mb-6 flex items-start gap-3 rounded-lg border border-error/20 p-4">
-            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
-            <p className="text-body-sm">{error}</p>
+          <div className="bg-error/10 text-error mb-6 rounded-lg border border-error/20 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-body-sm">{error}</p>
+                {!loadedSuccessfully && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRetry}
+                    disabled={loading}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -281,7 +358,7 @@ export default function DealbreakerSettingsPage() {
 
         {/* Actions */}
         <div className="mt-8 flex items-center gap-4">
-          <Button onClick={handleSave} disabled={saving || !userId}>
+          <Button onClick={handleSave} disabled={saving || !userId || !loadedSuccessfully}>
             {saving ? "Saving..." : "Save changes"}
           </Button>
 
@@ -289,7 +366,7 @@ export default function DealbreakerSettingsPage() {
             requireDisclosure ||
             selectedArrangements.size > 0 ||
             selectedTypes.size > 0) && (
-            <Button variant="ghost" onClick={handleClear} disabled={saving}>
+            <Button variant="ghost" onClick={handleClear} disabled={saving || !loadedSuccessfully}>
               Clear all dealbreakers
             </Button>
           )}

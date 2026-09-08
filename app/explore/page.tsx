@@ -20,6 +20,9 @@ import { getSavedJobs, getPassedJobIds } from "@/lib/storage/job-actions";
 import { createClient } from "@/lib/supabase/client";
 import { formatSalary } from "@/lib/utils";
 import type { JobMatch } from "@/types";
+import { useDealbreakerPreferences, evaluateJobsDealbreakers } from "@/hooks/use-dealbreaker-preferences";
+import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
+import type { DealbreakerEvaluation } from "@/lib/dealbreakers/types";
 
 type ViewMode = "list" | "deck";
 
@@ -43,6 +46,18 @@ export default function ExplorePage() {
   const [passedJobIds, setPassedJobIds] = useState<Set<string>>(new Set());
   const [deckStateError, setDeckStateError] = useState(false);
   const [deckPending, setDeckPending] = useState(false);
+
+  // Load dealbreaker preferences once
+  const { preferences: dealbreakerPreferences } = useDealbreakerPreferences();
+
+  // Evaluate dealbreakers for all jobs (single-flight)
+  const dealbreakerEvaluations = useMemo(() => {
+    if (!dealbreakerPreferences || allMatches.length === 0) {
+      return new Map<string, DealbreakerEvaluation>();
+    }
+    const jobs = allMatches.map(m => m.job);
+    return evaluateJobsDealbreakers(dealbreakerPreferences, jobs);
+  }, [dealbreakerPreferences, allMatches]);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -358,6 +373,7 @@ export default function ExplorePage() {
               <div className="space-y-3">
                 {filteredJobs.map((match) => {
                   const { job, overall_score, matched_skills } = match;
+                  const dealbreakerEval = dealbreakerEvaluations.get(job.id);
 
                   return (
                     <Card
@@ -377,13 +393,15 @@ export default function ExplorePage() {
                             <h3 className="text-lg font-semibold text-foreground">
                               {job.title}
                             </h3>
-                            <Badge
-                              variant={overall_score >= 90 ? "success" : "brand"}
-                              size="sm"
-                              className="shrink-0"
-                            >
-                              {overall_score}%
-                            </Badge>
+                            <div className="flex shrink-0 gap-1.5">
+                              <Badge
+                                variant={overall_score >= 90 ? "success" : "brand"}
+                                size="sm"
+                              >
+                                {overall_score}%
+                              </Badge>
+                              {dealbreakerEval && <DealbreakerBadge evaluation={dealbreakerEval} size="sm" />}
+                            </div>
                           </div>
                           <p className="mb-2 text-sm text-foreground-secondary">
                             {job.company.name}

@@ -465,9 +465,269 @@
 
 ---
 
+## Settings Error Handling Tests
+
+### DB-SET-ERR-001: Load Failure Handling
+
+**Objective**: Verify load failure prevents unsafe overwrite
+
+**Steps**:
+1. Simulate database error during preference load (disconnect network or use browser dev tools to block request)
+2. Navigate to `/settings/dealbreakers`
+3. Observe error state
+
+**Expected**:
+- Error message displays
+- Retry button appears
+- Save/Clear buttons are disabled
+- Form inputs remain editable but cannot be saved
+
+---
+
+### DB-SET-ERR-002: Retry After Load Failure
+
+**Objective**: Verify retry mechanism works
+
+**Steps**:
+1. Trigger load failure (as above)
+2. Restore network/database access
+3. Click "Retry" button
+
+**Expected**:
+- Loading state appears
+- Preferences load successfully
+- Error clears
+- Save/Clear buttons become enabled
+
+---
+
+### DB-SET-VAL-001: Negative Salary Validation
+
+**Objective**: Verify negative salary is rejected
+
+**Steps**:
+1. Navigate to `/settings/dealbreakers`
+2. Enter "-50000" in minimum salary
+3. Click "Save changes"
+
+**Expected**:
+- Error message: "Minimum salary cannot be negative."
+- Preferences not saved
+- Form remains in edit mode
+
+---
+
+### DB-SET-VAL-002: Non-Numeric Salary Validation
+
+**Objective**: Verify non-numeric salary is rejected
+
+**Steps**:
+1. Enter "abc" or "100k" in minimum salary field
+2. Click "Save changes"
+
+**Expected**:
+- Error message: "Minimum salary must be a valid number."
+- Preferences not saved
+
+---
+
+### DB-SET-VAL-003: Excessive Salary Validation
+
+**Objective**: Verify database range check
+
+**Steps**:
+1. Enter "99999999999" (exceeds max)
+2. Click "Save changes"
+
+**Expected**:
+- Error message about maximum allowed value
+- Preferences not saved
+
+---
+
+## Performance and N+1 Tests
+
+### DB-PERF-001: Explore List Single Preference Load
+
+**Objective**: Verify Explore LIST mode loads preferences once, not per card
+
+**Steps**:
+1. Open browser dev tools Network tab
+2. Navigate to `/explore`
+3. Ensure List mode is active
+4. Observe network requests
+
+**Expected**:
+- ONE request to load user dealbreaker preferences
+- NO additional preference requests per job card
+- All dealbreaker badges render correctly
+
+---
+
+### DB-PERF-002: Saved Jobs Single Preference Load
+
+**Objective**: Verify Saved page loads preferences once
+
+**Steps**:
+1. Open browser dev tools Network tab
+2. Navigate to `/saved`
+3. Observe network requests
+
+**Expected**:
+- ONE auth.getUser() call
+- ONE dealbreaker preferences load
+- NO per-card preference requests
+- All badges render correctly
+
+---
+
+### DB-PERF-003: Job Detail Single Preference Load
+
+**Objective**: Verify Job Detail loads preferences once
+
+**Steps**:
+1. Open browser dev tools Network tab
+2. Navigate to any `/jobs/[id]`
+3. Observe network requests
+
+**Expected**:
+- ONE dealbreaker preferences load
+- Findings section renders correctly
+- No repeated preference fetches
+
+---
+
+## Surface Integration Tests
+
+### DB-SURF-001: Explore List Badge Display
+
+**Objective**: Verify dealbreaker badges appear in Explore LIST view
+
+**Steps**:
+1. Set dealbreaker: Minimum salary 150000, Require disclosure
+2. Navigate to `/explore`
+3. Ensure LIST mode active
+4. Find a job with salary < 150000 OR no salary listed
+
+**Expected**:
+- Job card shows match score badge
+- Job card shows dealbreaker conflict/unknown badge next to match score
+- Badge colors: conflict = red/warning, unknown = muted
+- Badge shows conflict/unknown count
+
+---
+
+### DB-SURF-002: Saved Jobs Badge Display
+
+**Objective**: Verify dealbreaker badges appear on Saved jobs
+
+**Steps**:
+1. Save a job that conflicts with dealbreakers
+2. Navigate to `/saved`
+3. Locate saved job card
+
+**Expected**:
+- Match score displayed (or incomplete profile message)
+- Dealbreaker badge displayed next to match score
+- Badge accurately reflects evaluation
+
+---
+
+### DB-SURF-003: Job Detail Findings Display
+
+**Objective**: Verify dealbreaker findings appear in Job Detail
+
+**Steps**:
+1. Set multiple dealbreakers
+2. Navigate to job detail for job with conflicts
+3. Scroll to dealbreaker section
+
+**Expected**:
+- Dedicated dealbreaker findings card appears
+- Section shows after match breakdown
+- Individual rule findings listed with icons:
+  - Pass: green checkmark
+  - Conflict: red/warning triangle
+  - Unknown: help circle
+- Clear explanations for each finding
+
+---
+
+### DB-SURF-004: No Dealbreaker Badge When Inactive
+
+**Objective**: Verify badge does not appear when no dealbreakers set
+
+**Steps**:
+1. Clear all dealbreakers (or use account with none set)
+2. Navigate to Explore/Saved/Job Detail
+3. Observe job cards/detail
+
+**Expected**:
+- NO dealbreaker badge appears
+- Match score still displays normally
+- No "inactive" or "no dealbreakers" message cluttering UI
+
+---
+
+### DB-SURF-005: Cross-Surface Consistency
+
+**Objective**: Verify same job shows same dealbreaker result everywhere
+
+**Steps**:
+1. Set specific dealbreakers
+2. Find job ID that triggers conflict
+3. View job in:
+   - Explore List
+   - Saved (if saved)
+   - Job Detail
+
+**Expected**:
+- SAME dealbreaker evaluation status across all surfaces
+- SAME conflict/unknown counts
+- Consistent badge display
+- Consistent findings explanations
+
+---
+
+## Error Isolation Tests
+
+### DB-ISO-001: Dealbreaker Load Error Does Not Break Job Display
+
+**Objective**: Verify dealbreaker failure does not crash surfaces
+
+**Steps**:
+1. Simulate dealbreaker preference load failure (block network to user_dealbreakers endpoint)
+2. Navigate to `/explore`
+3. Observe job display
+
+**Expected**:
+- Jobs still load and display
+- Match scores still appear
+- NO dealbreaker badges appear (graceful degradation)
+- No JavaScript errors in console
+- Page remains functional
+
+---
+
+### DB-ISO-002: Invalid Preference Data Handling
+
+**Objective**: Verify app handles malformed dealbreaker data
+
+**Steps**:
+1. Using DB admin, insert invalid work_arrangement value (e.g., "invalid_value")
+2. Navigate to surfaces
+
+**Expected**:
+- App does not crash
+- Either: preferences validation error, OR: invalid value ignored
+- Migration constraints prevent this in production
+
+---
+
 ## Document Information
 
 **Created**: 2026-09-08
+**Updated**: 2026-09-08 (surface integration + hardening tests added)
 **Feature**: E3 — Dealbreaker Engine
 **Migration**: `20260908000006_create_user_dealbreakers.sql`
 **Status**: NOT YET EXECUTED — PENDING INDEPENDENT REVIEW

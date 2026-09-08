@@ -38,6 +38,9 @@ import {
 import type { JobMatch, Application } from "@/types";
 import type { MatchResult } from "@/lib/matching/types";
 import type { AIJobExplanation } from "@/lib/ai/job-explanation-schema";
+import { useDealbreakerPreferences, evaluateJobDealbreakers } from "@/hooks/use-dealbreaker-preferences";
+import { DealbreakerFindings } from "@/components/dealbreakers/dealbreaker-findings";
+import { useMemo } from "react";
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -57,6 +60,17 @@ export default function JobDetailPage() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Load dealbreaker preferences once
+  const { preferences: dealbreakerPreferences } = useDealbreakerPreferences();
+
+  // Evaluate dealbreakers for this job
+  const dealbreakerEvaluation = useMemo(() => {
+    if (!dealbreakerPreferences || !job) {
+      return null;
+    }
+    return evaluateJobDealbreakers(dealbreakerPreferences, job);
+  }, [dealbreakerPreferences, job]);
 
   useEffect(() => {
     const loadJobData = async () => {
@@ -405,6 +419,13 @@ export default function JobDetailPage() {
                   </div>
                 ))}
               </div>
+            </Card>
+          )}
+
+          {/* Dealbreaker Findings */}
+          {dealbreakerEvaluation && (
+            <Card className="mb-6 p-6">
+              <DealbreakerFindings evaluation={dealbreakerEvaluation} />
             </Card>
           )}
 

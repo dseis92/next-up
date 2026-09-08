@@ -20,6 +20,9 @@ import { formatSalary } from "@/lib/utils";
 import { getSavedJobs, unsaveJob } from "@/lib/storage/job-actions";
 import type { Job } from "@/types";
 import type { MatchResult } from "@/lib/matching/types";
+import { useDealbreakerPreferences, evaluateJobsDealbreakers } from "@/hooks/use-dealbreaker-preferences";
+import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
+import { useMemo } from "react";
 
 type SavedJobWithMatch = {
   job: Job;
@@ -33,6 +36,18 @@ export default function SavedPage() {
   const [loadError, setLoadError] = useState(false);
   const [removingJobId, setRemovingJobId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Load dealbreaker preferences once
+  const { preferences: dealbreakerPreferences } = useDealbreakerPreferences();
+
+  // Evaluate dealbreakers for all saved jobs (single-flight)
+  const dealbreakerEvaluations = useMemo(() => {
+    if (!dealbreakerPreferences || savedJobs.length === 0) {
+      return new Map();
+    }
+    const jobs = savedJobs.map(s => s.job);
+    return evaluateJobsDealbreakers(dealbreakerPreferences, jobs);
+  }, [dealbreakerPreferences, savedJobs]);
 
   useEffect(() => {
     const loadSavedJobs = async () => {
@@ -169,6 +184,7 @@ export default function SavedPage() {
         <div className="space-y-4">
           {savedJobs.map(({ job, matchResult }) => {
             const isIncomplete = matchResult.status === "incomplete_profile";
+            const dealbreakerEval = dealbreakerEvaluations.get(job.id);
 
             return (
               <Card key={job.id} variant="elevated" className="p-4">
@@ -210,13 +226,16 @@ export default function SavedPage() {
                           <IncompleteProfileMessage variant="inline" />
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={matchResult.overallScore! >= 90 ? "success" : "brand"}
-                            size="sm"
-                          >
-                            {matchResult.overallScore}% match
-                          </Badge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <Badge
+                              variant={matchResult.overallScore! >= 90 ? "success" : "brand"}
+                              size="sm"
+                            >
+                              {matchResult.overallScore}% match
+                            </Badge>
+                            {dealbreakerEval && <DealbreakerBadge evaluation={dealbreakerEval} size="sm" />}
+                          </div>
                           {matchResult.matchedSkills.slice(0, 2).map((skill) => (
                             <Badge key={skill} variant="muted" size="sm">
                               {skill}

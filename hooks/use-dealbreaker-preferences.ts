@@ -12,7 +12,7 @@ import type { DealbreakerPreferences, DealbreakerEvaluation } from "@/lib/dealbr
  * Hook to load user's dealbreaker preferences
  * Returns preferences and loading state
  */
-export function useDealbrekerPreferences() {
+export function useDealbreakerPreferences() {
   const [preferences, setPreferences] = useState<DealbreakerPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

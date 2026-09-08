@@ -14,7 +14,6 @@ import type {
   DealbreakerEvaluation,
   DealbreakerFinding,
   DealbreakerStatus,
-  RuleOutcome,
 } from "./types";
 
 /**
