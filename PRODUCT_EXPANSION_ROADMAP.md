@@ -34,7 +34,8 @@ New features may NOT:
 
 ### E1 — Opportunity Deck
 
-**Status**: IMPLEMENTATION AUTHORIZED
+**Status**: IMPLEMENTATION COMPLETE + CODE APPROVED
+**Manual QA**: PENDING
 
 Tinder-style / swipe-card job discovery INSIDE Explore.
 
@@ -51,19 +52,47 @@ Default: List
 
 Deck shows unreviewed opportunities matching current filters.
 
+**Approved E1 SHA**: 8ffaf3666a7af7aea0b6fdb758032aaed5743d50
+
 ---
 
 ### E2 — Opportunity Compare
 
-**Status**: PLANNING ONLY
+**Status**: IMPLEMENTATION AUTHORIZED
 
-Compare 2–4 roles using deterministic evidence:
-- Salary
-- Lifestyle
-- Qualification
-- Concerns
-- Growth potential
-- Dealbreakers
+Compare 2–4 selected jobs using deterministic evidence.
+
+**E2 V1 Scope**:
+
+Selection:
+- Minimum: 2 jobs
+- Maximum: 4 jobs
+- Entry points: Explore List, Saved, Job Detail
+- Session-persistent selection state
+- Compare tray UI
+- Comparison route: /compare?jobs=id1,id2,id3
+
+Comparison features:
+- Side-by-side job summary columns
+- Deterministic match scores (same as other surfaces)
+- Skills comparison (matched/missing)
+- Strengths/concerns from existing MatchResult reasons
+- Salary comparison (when available)
+- Lifestyle factors (location, work arrangement, etc.)
+- Difference Mode (hide/show identical rows)
+- Comparison Lenses (Balanced, Compensation, Lifestyle, Qualification)
+- Leader/tie indicators (derived from displayed values)
+- Mobile-responsive horizontal comparison UI
+- Keyboard accessible
+
+**NOT in E2 V1**:
+- AI-generated comparisons
+- Dealbreaker engine (that's E3)
+- New scoring formula
+- Growth-potential scores
+- Market salary estimates
+- Cost-of-living analysis
+- Persisted comparison results
 
 ---
 
@@ -453,4 +482,4 @@ This must remain user-controlled and privacy-first.
 
 **Created**: 2026-09-07
 **Last Updated**: 2026-09-07
-**Current Authorized Expansion**: E1 — Opportunity Deck
+**Current Authorized Expansion**: E2 — Opportunity Compare

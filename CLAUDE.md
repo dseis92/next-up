@@ -1730,9 +1730,40 @@ Product Expansion Track is NOT Phase 12.
 Phase 11 remains FROZEN.
 Phase 12 remains LOCKED.
 
+E1 — EXPLORE OPPORTUNITY DECK
+
+IMPLEMENTATION COMPLETE
+INDEPENDENT CODE REVIEW COMPLETE
+CODE APPROVED + FROZEN
+MANUAL BROWSER QA PENDING
+
+Approved E1 baseline:
+
+8ffaf3666a7af7aea0b6fdb758032aaed5743d50
+fix: finalize opportunity deck lock release
+
+E1 established:
+
+- Swipe-card job discovery inside Explore
+- List/Deck mode toggle (List is default)
+- Right swipe = Save
+- Left swipe = Pass
+- Undo functionality
+- Deck shows unreviewed filtered opportunities
+- Mobile gesture support
+- Reduced-motion support
+- Session-persistent deck state
+- Lock-based action safety
+- Comprehensive automated test coverage
+- Manual QA test documentation
+
+E1 browser QA status: PENDING (not yet executed)
+
 Current authorized expansion:
 
-E1 — EXPLORE OPPORTUNITY DECK
+E2 — OPPORTUNITY COMPARE
+
+IMPLEMENTATION AUTHORIZED
 
 Roadmap location:
 
@@ -1744,7 +1775,11 @@ DO NOT CHANGE OR REPLACE WHAT NEXTUP ALREADY DOES.
 
 Expansion work is ADDITIVE ONLY.
 
-Expansions E2–E35 are roadmap planning only and are NOT implementation-authorized.
+E1 code is FROZEN.
+Phase 11 remains FROZEN.
+Phase 12 remains LOCKED.
+
+Expansions E3–E35 are roadmap planning only and are NOT implementation-authorized.
 
 PHASE 11 IMPLEMENTATION REFERENCE
 
