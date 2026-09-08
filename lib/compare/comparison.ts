@@ -213,3 +213,39 @@ export function getSectionOrder(lens: ComparisonLens): string[] {
       return ["match", "compensation", "lifestyle", "skills", "strengths"];
   }
 }
+
+/**
+ * Salary value representation for comparison
+ */
+export interface SalaryValue {
+  min: number | null;
+  max: number | null;
+  period: "yearly" | "hourly" | null;
+}
+
+/**
+ * Extract salary value from a job for comparison
+ */
+export function getSalaryValue(job: {
+  salary_min?: number | null;
+  salary_max?: number | null;
+  salary_period?: "yearly" | "hourly" | null;
+}): SalaryValue {
+  return {
+    min: job.salary_min ?? null,
+    max: job.salary_max ?? null,
+    period: job.salary_period ?? null,
+  };
+}
+
+/**
+ * Check if two salary values are equivalent for comparison purposes
+ * Compares min, max, and period
+ */
+export function areSalariesEquivalent(salary1: SalaryValue, salary2: SalaryValue): boolean {
+  return (
+    areValuesEquivalent(salary1.min, salary2.min) &&
+    areValuesEquivalent(salary1.max, salary2.max) &&
+    areValuesEquivalent(salary1.period, salary2.period)
+  );
+}

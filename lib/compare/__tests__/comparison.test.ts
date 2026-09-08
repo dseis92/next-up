@@ -12,6 +12,8 @@ import {
   getSectionOrder,
   getSkillStatus,
   allJobsHaveSameSkillStatus,
+  getSalaryValue,
+  areSalariesEquivalent,
 } from "../comparison";
 
 // Mock JobMatch helper
@@ -343,6 +345,86 @@ describe("Comparison Logic", () => {
 
     it("should handle empty matches array", () => {
       expect(allJobsHaveSameSkillStatus([], "TypeScript")).toBe(true);
+    });
+  });
+});
+
+describe("Salary Comparison", () => {
+  describe("getSalaryValue", () => {
+    it("should extract salary value from job", () => {
+      const job = {
+        salary_min: 100000,
+        salary_max: 120000,
+        salary_period: "yearly" as const,
+      };
+      const result = getSalaryValue(job);
+      expect(result).toEqual({
+        min: 100000,
+        max: 120000,
+        period: "yearly",
+      });
+    });
+
+    it("should handle missing salary fields", () => {
+      const job = {};
+      const result = getSalaryValue(job);
+      expect(result).toEqual({
+        min: null,
+        max: null,
+        period: null,
+      });
+    });
+
+    it("should handle null salary fields", () => {
+      const job = {
+        salary_min: null,
+        salary_max: null,
+        salary_period: null,
+      };
+      const result = getSalaryValue(job);
+      expect(result).toEqual({
+        min: null,
+        max: null,
+        period: null,
+      });
+    });
+  });
+
+  describe("areSalariesEquivalent", () => {
+    it("should return true for identical salaries", () => {
+      const salary1 = { min: 100000, max: 120000, period: "yearly" as const };
+      const salary2 = { min: 100000, max: 120000, period: "yearly" as const };
+      expect(areSalariesEquivalent(salary1, salary2)).toBe(true);
+    });
+
+    it("should return false for different min", () => {
+      const salary1 = { min: 100000, max: 120000, period: "yearly" as const };
+      const salary2 = { min: 90000, max: 120000, period: "yearly" as const };
+      expect(areSalariesEquivalent(salary1, salary2)).toBe(false);
+    });
+
+    it("should return false for different max", () => {
+      const salary1 = { min: 100000, max: 120000, period: "yearly" as const };
+      const salary2 = { min: 100000, max: 130000, period: "yearly" as const };
+      expect(areSalariesEquivalent(salary1, salary2)).toBe(false);
+    });
+
+    it("should return false for different period", () => {
+      const salary1 = { min: 100000, max: 120000, period: "yearly" as const };
+      const salary2 = { min: 100000, max: 120000, period: "hourly" as const };
+      expect(areSalariesEquivalent(salary1, salary2)).toBe(false);
+    });
+
+    it("should treat both null as equivalent", () => {
+      const salary1 = { min: null, max: null, period: null };
+      const salary2 = { min: null, max: null, period: null };
+      expect(areSalariesEquivalent(salary1, salary2)).toBe(true);
+    });
+
+    it("should return false when one has data and other is null", () => {
+      const salary1 = { min: 100000, max: 120000, period: "yearly" as const };
+      const salary2 = { min: null, max: null, period: null };
+      expect(areSalariesEquivalent(salary1, salary2)).toBe(false);
     });
   });
 });

@@ -4,7 +4,77 @@
 
 **Feature**: E2 — Opportunity Compare
 **Related Spec**: E2_OPPORTUNITY_COMPARE_SPEC.md
-**Related Commit**: a332985afcc67e54f00099575d530a5beb75f8cc
+**Initial Commit**: a332985afcc67e54f00099575d530a5beb75f8cc
+**Stabilization Commit**: 6495eee60f2812767664bdb76c7c16a36a2c935d
+
+---
+
+## E2 Final Stabilization Changes
+
+**Date**: 2026-09-08
+**Summary**: Critical lifecycle and difference-mode fixes applied based on independent audit
+
+### Stabilization Fixes Applied:
+
+1. **Incomplete Profile State** (COMP-PROFILE-INCOMPLETE-001)
+   - Fixed: Now shows canonical `IncompleteProfileMessage` component
+   - Fixed: No longer displays empty scored matrix with fake 0% values
+   - Test: Verify profile-level incomplete detection, not per-job
+
+2. **Compensation Differences-Only Logic** (COMP-DIFF-MODE-001)
+   - Fixed: Listed Salary row now respects `shouldShowRow` filtering
+   - Fixed: Salary equivalence now accounts for min, max, and period
+   - Fixed: Section visibility logic (hide section if no rows visible)
+   - Test: Verify identical salaries hidden in Differences Only mode
+
+3. **Empty URL Synchronization** (COMP-URL-MALFORMED-001)
+   - Fixed: `/compare` with no params now clears store unconditionally
+   - Fixed: Store always synchronizes with URL, including empty state
+   - Test: Navigate to `/compare` directly and verify empty state
+
+4. **Ghost Slot Prevention** (COMP-URL-MISSING-001)
+   - Fixed: Missing/unavailable job IDs now normalized out of selection
+   - Fixed: URL updated via `router.replace` to remove unavailable IDs
+   - Test: Verify missing IDs don't permanently consume comparison slots
+
+5. **Skills Difference-Mode Implementation**
+   - Fixed: Removed inference hack, now passes `differencesOnly` prop explicitly
+   - Fixed: Proper skill status differentiation (matched/missing/not-required)
+   - Test: Verify skills with identical status hidden in Differences mode
+
+6. **Stale Comparison Frame Prevention** (COMP-NETWORK-PERF-001)
+   - Fixed: Added `loadedKey` vs `requestedKey` pattern
+   - Fixed: Request generation counter prevents stale async results
+   - Test: Verify rapid navigation doesn't show stale comparison data
+
+7. **Storage Test Coverage**
+   - Added: 6 comprehensive `getJobsByIds` tests with Vitest mocking
+   - Tests: Empty input, order preservation, missing IDs, query failures
+
+8. **Zustand Hydration Safety** (COMP-SESSION-RESTORE-001)
+   - Verified: All store consumers have `"use client"` directive
+   - Verified: `createJSONStorage(() => sessionStorage)` provides lazy eval
+   - Verified: No React hydration mismatch warnings
+
+### Priority Test Cases for Stabilization Verification:
+
+**Critical Path**:
+1. COMP-PROFILE-INCOMPLETE-001 — Incomplete profile shows message, not 0%
+2. COMP-DIFF-MODE-001 — Identical salaries hidden in Differences Only
+3. COMP-URL-MALFORMED-001 — Empty URL clears store
+4. COMP-URL-MISSING-001 — Missing jobs don't create ghost slots
+5. COMP-NETWORK-PERF-001 — One profile hydration, no per-job queries
+6. COMP-ERROR-CONSOLE-001 — No React/PostgREST errors during normal flow
+
+**Compensation Section**:
+- Verify different min/max/period shows in Differences mode
+- Verify identical salary min/max/period hidden in Differences mode
+- Verify "Not disclosed" vs disclosed salary comparison works
+
+**Skills Section**:
+- Verify skills with different status (matched vs missing) show in Differences mode
+- Verify skills with same status across all jobs hidden in Differences mode
+- Verify skill matrix remains readable with difference filtering
 
 ---
 

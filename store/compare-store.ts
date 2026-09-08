@@ -41,9 +41,7 @@ export const useCompareStore = create<CompareState>()(
       },
 
       replaceSelection: (jobIds: string[]) => {
-        // Enforce max 4, deduplicate, preserve order
-        const uniqueIds = Array.from(new Set(jobIds)).slice(0, MAX_COMPARE_JOBS);
-        set({ selectedJobIds: uniqueIds });
+        set({ selectedJobIds: normalizeCompareSelection(jobIds) });
       },
 
       clearSelection: () => {
@@ -86,4 +84,13 @@ export const isCompareSelected = (currentIds: string[], jobId: string): boolean 
 
 export const canAddCompareJob = (currentIds: string[]): boolean => {
   return currentIds.length < MAX_COMPARE_JOBS;
+};
+
+/**
+ * Normalize compare selection IDs
+ * Enforces max 4, deduplication, order preservation
+ */
+export const normalizeCompareSelection = (jobIds: string[]): string[] => {
+  const uniqueIds = Array.from(new Set(jobIds)).slice(0, MAX_COMPARE_JOBS);
+  return uniqueIds;
 };

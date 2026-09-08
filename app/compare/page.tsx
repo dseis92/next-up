@@ -31,6 +31,7 @@ function CompareContent() {
   const [loadError, setLoadError] = useState(false);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
   const [missingJobIds, setMissingJobIds] = useState<string[]>([]);
+  const [loadedKey, setLoadedKey] = useState<string>("");
 
   const [differencesOnly, setDifferencesOnly] = useState(false);
   const [selectedLens, setSelectedLens] = useState<ComparisonLens>("balanced");
@@ -44,11 +45,12 @@ function CompareContent() {
     return parseCompareJobIds(jobsParam);
   }, [searchParams]);
 
-  // Synchronize store with URL on mount/URL change
+  // Request key for stale-frame protection
+  const requestedKey = useMemo(() => jobIds.join(","), [jobIds]);
+
+  // Synchronize store with URL on mount/URL change (including empty)
   useEffect(() => {
-    if (jobIds.length > 0) {
-      replaceSelection(jobIds);
-    }
+    replaceSelection(jobIds);
   }, [jobIds, replaceSelection]);
 
   // Load comparison data
@@ -62,10 +64,12 @@ function CompareContent() {
       setLoadError(false);
       setMissingJobIds([]);
       setHasIncompleteProfile(false);
+      setLoadedKey("");
 
       if (jobIds.length === 0) {
         setMatches([]);
         setLoading(false);
+        setLoadedKey("");
         return;
       }
 
@@ -79,6 +83,7 @@ function CompareContent() {
         if (!user) {
           setMatches([]);
           setLoading(false);
+          setLoadedKey(requestedKey);
           return;
         }
 
@@ -90,9 +95,19 @@ function CompareContent() {
           return; // Ignore stale results
         }
 
-        // Track missing jobs
+        // Normalize missing IDs out of comparison selection (ghost slot prevention)
         if (missingIds.length > 0) {
           setMissingJobIds(missingIds);
+          const validIds = jobIds.filter((id) => !missingIds.includes(id));
+          if (validIds.length !== jobIds.length) {
+            // Update URL + store to remove unavailable IDs
+            if (validIds.length === 0) {
+              router.replace("/compare");
+            } else {
+              router.replace(buildCompareUrl(validIds));
+            }
+            return; // Let next effect handle new valid IDs
+          }
         }
 
         // Check minimum valid jobs (distinguish missing from query error)
@@ -100,6 +115,7 @@ function CompareContent() {
           // Not enough valid jobs for comparison
           setMatches([]);
           setLoading(false);
+          setLoadedKey(requestedKey);
           return;
         }
 
@@ -116,50 +132,59 @@ function CompareContent() {
           setLoadError(true);
           setMatches([]);
           setLoading(false);
+          setLoadedKey(requestedKey);
           return;
         }
 
         const matchResults = matchResult.results;
 
+        // Check for incomplete profile (profile-level, not per-job)
+        const hasIncomplete = matchResults.some((r) => r.status === "incomplete_profile");
+
+        if (hasIncomplete) {
+          // Incomplete profile: do not show empty scored matrix
+          setHasIncompleteProfile(true);
+          setMatches([]);
+          setLoading(false);
+          setLoadedKey(requestedKey);
+          return;
+        }
+
         // Build JobMatch objects
         const jobMatches: JobMatch[] = [];
-        let hasIncomplete = false;
 
         for (let i = 0; i < jobs.length; i++) {
           const job = jobs[i];
           const result = matchResults[i];
 
-          if (result.status === "incomplete_profile") {
-            hasIncomplete = true;
-            continue; // Skip incomplete profiles
+          if (result.status === "scored") {
+            jobMatches.push({
+              id: `${job.id}-match`,
+              user_id: user.id,
+              job_id: job.id,
+              job,
+              overall_score: result.overallScore!,
+              qualification_score: result.qualificationScore!,
+              lifestyle_score: result.lifestyleScore!,
+              breakdown: {
+                skills: result.breakdown.skills.score,
+                experience: result.breakdown.experience.score,
+                salary: result.breakdown.salary.score,
+                location: result.breakdown.location.score,
+                work_arrangement: result.breakdown.workArrangement.score,
+                career_goals: result.breakdown.careerGoals.score,
+              },
+              matched_skills: result.matchedSkills,
+              missing_skills: result.missingSkills,
+              reasons_fit: result.reasonsFit.map((r) => r.text),
+              reasons_concern: result.reasonsConcern.map((r) => r.text),
+              created_at: new Date().toISOString(),
+            });
           }
-
-          jobMatches.push({
-            id: `${job.id}-match`,
-            user_id: user.id,
-            job_id: job.id,
-            job,
-            overall_score: result.overallScore!,
-            qualification_score: result.qualificationScore!,
-            lifestyle_score: result.lifestyleScore!,
-            breakdown: {
-              skills: result.breakdown.skills.score,
-              experience: result.breakdown.experience.score,
-              salary: result.breakdown.salary.score,
-              location: result.breakdown.location.score,
-              work_arrangement: result.breakdown.workArrangement.score,
-              career_goals: result.breakdown.careerGoals.score,
-            },
-            matched_skills: result.matchedSkills,
-            missing_skills: result.missingSkills,
-            reasons_fit: result.reasonsFit.map((r) => r.text),
-            reasons_concern: result.reasonsConcern.map((r) => r.text),
-            created_at: new Date().toISOString(),
-          });
         }
 
-        setHasIncompleteProfile(hasIncomplete);
         setMatches(jobMatches);
+        setLoadedKey(requestedKey);
       } catch (error) {
         // Check if request is stale
         if (currentRequest !== requestGenRef.current) {
@@ -169,6 +194,7 @@ function CompareContent() {
         console.error("Failed to load comparison:", error);
         setLoadError(true);
         setMatches([]);
+        setLoadedKey(requestedKey);
       } finally {
         // Only update loading if this is still the current request
         if (currentRequest === requestGenRef.current) {
@@ -178,7 +204,7 @@ function CompareContent() {
     };
 
     loadComparison();
-  }, [jobIds]);
+  }, [jobIds, requestedKey, router]);
 
   const handleClear = () => {
     clearSelection();
@@ -230,7 +256,31 @@ function CompareContent() {
     );
   }
 
-  // Missing-job minimum state (distinguish from database failure)
+  // Incomplete profile state
+  if (hasIncompleteProfile) {
+    return (
+      <AppShell>
+        <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/explore")}
+              className="mb-4 gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Explore
+            </Button>
+            <h1 className="text-heading-lg mb-2">Compare opportunities</h1>
+          </div>
+
+          <IncompleteProfileMessage />
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Minimum selection state (0-1 valid jobs)
   const validJobCount = jobIds.length - missingJobIds.length;
   const showMinimumState = validJobCount < 2;
 
@@ -264,19 +314,26 @@ function CompareContent() {
             </div>
           )}
 
-          {hasIncompleteProfile && matches.length === 0 ? (
-            <IncompleteProfileMessage />
-          ) : (
-            <EmptyState
-              icon={<Search className="h-6 w-6" />}
-              title="Choose at least two opportunities to compare"
-              description="Select jobs from Explore or Saved to see how they stack up"
-              action={{
-                label: "Explore jobs",
-                onClick: () => router.push("/explore"),
-              }}
-            />
-          )}
+          <EmptyState
+            icon={<Search className="h-6 w-6" />}
+            title="Choose at least two opportunities to compare"
+            description="Select jobs from Explore or Saved to see how they stack up"
+            action={{
+              label: "Explore jobs",
+              onClick: () => router.push("/explore"),
+            }}
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Stale-frame protection: only render if loaded matches current request
+  if (loadedKey !== requestedKey) {
+    return (
+      <AppShell>
+        <div className="flex h-full items-center justify-center p-4">
+          <p className="text-foreground-secondary">Loading comparison...</p>
         </div>
       </AppShell>
     );

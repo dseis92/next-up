@@ -15,6 +15,7 @@ import {
   getSectionOrder,
   allJobsHaveSameValue,
   allJobsHaveSameSkillStatus,
+  getSalaryValue,
 } from "@/lib/compare/comparison";
 
 export interface CompareMatrixProps {
@@ -157,6 +158,7 @@ export function CompareMatrix({
                   matches={matches}
                   leaders={leaders}
                   shouldShowRow={shouldShowRow}
+                  differencesOnly={differencesOnly}
                 />
               );
             case "strengths":
@@ -310,7 +312,18 @@ function MatchSection({ matches, leaders, shouldShowRow }: SectionProps) {
 function CompensationSection({ matches, leaders, shouldShowRow }: SectionProps) {
   const hasSalaryData = matches.some((m: JobMatch) => m.job.salary_min != null);
 
-  if (!hasSalaryData && shouldShowRow((m: JobMatch) => m.breakdown.salary)) {
+  // Check if listed salary row should be visible
+  const showListedSalary = hasSalaryData && shouldShowRow((m: JobMatch) => {
+    const salary = getSalaryValue(m.job);
+    // Return a composite key representing the full salary value
+    return `${salary.min}-${salary.max}-${salary.period}`;
+  });
+
+  // Check if salary alignment row should be visible
+  const showSalaryAlignment = shouldShowRow((m: JobMatch) => m.breakdown.salary);
+
+  // Hide section entirely if no rows should be visible
+  if (!showListedSalary && !showSalaryAlignment) {
     return null;
   }
 
@@ -336,7 +349,7 @@ function CompensationSection({ matches, leaders, shouldShowRow }: SectionProps) 
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {hasSalaryData && (
+            {showListedSalary && (
               <tr>
                 <td className="py-3 pr-4 text-sm font-medium text-foreground">
                   Listed Salary
@@ -365,7 +378,7 @@ function CompensationSection({ matches, leaders, shouldShowRow }: SectionProps) 
               </tr>
             )}
 
-            {shouldShowRow((m: JobMatch) => m.breakdown.salary) && (
+            {showSalaryAlignment && (
               <tr>
                 <td className="py-3 pr-4 text-sm text-foreground-secondary">
                   Salary Alignment
@@ -498,7 +511,11 @@ function LifestyleSection({ matches, shouldShowRow }: SectionProps) {
 }
 
 // Skills Section
-function SkillsSection({ matches, leaders, shouldShowRow }: SectionProps) {
+interface SkillsSectionProps extends SectionProps {
+  differencesOnly: boolean;
+}
+
+function SkillsSection({ matches, leaders, shouldShowRow, differencesOnly }: SkillsSectionProps) {
   // Build unified skill list
   const allSkills = new Set<string>();
   matches.forEach((match: JobMatch) => {
@@ -510,9 +527,7 @@ function SkillsSection({ matches, leaders, shouldShowRow }: SectionProps) {
 
   // Determine which skills to show based on difference mode
   const shouldShowSkill = (skill: string): boolean => {
-    // Use parent's shouldShowRow to check if we're in difference mode
-    const inDifferenceMode = !shouldShowRow(() => 0); // hack: always different primitive
-    if (!inDifferenceMode) return true;
+    if (!differencesOnly) return true;
 
     // In difference mode: hide skill if all jobs have same status
     return !allJobsHaveSameSkillStatus(matches, skill);

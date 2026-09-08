@@ -608,4 +608,132 @@ describe("Storage Error Semantics", () => {
       await expect(getApplicationNotes("app-id")).rejects.toThrow("Unable to load application notes");
     });
   });
+
+  describe("getJobsByIds", () => {
+    it("should return empty arrays for empty input", async () => {
+      const mockSupabase = {
+        from: vi.fn(),
+      };
+
+      vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+
+      const { getJobsByIds } = await import("../jobs");
+      const result = await getJobsByIds([]);
+
+      expect(result).toEqual({ jobs: [], missingIds: [] });
+      expect(mockSupabase.from).not.toHaveBeenCalled();
+    });
+
+    it("should return jobs in requested order and identify missing IDs", async () => {
+      const job1 = { id: "job-1", title: "Engineer", company: { id: "c1", name: "Acme" } };
+      const job3 = { id: "job-3", title: "Designer", company: { id: "c2", name: "Corp" } };
+
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [job3, job1], // Returned in different order
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+
+      const { getJobsByIds } = await import("../jobs");
+      const result = await getJobsByIds(["job-1", "job-2", "job-3"]);
+
+      expect(result.jobs).toEqual([job1, job3]); // Reordered to match request
+      expect(result.missingIds).toEqual(["job-2"]);
+    });
+
+    it("should return all jobs when none are missing", async () => {
+      const job1 = { id: "job-1", title: "Engineer", company: { id: "c1", name: "Acme" } };
+      const job2 = { id: "job-2", title: "Manager", company: { id: "c2", name: "Corp" } };
+
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [job2, job1],
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+
+      const { getJobsByIds } = await import("../jobs");
+      const result = await getJobsByIds(["job-1", "job-2"]);
+
+      expect(result.jobs).toEqual([job1, job2]);
+      expect(result.missingIds).toEqual([]);
+    });
+
+    it("should return all missing IDs when no jobs found", async () => {
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+
+      const { getJobsByIds } = await import("../jobs");
+      const result = await getJobsByIds(["job-1", "job-2", "job-3"]);
+
+      expect(result.jobs).toEqual([]);
+      expect(result.missingIds).toEqual(["job-1", "job-2", "job-3"]);
+    });
+
+    it("should throw on query failure, not return empty result", async () => {
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: "Database connection failed" },
+            }),
+          }),
+        }),
+      };
+
+      vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+
+      const { getJobsByIds } = await import("../jobs");
+
+      await expect(getJobsByIds(["job-1"])).rejects.toThrow("Unable to load selected jobs");
+    });
+
+    it("should preserve order with mixed found and missing jobs", async () => {
+      const job2 = { id: "job-2", title: "Engineer", company: { id: "c1", name: "Acme" } };
+      const job4 = { id: "job-4", title: "Designer", company: { id: "c2", name: "Corp" } };
+
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [job4, job2],
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      vi.mocked(createClient).mockReturnValue(mockSupabase as any);
+
+      const { getJobsByIds } = await import("../jobs");
+      const result = await getJobsByIds(["job-1", "job-2", "job-3", "job-4", "job-5"]);
+
+      expect(result.jobs).toEqual([job2, job4]); // Ordered as requested
+      expect(result.missingIds).toEqual(["job-1", "job-3", "job-5"]); // Ordered as requested
+    });
+  });
 });

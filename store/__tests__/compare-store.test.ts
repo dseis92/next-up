@@ -5,13 +5,8 @@ import {
   clearCompareJobs,
   isCompareSelected,
   canAddCompareJob,
+  normalizeCompareSelection,
 } from "../compare-store";
-
-// Helper for replaceSelection pure logic
-const replaceSelection = (jobIds: string[]): string[] => {
-  const uniqueIds = Array.from(new Set(jobIds)).slice(0, 4);
-  return uniqueIds;
-};
 
 describe("Compare Selection Store Helpers", () => {
   describe("addCompareJob", () => {
@@ -106,30 +101,30 @@ describe("Compare Selection Store Helpers", () => {
     });
   });
 
-  describe("replaceSelection", () => {
-    it("should replace with new IDs", () => {
-      const result = replaceSelection(["job-a", "job-b"]);
+  describe("normalizeCompareSelection", () => {
+    it("should normalize with new IDs", () => {
+      const result = normalizeCompareSelection(["job-a", "job-b"]);
       expect(result).toEqual(["job-a", "job-b"]);
     });
 
     it("should deduplicate IDs", () => {
-      const result = replaceSelection(["job-1", "job-2", "job-1", "job-3"]);
+      const result = normalizeCompareSelection(["job-1", "job-2", "job-1", "job-3"]);
       expect(result).toEqual(["job-1", "job-2", "job-3"]);
     });
 
     it("should enforce max 4", () => {
-      const result = replaceSelection(["job-1", "job-2", "job-3", "job-4", "job-5"]);
+      const result = normalizeCompareSelection(["job-1", "job-2", "job-3", "job-4", "job-5"]);
       expect(result).toEqual(["job-1", "job-2", "job-3", "job-4"]);
       expect(result.length).toBe(4);
     });
 
     it("should preserve order", () => {
-      const result = replaceSelection(["job-c", "job-a", "job-b"]);
+      const result = normalizeCompareSelection(["job-c", "job-a", "job-b"]);
       expect(result).toEqual(["job-c", "job-a", "job-b"]);
     });
 
     it("should handle empty array", () => {
-      const result = replaceSelection([]);
+      const result = normalizeCompareSelection([]);
       expect(result).toEqual([]);
     });
   });
