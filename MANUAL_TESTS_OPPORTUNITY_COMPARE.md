@@ -4,8 +4,12 @@
 
 **Feature**: E2 — Opportunity Compare
 **Related Spec**: E2_OPPORTUNITY_COMPARE_SPEC.md
-**Initial Commit**: a332985afcc67e54f00099575d530a5beb75f8cc
-**Stabilization Commit**: 6495eee60f2812767664bdb76c7c16a36a2c935d
+
+**Implementation History**:
+- Initial implementation: a332985afcc67e54f00099575d530a5beb75f8cc
+- First stabilization: 7f519b485859cb44c55e8fae382ffc24ec60b00a
+- Pre-hydration stabilization: a684a0f1f5f3f8545d74f55b779799f61aa8155e
+- Final hydration stabilization: 48917b22dec923f6f06b7038848ea56d7fc34990
 
 ---
 
@@ -733,6 +737,149 @@
 
 ---
 
+## SSR Hydration Tests
+
+### 35. Empty State Hydration
+
+**Test ID**: COMP-HYDRATION-EMPTY-001
+**Objective**: Verify no hydration warnings with empty selection
+
+**Steps**:
+1. Clear all compare selections
+2. Navigate to /explore
+3. Open browser DevTools Console
+4. Hard refresh page (Cmd+Shift+R / Ctrl+Shift+F5)
+5. Observe console for React hydration warnings
+6. Verify Compare buttons render correctly
+
+**Expected Result**:
+- No React hydration mismatch warnings
+- All Compare buttons show "Compare" text
+- CompareToggle components render correctly
+- No CompareTray visible
+
+---
+
+### 36. Session Restore Hydration
+
+**Test ID**: COMP-HYDRATION-RESTORE-001
+**Objective**: Verify safe hydration with persisted selection
+
+**Steps**:
+1. Select job A and B for comparison
+2. Verify tray shows 2/4
+3. Navigate to /explore
+4. Open DevTools Console
+5. Hard refresh page
+6. Observe first render behavior
+7. Verify selection restores after hydration
+
+**Expected Result**:
+- No React hydration mismatch warnings
+- First render: deterministic unselected state
+- After hydration: A/B restore correctly
+- CompareTray appears after safe hydration
+- "Comparing" buttons show for A/B after hydration
+
+---
+
+### 37. Saved Page Hydration
+
+**Test ID**: COMP-HYDRATION-SAVED-001
+**Objective**: Verify hydration on Saved page
+
+**Steps**:
+1. Persist A/B selection in session
+2. Navigate to /saved
+3. Hard refresh page
+4. Open DevTools Console
+5. Verify no hydration warnings
+
+**Expected Result**:
+- No React hydration mismatch
+- Selection state restores correctly
+- Compare buttons update after hydration
+
+---
+
+### 38. Job Detail Hydration
+
+**Test ID**: COMP-HYDRATION-DETAIL-001
+**Objective**: Verify hydration on Job Detail
+
+**Steps**:
+1. Select job A for comparison
+2. Navigate to job A's detail page
+3. Hard refresh page
+4. Verify Compare button state
+
+**Expected Result**:
+- No hydration warning
+- Compare state restores
+- "Comparing" button shows after hydration
+
+---
+
+### 39. URL Wins Over Session
+
+**Test ID**: COMP-HYDRATION-URL-WINS-001
+**Objective**: Verify URL is canonical over persisted session
+
+**Steps**:
+1. Select A/B for comparison (persisted in session)
+2. Directly navigate to: /compare?jobs=C,D (different IDs)
+3. Observe loaded comparison
+
+**Expected Result**:
+- C/D become the canonical comparison
+- Store updates to C/D (not A/B)
+- Session selection does NOT override URL
+- Comparison page shows C and D
+
+---
+
+## Missing Normalization Tests
+
+### 40. Missing Notice Survives Normalization
+
+**Test ID**: COMP-MISSING-NOTICE-001
+**Objective**: Verify unavailable notice persists through URL normalization
+
+**Steps**:
+1. Manually construct URL: /compare?jobs=A,B,C (where C is unavailable)
+2. Open URL
+3. Observe normalization behavior
+4. Verify final state
+
+**Expected Result**:
+- URL normalizes to /compare?jobs=A,B
+- Store normalizes to A,B
+- A/B comparison loads successfully
+- Notice displays: "1 opportunity is no longer available"
+- C does NOT consume a comparison slot
+- Notice visible on normalized destination
+
+---
+
+### 41. Missing Notice With Minimum State
+
+**Test ID**: COMP-MISSING-NOTICE-MIN-001
+**Objective**: Verify notice with below-minimum valid jobs
+
+**Steps**:
+1. Construct URL: /compare?jobs=A,B (where B is unavailable)
+2. Open URL
+3. Observe normalization
+
+**Expected Result**:
+- URL normalizes to /compare?jobs=A
+- Store normalizes to A
+- Unavailable notice visible: "1 opportunity is no longer available"
+- Minimum-selection message visible: "Choose at least two opportunities to compare"
+- Both notices display simultaneously
+
+---
+
 ## Test Execution Log
 
 | Test ID | Date | Tester | Status | Notes |
@@ -771,6 +918,13 @@
 | COMP-NAVIGATION-BACK-001 | | | | |
 | COMP-ERROR-CONSOLE-001 | | | | |
 | COMP-NETWORK-PERF-001 | | | | |
+| COMP-HYDRATION-EMPTY-001 | | | | |
+| COMP-HYDRATION-RESTORE-001 | | | | |
+| COMP-HYDRATION-SAVED-001 | | | | |
+| COMP-HYDRATION-DETAIL-001 | | | | |
+| COMP-HYDRATION-URL-WINS-001 | | | | |
+| COMP-MISSING-NOTICE-001 | | | | |
+| COMP-MISSING-NOTICE-MIN-001 | | | | |
 
 ---
 

@@ -6,13 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { X, ArrowRight } from "lucide-react";
 import { useCompareStore } from "@/store/compare-store";
 import { buildCompareUrl } from "@/lib/compare/query";
+import { useCompareHydration } from "@/hooks/use-compare-hydration";
 
 export function CompareTray() {
   const router = useRouter();
+  const hasHydrated = useCompareHydration();
   const selectedJobIds = useCompareStore((state) => state.selectedJobIds);
   const removeJobId = useCompareStore((state) => state.removeJobId);
 
-  if (selectedJobIds.length === 0) {
+  // Before hydration: render nothing (SSR-safe)
+  // After hydration: render tray if selections exist
+  if (!hasHydrated || selectedJobIds.length === 0) {
     return null;
   }
 

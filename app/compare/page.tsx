@@ -39,6 +39,9 @@ function CompareContent() {
   // Stale request protection: track request generation
   const requestGenRef = useRef(0);
 
+  // Missing-job notice preservation: track unavailable count across normalization
+  const pendingMissingNoticeRef = useRef<{ key: string; count: number } | null>(null);
+
   // Parse job IDs from URL
   const jobIds = useMemo(() => {
     const jobsParam = searchParams.get("jobs");
@@ -62,9 +65,22 @@ function CompareContent() {
       // Reset transient state for new request
       setLoading(true);
       setLoadError(false);
-      setMissingJobIds([]);
       setHasIncompleteProfile(false);
       setLoadedKey("");
+
+      // Check if this request has a pending missing-notice from normalization
+      const hasPendingNotice = pendingMissingNoticeRef.current?.key === requestedKey;
+      if (hasPendingNotice) {
+        // Restore missing IDs from pending notice
+        const placeholderIds = Array(pendingMissingNoticeRef.current!.count).fill("").map((_, i) => `missing-${i}`);
+        setMissingJobIds(placeholderIds);
+        // Clear the pending notice after restoration
+        pendingMissingNoticeRef.current = null;
+      } else {
+        // Clear missing IDs for unrelated comparison
+        setMissingJobIds([]);
+        pendingMissingNoticeRef.current = null;
+      }
 
       if (jobIds.length === 0) {
         setMatches([]);
@@ -100,6 +116,13 @@ function CompareContent() {
           setMissingJobIds(missingIds);
           const validIds = jobIds.filter((id) => !missingIds.includes(id));
           if (validIds.length !== jobIds.length) {
+            // Store missing-notice for destination key (survives normalization)
+            const destinationKey = validIds.join(",");
+            pendingMissingNoticeRef.current = {
+              key: destinationKey,
+              count: missingIds.length,
+            };
+
             // Update URL + store to remove unavailable IDs
             if (validIds.length === 0) {
               router.replace("/compare");

@@ -59,6 +59,7 @@ export const useCompareStore = create<CompareState>()(
     {
       name: "nextup-compare-selection",
       storage: createJSONStorage(() => sessionStorage),
+      skipHydration: true, // Manual rehydration for SSR safety
     }
   )
 );

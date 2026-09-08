@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { PlusCircle, CheckCircle } from "lucide-react";
 import { useCompareStore } from "@/store/compare-store";
+import { useCompareHydration } from "@/hooks/use-compare-hydration";
 
 export interface CompareToggleProps {
   jobId: string;
@@ -17,7 +18,11 @@ export function CompareToggle({
   size = "sm",
   className,
 }: CompareToggleProps) {
-  const isSelected = useCompareStore((state) => state.isSelected(jobId));
+  const hasHydrated = useCompareHydration();
+
+  // Before hydration: use deterministic default state
+  // After hydration: use persisted session state
+  const isSelected = useCompareStore((state) => hasHydrated && state.isSelected(jobId));
   const canAddMore = useCompareStore((state) => state.canAddMore());
   const addJobId = useCompareStore((state) => state.addJobId);
   const removeJobId = useCompareStore((state) => state.removeJobId);
