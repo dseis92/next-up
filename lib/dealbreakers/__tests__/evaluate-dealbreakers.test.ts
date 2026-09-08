@@ -234,6 +234,102 @@ describe("Dealbreaker Engine - Core Evaluation", () => {
       expect(result.findings[0].outcome).toBe("unknown");
     });
 
+    it("should return UNKNOWN with correct explanation when salaryMin and salaryMax are both undefined", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        minimumSalary: 100000,
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        salaryMin: undefined,
+        salaryMax: undefined,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+
+      expect(result.findings[0].outcome).toBe("unknown");
+      expect(result.findings[0].explanation).toContain("not available");
+    });
+
+    it("should return UNKNOWN with correct explanation when salaryMin and salaryMax are both null", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        minimumSalary: 100000,
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        salaryMin: null,
+        salaryMax: null,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+
+      expect(result.findings[0].outcome).toBe("unknown");
+      expect(result.findings[0].explanation).toContain("not available");
+    });
+
+    it("should return UNKNOWN with correct explanation when salaryMin is undefined and salaryMax is null", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        minimumSalary: 100000,
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        salaryMin: undefined,
+        salaryMax: null,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+
+      expect(result.findings[0].outcome).toBe("unknown");
+      expect(result.findings[0].explanation).toContain("not available");
+    });
+
+    it("should return UNKNOWN with correct explanation when salaryMin is null and salaryMax is undefined", () => {
+      const preferences: DealbreakerPreferences = {
+        userId: "user-1",
+        minimumSalary: 100000,
+        requireSalaryDisclosure: false,
+        allowedWorkArrangements: [],
+        allowedEmploymentTypes: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      const job: DealbreakerJobData = {
+        id: "job-1",
+        title: "Software Engineer",
+        salaryMin: null,
+        salaryMax: undefined,
+      };
+
+      const result = evaluateDealbreakers(preferences, job);
+
+      expect(result.findings[0].outcome).toBe("unknown");
+      expect(result.findings[0].explanation).toContain("not available");
+    });
+
     it("should be UNKNOWN when salary period is hourly", () => {
       const preferences: DealbreakerPreferences = {
         userId: "user-1",

@@ -105,7 +105,7 @@ function evaluateMinimumSalary(
   const { salaryMin, salaryMax, salaryPeriod, salaryIsEstimated } = job;
 
   // No salary data available
-  if (salaryMin === undefined && salaryMin === null && salaryMax === undefined && salaryMax === null) {
+  if ((salaryMin === undefined || salaryMin === null) && (salaryMax === undefined || salaryMax === null)) {
     return {
       ruleType: "minimum_salary",
       outcome: "unknown",
