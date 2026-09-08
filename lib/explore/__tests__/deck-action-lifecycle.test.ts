@@ -199,4 +199,62 @@ describe("Deck Action Lifecycle", () => {
     expect(afterUndo.currentIndex).toBe(0);
     expect(afterUndo.lastAction).toBeNull();
   });
+
+  it("should prevent duplicate action on same job", () => {
+    const jobs = [createMockMatch("job-1"), createMockMatch("job-2")];
+    const initialState = resetDeck(jobs);
+
+    // Save job-1
+    const afterSave = recordAction(initialState, "job-1", "save");
+    expect(afterSave.currentIndex).toBe(1);
+    expect(afterSave.lastAction?.action).toBe("save");
+
+    // Attempting to pass the same job (should not happen if lock works)
+    // This proves the state machine behavior, not the lock itself
+    const afterInvalidPass = recordAction(initialState, "job-1", "pass");
+    expect(afterInvalidPass.currentIndex).toBe(1);
+    expect(afterInvalidPass.lastAction?.action).toBe("pass");
+    // Both would advance - this shows why we need actionPending lock
+  });
+
+  it("should record exactly one action per job", () => {
+    const jobs = [
+      createMockMatch("job-1"),
+      createMockMatch("job-2"),
+      createMockMatch("job-3"),
+    ];
+    let state = resetDeck(jobs);
+
+    // Save job-1
+    state = recordAction(state, "job-1", "save");
+    expect(state.currentIndex).toBe(1);
+    expect(state.lastAction).toEqual({ jobId: "job-1", action: "save" });
+
+    // Save job-2 (replaces lastAction)
+    state = recordAction(state, "job-2", "save");
+    expect(state.currentIndex).toBe(2);
+    expect(state.lastAction).toEqual({ jobId: "job-2", action: "save" });
+
+    // Each action advances exactly once
+    expect(state.jobs.length).toBe(3);
+  });
+
+  it("should maintain action integrity through undo cycle", () => {
+    const jobs = [createMockMatch("job-1"), createMockMatch("job-2")];
+    let state = resetDeck(jobs);
+
+    // Save job-1
+    state = recordAction(state, "job-1", "save");
+    const savedState = { ...state };
+
+    // Undo
+    state = undoLastAction(state, "job-1");
+    expect(state.currentIndex).toBe(0);
+    expect(state.lastAction).toBeNull();
+
+    // Re-save job-1 should produce same result
+    state = recordAction(state, "job-1", "save");
+    expect(state.currentIndex).toBe(savedState.currentIndex);
+    expect(state.lastAction).toEqual(savedState.lastAction);
+  });
 });

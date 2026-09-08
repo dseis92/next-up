@@ -95,13 +95,18 @@ export function OpportunityDeck({
   const currentMatch = getCurrentJob(deckState);
   const nextMatch = deckState.jobs[deckState.currentIndex + 1] || null;
 
-  // Persist save action (does NOT finalize deck advancement yet)
-  const persistSave = async (jobId: string): Promise<boolean> => {
+  // Persist save action and synchronize Set immediately
+  // For swipes: keeps actionPending locked (caller must release after animation)
+  // For buttons: releases lock in finally
+  const persistSave = async (jobId: string, fromSwipe: boolean): Promise<boolean> => {
     if (actionPending) return false;
 
     setActionPending(true);
     try {
       await saveJob(jobId);
+
+      // Synchronize Set immediately after successful persistence
+      onSaved?.(jobId);
       return true;
     } catch (error) {
       console.error("Failed to save job:", error);
@@ -109,17 +114,26 @@ export function OpportunityDeck({
       setTimeout(() => setActionError(null), 5000);
       return false;
     } finally {
-      setActionPending(false);
+      // For button actions, release lock immediately
+      // For swipe actions, keep locked until animation completes
+      if (!fromSwipe) {
+        setActionPending(false);
+      }
     }
   };
 
-  // Persist pass action (does NOT finalize deck advancement yet)
-  const persistPass = async (jobId: string): Promise<boolean> => {
+  // Persist pass action and synchronize Set immediately
+  // For swipes: keeps actionPending locked (caller must release after animation)
+  // For buttons: releases lock in finally
+  const persistPass = async (jobId: string, fromSwipe: boolean): Promise<boolean> => {
     if (actionPending) return false;
 
     setActionPending(true);
     try {
       await passJob(jobId);
+
+      // Synchronize Set immediately after successful persistence
+      onPassed?.(jobId);
       return true;
     } catch (error) {
       console.error("Failed to pass job:", error);
@@ -127,28 +141,34 @@ export function OpportunityDeck({
       setTimeout(() => setActionError(null), 5000);
       return false;
     } finally {
-      setActionPending(false);
+      // For button actions, release lock immediately
+      // For swipe actions, keep locked until animation completes
+      if (!fromSwipe) {
+        setActionPending(false);
+      }
     }
   };
 
-  // Finalize save action (after animation completes)
+  // Finalize save action (after animation completes for swipes)
+  // Set is already synchronized - just record action and release lock
   const finalizeSave = (jobId: string) => {
-    onSaved?.(jobId);
     setDeckState((prev) => recordAction(prev, jobId, "save"));
     setShowUndoToast(true);
+    setActionPending(false); // Release lock after animation
   };
 
-  // Finalize pass action (after animation completes)
+  // Finalize pass action (after animation completes for swipes)
+  // Set is already synchronized - just record action and release lock
   const finalizePass = (jobId: string) => {
-    onPassed?.(jobId);
     setDeckState((prev) => recordAction(prev, jobId, "pass"));
     setShowUndoToast(true);
+    setActionPending(false); // Release lock after animation
   };
 
   // Button action handlers (persist then immediately finalize)
   const handleSaveButton = async () => {
     if (!currentMatch) return;
-    const success = await persistSave(currentMatch.job.id);
+    const success = await persistSave(currentMatch.job.id, false);
     if (success) {
       finalizeSave(currentMatch.job.id);
     }
@@ -156,7 +176,7 @@ export function OpportunityDeck({
 
   const handlePassButton = async () => {
     if (!currentMatch) return;
-    const success = await persistPass(currentMatch.job.id);
+    const success = await persistPass(currentMatch.job.id, false);
     if (success) {
       finalizePass(currentMatch.job.id);
     }
@@ -276,8 +296,8 @@ export function OpportunityDeck({
           <OpportunitySwipeCard
             key={currentMatch.job.id}
             match={currentMatch}
-            onSwipeLeft={() => persistPass(currentMatch.job.id)}
-            onSwipeRight={() => persistSave(currentMatch.job.id)}
+            onSwipeLeft={() => persistPass(currentMatch.job.id, true)}
+            onSwipeRight={() => persistSave(currentMatch.job.id, true)}
             onSwipeLeftComplete={() => finalizePass(currentMatch.job.id)}
             onSwipeRightComplete={() => finalizeSave(currentMatch.job.id)}
             onDetails={handleDetails}

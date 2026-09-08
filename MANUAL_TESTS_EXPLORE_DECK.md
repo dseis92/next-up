@@ -765,6 +765,97 @@ This document records manual test requirements for the Explore Opportunity Deck 
 
 ---
 
+## AK. Rapid Mixed Input During Exit
+
+**Test ID**: DECK-RACE-001
+**Objective**: Verify interaction lock prevents duplicate actions during swipe exit animation
+
+**Steps**:
+1. Open Deck mode with job A
+2. Swipe right to save A
+3. Immediately after persistence begins/succeeds, rapidly attempt:
+   - Click Pass button
+   - Click Save button again
+   - Press ArrowLeft
+   - Press ArrowRight
+   - Attempt to drag card
+
+**Expected Result**:
+- Exactly ONE save action persisted for job A
+- No duplicate save recorded
+- No pass action on job A
+- Buttons disabled during exit animation
+- Keyboard shortcuts ignored during animation
+- Drag disabled during animation
+- Job B appears once after A's animation completes
+- One finalization only
+
+---
+
+## AL. Filter During Exit Animation
+
+**Test ID**: DECK-FILTER-EXIT-001
+**Objective**: Verify filter changes during swipe exit remain safe
+
+**Steps**:
+1. Open Deck mode
+2. Swipe right to save job A
+3. Immediately after persistence succeeds but before animation completes:
+   - Change work arrangement filter
+
+**Expected Result**:
+- Job A persisted correctly
+- Job A excluded from new filtered Deck
+- Deck rebuilds with new filter
+- Deck does not remain stuck disabled
+- No false Undo action created if animation interrupted
+- Safe state recovery
+
+---
+
+## AM. Set Synchronized After Persistence
+
+**Test ID**: DECK-SET-SYNC-001
+**Objective**: Verify Set updates immediately after successful persistence
+
+**Steps**:
+1. Open Deck mode
+2. Note job A
+3. Swipe right to save A
+4. Immediately after persistence succeeds (before animation completes):
+   - Change filter to force Deck rebuild
+
+**Expected Result**:
+- savedJobIds Set updated before filter change
+- Job A excluded from rebuilt Deck
+- No race condition where A reappears
+- Database and Set state consistent
+
+---
+
+## AN. Failed Persistence Lock Release
+
+**Test ID**: DECK-FAIL-LOCK-001
+**Objective**: Verify lock released after failed persistence
+
+**Steps**:
+1. Open Deck mode
+2. Set DevTools to offline
+3. Swipe right to save job A
+4. Observe persistence failure
+5. Observe UI state
+
+**Expected Result**:
+- Card snaps back to center
+- Error toast appears
+- Buttons become enabled again
+- Keyboard shortcuts work again
+- Drag enabled again
+- Action retryable
+- No duplicate lock state
+
+---
+
 ## Test Execution Log
 
 | Test ID | Date | Tester | Pass/Fail | Notes |
@@ -805,10 +896,14 @@ This document records manual test requirements for the Explore Opportunity Deck 
 | DECK-ADVANCE-AFTER-001 | | | | |
 | DECK-FILTER-REVIEW-001 | | | | |
 | DECK-FOCUS-VIS-001 | | | | |
+| DECK-RACE-001 | | | | |
+| DECK-FILTER-EXIT-001 | | | | |
+| DECK-SET-SYNC-001 | | | | |
+| DECK-FAIL-LOCK-001 | | | | |
 
 ---
 
-**Document Version**: 1.2
+**Document Version**: 1.3
 **Last Updated**: 2026-09-07
 **Feature**: E1 — Explore Opportunity Deck
 **Related Commit**: TBD

@@ -58,14 +58,15 @@ export function OpportunitySwipeCard({
       if (onSwipeLeft) {
         setIsProcessing(true);
         const success = await onSwipeLeft();
-        setIsProcessing(false);
 
         if (success) {
           // Persistence succeeded - commit exit animation
+          // Keep isProcessing locked until animation completes
           setExitX(-300);
         } else {
-          // Persistence failed - snap back to center
+          // Persistence failed - snap back to center and release lock
           x.set(0);
+          setIsProcessing(false);
         }
       }
     } else if (offset > SWIPE_THRESHOLD || velocity > 500) {
@@ -73,14 +74,15 @@ export function OpportunitySwipeCard({
       if (onSwipeRight) {
         setIsProcessing(true);
         const success = await onSwipeRight();
-        setIsProcessing(false);
 
         if (success) {
           // Persistence succeeded - commit exit animation
+          // Keep isProcessing locked until animation completes
           setExitX(300);
         } else {
-          // Persistence failed - snap back to center
+          // Persistence failed - snap back to center and release lock
           x.set(0);
+          setIsProcessing(false);
         }
       }
     }
@@ -107,10 +109,16 @@ export function OpportunitySwipeCard({
           : {}
       }
       onAnimationComplete={() => {
-        if (exitX < 0 && onSwipeLeftComplete) {
-          onSwipeLeftComplete();
-        } else if (exitX > 0 && onSwipeRightComplete) {
-          onSwipeRightComplete();
+        if (exitX !== 0) {
+          // Release card-level lock after animation completes
+          setIsProcessing(false);
+
+          // Notify parent to finalize
+          if (exitX < 0 && onSwipeLeftComplete) {
+            onSwipeLeftComplete();
+          } else if (exitX > 0 && onSwipeRightComplete) {
+            onSwipeRightComplete();
+          }
         }
       }}
       className="absolute w-full"
