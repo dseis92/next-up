@@ -58,7 +58,7 @@ Radar curates the existing job collection using deterministic, evidence-backed r
 - MatchResult (overall_score, qualification_score, lifestyle_score, breakdown components, skills, reasons)
 - Job data (title, company, location, work_arrangement, employment_type, salary fields, posted_date, created_at)
 - User profile/preferences (for category eligibility where needed)
-- Saved/passed/applied state
+- Saved/passed state (existing Explore behavior; applied state NOT loaded in V1)
 - DealbreakerResult (for display purposes only, not filtering)
 - Existing Explore filters
 
@@ -264,9 +264,10 @@ For each job, evaluate eligibility for each category independently. A job MAY ap
 Global exclusions (apply to ALL categories):
 1. Job is passed (exists in passed_jobs table)
 2. Job fails existing Explore filters (search query, work arrangement filter, minimum match filter)
-3. MatchResult.status = 'incomplete_profile'
 
-**Note**: Applied jobs are NOT excluded in E4 V1 to preserve zero-query architecture. Explore currently does not load application IDs. Future enhancement may add applied-state exclusion if Explore integration provides this data without Radar-specific cost.
+**Incomplete Profile Handling**: Jobs with MatchResult.status = 'incomplete_profile' are handled at the integration adapter boundary BEFORE adaptation to RadarJobInput. Pure Radar selectors assume all inputs represent scored opportunities.
+
+**Applied Jobs**: NOT excluded in E4 V1 to preserve zero-query architecture. Explore currently does not load application IDs. Future enhancement may add applied-state exclusion if Explore integration provides this data without Radar-specific query cost.
 
 ### Ranking Rules
 
@@ -282,16 +283,26 @@ All categories use consistent three-level deterministic ordering:
 2. Secondary sort (if not already used)
 3. Final tie-break by job.id ASC (stable deterministic ordering)
 
+**Posted Date Comparator Safety**:
+- Valid posted_date: compare descending (newer first)
+- Missing/invalid/null posted_date: sort AFTER jobs with valid posted_date
+- If both dates missing/invalid: fall through to job.id ASC
+- Never allow NaN or undefined comparator behavior
+
+**Note**: New Opportunities excludes invalid/missing posted_date entirely at eligibility phase. Other categories (Best Matches, High Compensation, Stretch) may include jobs with invalid posted_date, but these sort last at the date tie-break level.
+
 ### Handling Missing Evidence
 
 | Category | Missing Field | Behavior |
 |----------|---------------|----------|
-| Best Matches | overallScore null | Exclude (incomplete profile) |
+| All Categories | overallScore null (incomplete profile) | Excluded at adapter boundary (RadarJobInput not created) |
 | New Opportunities | posted_date null | Exclude (cannot determine recency) |
 | High Compensation | salary_min null OR salary_is_estimated = true OR salary_period != 'yearly' | Exclude (no reliable comparable salary data; hourly excluded from V1) |
 | Stretch Opportunities | qualificationScore null OR missingSkills empty | Exclude (cannot determine stretch status) |
 
-**Critical Rule**: NEVER estimate, infer, or fabricate missing data to qualify a job for a category.
+**Critical Rules**:
+- NEVER estimate, infer, or fabricate missing data to qualify a job for a category
+- Incomplete profile handling occurs at integration adapter layer, NOT in pure Radar domain logic
 
 ### Maximum Displayed Opportunities
 
@@ -526,7 +537,36 @@ A 95% match with 1 dealbreaker conflict remains:
 **URL**: `/explore?view=radar`
 **Exit**: Click "List" or "Deck" to return to those views
 **Filters**: Existing Explore filters (search, work arrangement, minimum match) remain active and affect Radar categories
-**Persistence**: View mode preference stored in URL state (no new persistence required)
+**Persistence**: View mode stored in URL query parameter only (no database persistence)
+
+### View Mode Architecture
+
+**Source of Truth**: URL query parameter (`?view=`)
+
+**Supported Values**:
+- `view=list` → Explore List mode
+- `view=deck` → Explore Deck mode (E1 Opportunity Deck)
+- `view=radar` → Opportunity Radar mode
+
+**Fallback Behavior**:
+- Missing `view` parameter → defaults to `list`
+- Invalid `view` value → defaults to `list`
+- Invalid is defined as: any value other than "list", "deck", or "radar"
+
+**State Management**:
+- Derive active view from URL search params, NOT from independent component state
+- View switching uses router navigation that updates only `view` parameter
+- Preserve other URL parameters during view switching (filters remain intact)
+- Use browser history (Back button returns to previous Explore view)
+
+**Filter State Interaction**:
+- Existing Explore filter React state remains intact when switching among List/Deck/Radar
+- Filter changes update Explore state, which affects all views
+- Radar does NOT duplicate or fork filter state
+
+**Compare Tray Availability**:
+- Available in: List, Radar
+- Not available in: Deck (existing E1 behavior)
 
 ### Back Behavior
 
@@ -726,7 +766,7 @@ Categories themselves stack vertically on both desktop and mobile.
 **Example GOOD Explanations**:
 - "Posted 3 days ago" (factual, time-based)
 - "92% match" (existing MatchResult)
-- "4 new skills to develop" (count from missingSkills)
+- "4 required skills aren't currently matched" (count from missingSkills)
 - "$150k–$180k/year" (disclosed salary)
 
 **Example BAD Explanations**:
@@ -753,9 +793,11 @@ Radar MUST honor all active Explore filters:
 1. Load all jobs
 2. Calculate MatchResults for all jobs (Phase 10)
 3. Apply Explore filters (search, arrangement, match threshold)
-4. Apply Radar exclusions (passed, applied, incomplete profile)
+4. Apply Radar exclusions (passed jobs only)
 5. Compute category membership from filtered set
 6. Apply category-specific eligibility/ranking
+
+**Note**: Incomplete-profile handling occurs at integration adapter boundary. Pure Radar selectors operate only on scored RadarJobInput. Applied-job exclusion deferred to preserve zero-query architecture.
 
 ### Filter State Management
 
@@ -783,9 +825,24 @@ Search applies to title, company, location (existing Explore behavior). Radar ca
 
 ### Category Computation State
 
-**Storage**: Local component state (ephemeral)
-**Computed**: On every render from filtered jobs
-**Rationale**: Categories are derived views. Do not persist computed results.
+**Architecture**: Derived data, NOT persisted state
+**Computation**: Pure selectors transform filtered RadarJobInput[] → category buckets
+**Memoization**: May memoize category results to avoid unnecessary recomputation
+**Time Reference**: Capture explicit `asOfMs = Date.now()` once per Radar view session, pass to all time-dependent selectors
+**Rationale**: Categories are pure derivations. Do NOT duplicate category membership into mutable React state or database tables.
+
+**State Flow**:
+1. Explore loads jobs + calculates MatchResults (existing behavior)
+2. Adapter filters scored matches → RadarJobInput[]
+3. Capture `asOfMs = Date.now()` once for current Radar session
+4. Pure selectors: `computeAllCategories(radarJobs, asOfMs)` → category buckets
+5. Render category buckets
+6. On filter change: re-adapt + re-compute (with fresh asOfMs if appropriate)
+
+**Do NOT**:
+- Store category membership in component state separate from derivation
+- Persist category results to database
+- Call `Date.now()` inside pure domain selectors
 
 ### User Preference Persistence
 
@@ -838,15 +895,19 @@ All category logic is pure derivation from existing job/match data.
 
 ### Category Computation Performance
 
-**Target**: <100ms for 100 jobs, <200ms for 500 jobs
+**Manual Benchmark Goals** (not CI assertions):
+- <100ms for 100 jobs
+- <200ms for 500 jobs
 
-**Measurement**: Time from filtered jobs → category buckets
+**Measurement**: Time from filtered jobs → category buckets (manual profiling)
 
-**Optimization**: Use pure selectors, avoid unnecessary re-renders
+**Optimization**: Use pure selectors, memoization, avoid unnecessary re-renders
+
+**Note**: Wall-clock timing goals are targets for manual profiling, NOT mandatory merge-gate assertions. CI gates focus on request count and algorithmic behavior.
 
 ### Rendering Performance
 
-**Target**: <50ms to render category headings + first 3 cards per category
+**Manual Goal**: <50ms to render category headings + first 3 cards per category
 
 **Approach**: Lazy render remaining cards as user scrolls horizontally
 
@@ -881,9 +942,19 @@ interface RadarJobInput {
 }
 ```
 
-**Integration Adapter**: Explore should adapt existing `JobMatch` (snake_case fields) → `RadarJobInput` (camelCase domain contract) at the boundary. Radar domain logic operates on clean camelCase inputs.
+**Integration Adapter Responsibilities**:
+1. Accept existing Explore JobMatch data (scored opportunities only)
+2. Filter out incomplete-profile MatchResults BEFORE adaptation
+3. Transform scored JobMatch (snake_case) → RadarJobInput (camelCase)
+4. Pass only scored RadarJobInput to pure Radar selectors
 
-**CRITICAL**: Do NOT modify `lib/matching/` types. Do NOT change existing `JobMatch` structure. Do NOT modify Phase 9/10 semantics. Adapter pattern preserves separation.
+**Incomplete Profile Boundary**:
+- Existing Explore integration handles incomplete-profile messaging/UI
+- Adapter layer excludes incomplete MatchResults before creating RadarJobInput
+- Pure Radar selectors assume all inputs represent scored opportunities (overallScore is number, not null)
+- Radar domain logic does NOT inspect MatchResult.status
+
+**CRITICAL**: Do NOT modify `lib/matching/` types. Do NOT change existing `JobMatch` structure. Do NOT modify Phase 9/10 semantics. Do NOT add `matchStatus` field to RadarJobInput. Adapter pattern preserves separation.
 
 ### Domain Responsibilities
 
@@ -934,13 +1005,15 @@ Domain selectors MAY:
 
 | Missing Field | Radar Behavior |
 |---------------|----------------|
-| overallScore = null | Exclude from ALL categories (incomplete profile) |
+| overallScore = null | Excluded at adapter boundary (incomplete profile; RadarJobInput not created) |
 | qualificationScore = null | Exclude from Stretch Opportunities |
 | posted_date = null | Exclude from New Opportunities |
 | salary_min = null | Exclude from High Compensation |
 | salary_is_estimated = true | Exclude from High Compensation |
 | salary_period != 'yearly' | Exclude from High Compensation (hourly excluded from V1) |
 | missingSkills = [] | Exclude from Stretch Opportunities |
+
+**Architecture Note**: Pure Radar selectors assume RadarJobInput.overallScore is always a valid number (never null). Incomplete-profile filtering happens at integration adapter layer before domain logic.
 
 ### Never Estimate
 
@@ -978,7 +1051,6 @@ Better to show an honest empty category than fabricate eligibility.
 - Best Matches selector returns all scored jobs passing filters
 - Best Matches sorted by overallScore DESC, then posted_date DESC, then job.id ASC
 - Best Matches limited to 20
-- Best Matches excludes incomplete profiles
 - Best Matches includes 79% match if it's among top available
 - New Opportunities uses explicit asOfMs parameter
 - New Opportunities returns jobs posted within 7 days of asOfMs
@@ -1006,6 +1078,19 @@ Better to show an honest empty category than fabricate eligibility.
 - Deterministic ordering (same inputs + same asOfMs → same outputs)
 - No mutation of input arrays
 - Tie-breaking rules applied correctly
+- Invalid/missing posted_date sorts after valid posted_date
+- Invalid posted_date does not cause NaN comparator
+- Two invalid posted_dates fall through to job.id ASC
+
+### Incomplete Profile Boundary Tests
+
+**Location**: Integration tests
+
+**Coverage**:
+- Explore adapter does not create RadarJobInput from incomplete MatchResults
+- Incomplete-profile messaging remains owned by existing Explore integration
+- Pure Radar selectors never receive null overallScore
+- Radar view shows existing incomplete-profile UI (does not invent new messaging)
 
 ### Match Trust Tests
 
@@ -1375,45 +1460,55 @@ All interactive elements ≥44px × 44px (WCAG 2.1 AA).
 ### UI/UX
 
 30. ✓ Radar accessible via Explore view mode selector
-31. ✓ Horizontal scrolling job cards
-32. ✓ Mobile responsive
-33. ✓ Bottom nav remains accessible
-34. ✓ Radar failure does not break Explore List/Deck
-35. ✓ Job Detail navigation works
-36. ✓ Compare integration works
-37. ✓ DealbreakerBadge displays on cards
-38. ✓ Best Matches shows top available (no fixed 80% threshold)
-39. ✓ New Opportunities uses explicit asOfMs parameter (deterministic time handling)
+31. ✓ View mode derived from URL query parameter (not independent state)
+32. ✓ Missing/invalid view parameter defaults to list
+33. ✓ Browser Back returns to previous Explore view
+34. ✓ CompareTray available in List and Radar (not Deck)
+35. ✓ Horizontal scrolling job cards
+36. ✓ Mobile responsive
+37. ✓ Bottom nav remains accessible
+38. ✓ Radar failure does not break Explore List/Deck
+39. ✓ Job Detail navigation works
+40. ✓ Compare integration works
+41. ✓ DealbreakerBadge displays on cards
+42. ✓ Best Matches shows top available (no fixed 80% threshold)
+43. ✓ New Opportunities uses explicit asOfMs parameter (deterministic time handling)
+44. ✓ Invalid posted_date sorted after valid posted_date (no NaN comparator)
 
 ### Accessibility
 
-40. ✓ Keyboard navigation functional (standard tab order, no unnecessary custom navigation)
-41. ✓ Visible focus states
-42. ✓ Screen reader labels present
-43. ✓ Semantic headings (non-interactive headings not focusable)
-44. ✓ Touch targets ≥44px on mobile
-45. ✓ Horizontal scroll keyboard-accessible (native behavior)
+45. ✓ Keyboard navigation functional (standard tab order, no unnecessary custom navigation)
+46. ✓ Visible focus states
+47. ✓ Screen reader labels present
+48. ✓ Semantic headings (non-interactive headings not focusable)
+49. ✓ Touch targets ≥44px on mobile
+50. ✓ Horizontal scroll keyboard-accessible (native behavior)
 
 ### Testing
 
-46. ✓ Pure domain tests cover all selectors (including asOfMs handling)
-47. ✓ High Compensation percentile algorithm tested (edge cases: n=0, n=1, ties)
-48. ✓ Hourly salary exclusion tested
-49. ✓ Match trust tests verify no MatchResult mutation
-50. ✓ E3 trust tests verify dealbreaker independence
-51. ✓ Filter tests verify Explore filter integration
-52. ✓ Regression tests verify frozen systems unchanged
-53. ✓ All quality gates pass (typecheck, lint, tests, build)
+51. ✓ Pure domain tests cover all selectors (including asOfMs handling)
+52. ✓ High Compensation percentile algorithm tested (edge cases: n=0, n=1, ties)
+53. ✓ Hourly salary exclusion tested
+54. ✓ Invalid posted_date tie-break tested (sorts after valid, no NaN)
+55. ✓ Incomplete profile handled at adapter boundary (integration test)
+56. ✓ Pure selectors never receive null overallScore (integration test)
+57. ✓ Match trust tests verify no MatchResult mutation
+58. ✓ E3 trust tests verify dealbreaker independence
+59. ✓ Filter tests verify Explore filter integration
+60. ✓ Regression tests verify frozen systems unchanged
+61. ✓ All quality gates pass (typecheck, lint, tests, build)
 
 ### Non-Functional
 
-54. ✓ No new database migration
-55. ✓ No new AI usage
-56. ✓ No new external API integrations
-57. ✓ No modifications to Phase 9/10/11
-58. ✓ No modifications to E1/E2/E3
-59. ✓ Radar domain input contract explicit (RadarJobInput)
-60. ✓ No modification to existing JobMatch or MatchResult types
+62. ✓ No new database migration
+63. ✓ No new AI usage
+64. ✓ No new external API integrations
+65. ✓ No modifications to Phase 9/10/11
+66. ✓ No modifications to E1/E2/E3
+67. ✓ Radar domain input contract explicit (RadarJobInput)
+68. ✓ No modification to existing JobMatch or MatchResult types
+69. ✓ Category membership derived data (not persisted component state)
+70. ✓ View mode source of truth is URL (not separate React state)
 
 ---
 
