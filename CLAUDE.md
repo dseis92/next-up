@@ -15,7 +15,7 @@ If working on an authorized product expansion, also read its active feature spec
 
 Current independently approved CODE baseline:
 
-fe7253ae289155d8263bf4725cb410b728a52c84
+8f4ba113c02adddbc014c44510ea1142ba5f3328
 
 E1:
 COMPLETE + CODE APPROVED + FROZEN
@@ -24,9 +24,12 @@ E2:
 COMPLETE + CODE APPROVED + FROZEN
 
 E3:
-IMPLEMENTATION AUTHORIZED
+COMPLETE + INDEPENDENTLY APPROVED + PRODUCTION APPROVED + FROZEN
 
-E4–E35:
+E4:
+SPECIFICATION APPROVED + IMPLEMENTATION AUTHORIZED — NOT STARTED
+
+E5–E35:
 PLANNING ONLY
 
 Phase 9:
@@ -36,7 +39,7 @@ Phase 10:
 FROZEN
 
 Phase 11:
-CODE FROZEN / REAL PROVIDER RUNTIME BLOCKED EXTERNALLY
+IMPLEMENTATION + REAL OPENAI RUNTIME APPROVED + FROZEN
 
 Phase 12:
 LOCKED
@@ -55,7 +58,15 @@ E4 — OPPORTUNITY RADAR
 SPECIFICATION: INDEPENDENTLY APPROVED + MERGED TO MAIN
 APPROVED SPEC SHA: 738c3378df712dd5da25bc894616d987c764f5ff
 APPROVED SPEC MERGE SHA: 2f3eab0cab17f8daa2854efe8a1a878f99283dda
-IMPLEMENTATION: NOT STARTED
+IMPLEMENTATION: AUTHORIZED — NOT STARTED
+
+PHASE 11 — GROUNDED AI JOB EXPLANATION
+CODE CHECKPOINT: 3b15680ca7ee4856a592e0b8886137ebe66158fe
+REAL OPENAI RUNTIME: INDEPENDENTLY VERIFIED + APPROVED + PRODUCTION ACTIVE
+VERIFIED PRODUCTION RUNTIME SHA: 20fea115c9989524180a485c458a0f214054c366
+MATCH IMMUTABILITY: PASS — 63% → 63%
+STORE FALSE: CONFIRMED
+ZERO DATA RETENTION: NOT CLAIMED / NOT VERIFIED
 
 E5+: NOT AUTHORIZED
 
@@ -1746,24 +1757,30 @@ This is a KNOWN LIMITATION, not an active bug-fix authorization.
 A true atomic solution may require transactional server/RPC/schema design and requires explicit future approval.
 
 PHASE 11 — GROUNDED AI JOB MATCH EXPLANATION
-IMPLEMENTATION COMPLETE / PRODUCTION RUNTIME BLOCKED
+IMPLEMENTATION COMPLETE + REAL OPENAI RUNTIME APPROVED + FROZEN
 
 Phase 11 implementation: COMPLETE
 
 Phase 11 code/security/privacy: APPROVED + FROZEN
 
-Approved Phase 11 baseline:
+Approved Phase 11 code checkpoint:
 
 3b15680ca7ee4856a592e0b8886137ebe66158fe
 Phase 11: Disable AI response storage
 
-OpenAI production credentials: UNAVAILABLE
+Real OpenAI Runtime: INDEPENDENTLY VERIFIED + APPROVED + PRODUCTION ACTIVE
 
-Real OpenAI production runtime verification: BLOCKED EXTERNALLY
+Verified production runtime SHA:
 
-Reason: No OPENAI_API_KEY currently available
+20fea115c9989524180a485c458a0f214054c366
 
-Phase 11 remains frozen. Do NOT modify to bypass credential unavailability.
+Real Runtime QA: LOCAL PASS + PRODUCTION PASS
+
+Match Immutability: PASS — observed 63% → 63%
+
+OpenAI Request Privacy: `store: false` confirmed (requests use `store: false`; API data not used for model training by default unless customer opts in; other provider data-control rules are separate from this setting)
+
+Phase 11 remains frozen.
 
 FOUNDATIONAL PRODUCT TRUST RULE
 
@@ -1778,13 +1795,17 @@ AI MUST NOT manufacture facts absent from trusted context.
 
 CURRENT AUTHORIZED PHASE
 
-NONE — NO IMPLEMENTATION PHASE CURRENTLY AUTHORIZED
+E4 — OPPORTUNITY RADAR IMPLEMENTATION
 
-Phase 11 implementation is COMPLETE.
+E4 specification is INDEPENDENTLY APPROVED + MERGED TO MAIN.
+
+E4 implementation is AUTHORIZED but NOT STARTED.
+
+Phase 11 implementation is COMPLETE + REAL OPENAI RUNTIME APPROVED + FROZEN.
 
 Phase 12 is LOCKED.
 
-No further Phase 12 implementation work is authorized without explicit approval.
+No Phase 12 implementation work is authorized without explicit approval.
 
 Planning for Phase 12 is allowed if explicitly requested.
 
@@ -1868,14 +1889,16 @@ DO NOT CHANGE OR REPLACE WHAT NEXTUP ALREADY DOES.
 
 Expansion work is ADDITIVE ONLY.
 
-E4: NOT AUTHORIZED
+E4 implementation is AUTHORIZED — NOT STARTED
 
 E1 code is FROZEN.
 E2 code is FROZEN.
+E3 is CLOSED + FROZEN.
 Phase 9/10/11 remain FROZEN.
 Phase 12 remains LOCKED.
 
-Expansions E4–E35 are roadmap planning only and are NOT implementation-authorized.
+E4 implementation is authorized.
+Expansions E5–E35 are roadmap planning only and are NOT implementation-authorized.
 
 PHASE 11 IMPLEMENTATION REFERENCE
 
@@ -2795,16 +2818,17 @@ AI exists only to make that truth more understandable and actionable.
 
 CURRENT PROJECT STATUS SUMMARY
 
-Phase 9 deterministic matching             COMPLETE + APPROVED
-Phase 10 matching integration              COMPLETE + APPROVED
-Phase 11 implementation                    COMPLETE
-Phase 11 code/security/privacy             APPROVED + FROZEN
+Phase 9 deterministic matching             COMPLETE + APPROVED + FROZEN
+Phase 10 matching integration              COMPLETE + APPROVED + FROZEN
+Phase 11 implementation                    COMPLETE + APPROVED + FROZEN
+Phase 11 real OpenAI runtime               INDEPENDENTLY VERIFIED + APPROVED + PRODUCTION ACTIVE
 Production QA maintenance                  COMPLETE + APPROVED
 
-Current approved repository SHA            3be6d51b39f8a7f12eff528973bdcf2d94c6fc30
+Current approved CODE baseline SHA         8f4ba113c02adddbc014c44510ea1142ba5f3328
+Phase 11 production runtime SHA            20fea115c9989524180a485c458a0f214054c366
 
-Automated tests                            230 PASS
+Automated tests                            440 PASS
 Manual browser regression                  PENDING
-OpenAI production runtime                  BLOCKED — NO API KEY
+E4 implementation                          AUTHORIZED — NOT STARTED
 
 Phase 12                                   LOCKED

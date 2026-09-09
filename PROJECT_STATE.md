@@ -46,9 +46,17 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 ### Phase 11 — Grounded AI Job Explanation
 **Status**: IMPLEMENTATION COMPLETE + CODE/SECURITY/PRIVACY APPROVED + FROZEN
 
-**Runtime Status**: REAL OPENAI RUNTIME BLOCKED EXTERNALLY (OPENAI_API_KEY UNAVAILABLE)
+**Approved Code Checkpoint**: `3b15680ca7ee4856a592e0b8886137ebe66158fe`
 
-**Approved Checkpoint**: `3b15680ca7ee4856a592e0b8886137ebe66158fe`
+**Real OpenAI Runtime**: INDEPENDENTLY VERIFIED + APPROVED + PRODUCTION ACTIVE
+
+**Verified Production Runtime SHA**: `20fea115c9989524180a485c458a0f214054c366`
+
+**Real Runtime QA**: LOCAL PASS + PRODUCTION PASS
+
+**Match Immutability**: PASS — observed 63% → 63%
+
+**OpenAI Request Privacy**: `store: false` confirmed (requests use `store: false`; API data not used for model training by default unless customer opts in; other provider data-control rules are separate from this setting)
 
 **Deliverable**: Privacy-hardened AI job explanation with strict trust boundaries
 
@@ -121,7 +129,7 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 **Approved Specification Merge SHA**: `2f3eab0cab17f8daa2854efe8a1a878f99283dda`
 
-**Implementation**: NOT STARTED
+**Implementation**: AUTHORIZED — NOT STARTED
 
 **Deliverable** (Proposed): Purpose-driven job categories using deterministic evidence-backed rules
 
@@ -158,15 +166,13 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 ## CURRENT AUTHORIZATION
 
-**E4 Specification Phase**: AUTHORIZED
-
-**E4 Implementation**: NOT AUTHORIZED
-
+- Phase 9 is **FROZEN**
+- Phase 10 is **FROZEN**
+- Phase 11 is **IMPLEMENTATION + REAL OPENAI RUNTIME APPROVED + FROZEN**
+- Phase 12 is **LOCKED**
 - E1/E2 are **FROZEN**
 - E3 is **CLOSED + FROZEN**
-- E4 is **SPECIFICATION PHASE / IMPLEMENTATION NOT AUTHORIZED**
-- Phase 9/10/11 are **FROZEN**
-- Phase 12 is **LOCKED**
+- E4 is **SPECIFICATION APPROVED + MERGED TO MAIN / IMPLEMENTATION AUTHORIZED — NOT STARTED**
 - E5+ are **PLANNING ONLY / NOT IMPLEMENTATION AUTHORIZED**
 
 ---
