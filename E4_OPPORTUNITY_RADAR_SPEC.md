@@ -155,12 +155,12 @@ Based on inspection of the current NextUp repository, the following data is reli
 ---
 
 ### 4. Stretch Opportunities
-**Required Evidence**: Definition of "stretch" — likely higher experience level or missing skill requirements
-**Existing Repository Evidence**: ✓ PARTIALLY AVAILABLE — MatchResult.missingSkills, Job.experience_level, MatchResult.qualificationScore
-**Missing Evidence**: Clear definition of stretch; experience_level is optional
-**Can V1 Support Deterministically?**: CONDITIONAL — With explicit definition
+**Required Evidence**: Definition of "stretch" — qualification score in manageable range with missing skills
+**Existing Repository Evidence**: ✓ AVAILABLE — MatchResult.qualificationScore, MatchResult.missingSkills
+**Missing Evidence**: None for V1 definition
+**Can V1 Support Deterministically?**: YES — With explicit definition
 **Recommended E4 V1 Status**: **INCLUDE** (using qualification score and missing skills)
-**Rationale**: Define "stretch" as: qualification score 60-85 AND has missing skills OR one qualification component below threshold. Avoids jobs too far out of reach (qualification <60) or already perfect fits (>85). Deterministic, evidence-based.
+**Rationale**: Define "stretch" as: qualificationScore between 60-85 (inclusive) AND missingSkills.length > 0. Avoids jobs too far out of reach (qualification <60) or already perfect fits (>85 or no missing skills). Deterministic, evidence-based.
 
 ---
 
@@ -828,16 +828,17 @@ Search applies to title, company, location (existing Explore behavior). Radar ca
 **Architecture**: Derived data, NOT persisted state
 **Computation**: Pure selectors transform filtered RadarJobInput[] → category buckets
 **Memoization**: May memoize category results to avoid unnecessary recomputation
-**Time Reference**: Capture explicit `asOfMs = Date.now()` once per Radar view session, pass to all time-dependent selectors
+**Time Reference**: Capture explicit `asOfMs = Date.now()` once when Radar view mounts/initializes. Reuse that SAME asOfMs for all category computations during the mounted Radar session, including filter changes. Do NOT refresh asOfMs when filters change.
 **Rationale**: Categories are pure derivations. Do NOT duplicate category membership into mutable React state or database tables.
 
 **State Flow**:
 1. Explore loads jobs + calculates MatchResults (existing behavior)
-2. Adapter filters scored matches → RadarJobInput[]
-3. Capture `asOfMs = Date.now()` once for current Radar session
+2. Radar view mounts/initializes: Capture `asOfMs = Date.now()` once for this Radar session
+3. Adapter filters scored matches → RadarJobInput[]
 4. Pure selectors: `computeAllCategories(radarJobs, asOfMs)` → category buckets
 5. Render category buckets
-6. On filter change: re-adapt + re-compute (with fresh asOfMs if appropriate)
+6. On filter change: re-adapt + recompute using the SAME Radar-session asOfMs (do NOT refresh time reference)
+7. On Radar view unmount/remount: New session may capture new asOfMs
 
 **Do NOT**:
 - Store category membership in component state separate from derivation
