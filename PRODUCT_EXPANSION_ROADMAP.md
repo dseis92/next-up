@@ -155,11 +155,13 @@ Specification: E3_DEALBREAKER_ENGINE_SPEC.md
 
 ### E4 — Opportunity Radar
 
-**Status**: SPECIFICATION PHASE AUTHORIZED
+**Status**: SPECIFICATION APPROVED + MERGED TO MAIN
 
-**Specification**: DRAFTED — PENDING INDEPENDENT REVIEW
+**Approved Specification SHA**: `738c3378df712dd5da25bc894616d987c764f5ff`
 
-**Implementation**: NOT AUTHORIZED
+**Approved Specification Merge SHA**: `2f3eab0cab17f8daa2854efe8a1a878f99283dda`
+
+**Implementation**: NOT STARTED
 
 Purpose-driven job categories using deterministic evidence-backed rules.
 
