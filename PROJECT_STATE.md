@@ -10,9 +10,9 @@
 
 ## LAST INDEPENDENTLY APPROVED CODE BASELINE
 
-**Commit**: `fe7253ae289155d8263bf4725cb410b728a52c84`
+**Commit**: `8f4ba113c02adddbc014c44510ea1142ba5f3328`
 
-**Message**: fix: finalize opportunity compare selection state
+**Message**: fix: correct missing salary dealbreaker evidence
 
 **Important Distinction**:
 
@@ -92,25 +92,27 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 **Deliverable**: Side-by-side job comparison with deterministic scoring consistency
 
 ### E3 — Dealbreaker Engine
-**Status**: COMPLETE + INDEPENDENTLY APPROVED + FROZEN
+**Status**: COMPLETE + INDEPENDENTLY APPROVED + PRODUCTION APPROVED + FROZEN
 
 **Approved E3 Code SHA**: `8f4ba113c02adddbc014c44510ea1142ba5f3328`
+
+**Merged / Production-Tested Runtime SHA**: `5b4593185a060e269324b9d9d4914717d738a731`
 
 **Migration**: `20260908000006` APPLIED + VERIFIED
 
 **Programmatic/Database CRUD**: PASS
 
-**Manual Browser QA**: REQUIRED MERGE-GATE TESTS PASS (2026-09-09)
+**Required Local Browser Merge-Gate**: PASS
 
-**Match Immutability Verification**: 65% → 65% PASS
+**Production Browser Smoke**: PASS
+
+**Match Immutability**: PASS (Observed verification: 65% → 65%)
+
+**Vercel Exact Runtime SHA**: SUCCESS
 
 **Cross-User RLS Runtime**: NOT EXECUTED
 
-**Merge Status**: READY FOR MERGE
-
-**Production Verification**: PENDING
-
-**Deliverable**: User-defined non-negotiable preferences with conflict detection
+**Deliverable**: User-defined non-negotiable preferences with independent conflict detection that does not alter deterministic MatchResult
 
 ### E4–E35
 **Status**: PLANNING ONLY — NOT IMPLEMENTATION AUTHORIZED
@@ -119,29 +121,15 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 ## CURRENT QUALITY CHECKPOINT
 
-**At Approved E2 Code Baseline** (`fe7253ae289155d8263bf4725cb410b728a52c84`):
+**At Approved E3 Code Baseline** (`8f4ba113c02adddbc014c44510ea1142ba5f3328`):
 
-- **Test Files**: 23
-- **Tests**: 374 PASS
+- **Test Files**: 27
+- **Tests**: 440 PASS
 - **Typecheck**: PASS
 - **Build**: PASS
-- **Vercel Exact SHA**: SUCCESS
+- **Vercel**: SUCCESS
 - **Lint Errors**: 0
 - **Lint Warnings**: 24
-
-**Historical Note**:
-
-Before the final E2 work, the repo had a 22-warning checkpoint.
-
-Therefore, do NOT describe all 24 current warnings as historically pre-existing.
-
-For E3:
-
-**24 warnings is the starting observed baseline.**
-
-Do not introduce additional warnings.
-
-Do not perform unrelated warning cleanup during E3.
 
 ---
 
@@ -150,23 +138,22 @@ Do not perform unrelated warning cleanup during E3.
 - **E1 Browser QA**: PENDING
 - **E2 Browser QA**: PENDING
 - **Application Mutation Browser QA**: PENDING
+- **E3 Required Browser Merge-Gate**: PASS
+- **E3 Production Smoke**: PASS
 
-**Do not falsely mark these complete.**
+**Do not falsely mark incomplete QA as complete.**
 
 ---
 
 ## CURRENT AUTHORIZATION
 
-**ONLY**:
-
-**E3 — Dealbreaker Engine**
-
-is authorized for new implementation work.
+**No new product-expansion implementation is currently authorized.**
 
 - E1/E2 are **FROZEN**
+- E3 is **CLOSED + FROZEN**
 - Phase 9/10/11 are **FROZEN**
 - Phase 12 is **LOCKED**
-- E4+ are **PLANNING ONLY**
+- E4+ are **PLANNING ONLY / NOT IMPLEMENTATION AUTHORIZED**
 
 ---
 

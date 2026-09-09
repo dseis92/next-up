@@ -101,19 +101,13 @@ Comparison features:
 
 ### E3 — Dealbreaker Engine
 
-**Status**: COMPLETE + INDEPENDENTLY APPROVED + FROZEN
+**Status**: COMPLETE + INDEPENDENTLY APPROVED + PRODUCTION APPROVED + FROZEN
 
 **Approved E3 Code SHA**: `8f4ba113c02adddbc014c44510ea1142ba5f3328`
 
+**Production-Tested Runtime SHA**: `5b4593185a060e269324b9d9d4914717d738a731`
+
 **Migration**: `20260908000006` APPLIED + VERIFIED
-
-**Manual Browser QA**: REQUIRED MERGE-GATE TESTS PASS (2026-09-09)
-
-**Match Immutability Verification**: 65% → 65% PASS
-
-**Merge Status**: READY FOR MERGE
-
-**Production Verification**: PENDING
 
 User-defined non-negotiables kept separate from MatchResult score.
 
@@ -161,7 +155,7 @@ Specification: E3_DEALBREAKER_ENGINE_SPEC.md
 
 ### E4 — Opportunity Radar
 
-**Status**: PLANNING ONLY
+**Status**: PLANNING ONLY — NOT IMPLEMENTATION AUTHORIZED
 
 Personalized categories:
 - Best Matches

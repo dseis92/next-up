@@ -302,3 +302,29 @@ _These optional cases must NOT be falsely marked PASS._
 **MANUAL_TESTS_DEALBREAKERS.md** remains the comprehensive QA specification/reference.
 
 Both documents serve distinct purposes and should be preserved.
+
+---
+
+## PRODUCTION SMOKE
+
+**Runtime**: PRODUCTION
+
+**Production Runtime Code Baseline**: `5b4593185a060e269324b9d9d4914717d738a731`
+
+**Result**: PASS
+
+**NOTE**: This was a focused production smoke test. It was NOT a repeat of the entire local B–M merge-gate suite.
+
+### Tests Executed
+
+**Settings/save/persistence**: PASS
+
+**Explore**: PASS
+
+**Job Detail**: PASS
+
+**Match score unchanged**: PASS
+
+**Clear**: PASS
+
+**Console**: PASS
