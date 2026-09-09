@@ -6,11 +6,11 @@
 
 **Migration**: `20260908000006` APPLIED
 
-**Tester**: __________
+**Tester**: Human tester
 
-**Date**: __________
+**Date**: 2026-09-09
 
-**Browser**: __________
+**Browser**: Chrome (local development)
 
 ---
 
@@ -51,14 +51,14 @@ npm run dev
 **Save**.
 
 **PASS if**:
-- [ ] Save succeeds
-- [ ] No raw error appears
-- [ ] Return/reload works
-- [ ] Values persist after hard refresh
+- [x] Save succeeds
+- [x] No raw error appears
+- [x] Return/reload works
+- [x] Values persist after hard refresh
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
-**Notes**: __________
+**Notes**: All persistence and reload operations worked correctly
 
 ---
 
@@ -67,19 +67,19 @@ npm run dev
 **Try**: `100000.5`
 
 **PASS if**:
-- [ ] Validation error appears
-- [ ] Value is NOT silently changed to 100000
-- [ ] No save occurs
+- [x] Validation error appears
+- [x] Value is NOT silently changed to 100000
+- [x] No save occurs
 
 **Try**: `-1`
 
-**PASS if**: rejected
+**PASS if**: rejected ✓
 
 **Try**: `2147483648`
 
-**PASS if**: rejected
+**PASS if**: rejected ✓
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -90,17 +90,17 @@ npm run dev
 **Use LIST mode**.
 
 **PASS if**:
-- [ ] Match percentages still appear
-- [ ] Dealbreaker badge appears where expected
-- [ ] Conflict and unknown are distinguishable
-- [ ] Card layout looks normal
-- [ ] Job Details still open
-- [ ] Compare still works
+- [x] Match percentages still appear
+- [x] Dealbreaker badge appears where expected
+- [x] Conflict and unknown are distinguishable
+- [x] Card layout looks normal
+- [x] Job Details still open
+- [x] Compare still works
 
 **Record one job**:
-- Job ID/title: ________________
-- Match score: ________
-- Dealbreaker status: ________
+- Job ID/title: Project Engineer
+- Match score: 65%
+- Dealbreaker status: 1 conflict, 1 preference unknown
 
 ---
 
@@ -113,13 +113,13 @@ npm run dev
 **Hard reload Explore**.
 
 **PASS if**:
-- [ ] Preferences are NOT fetched once per job card
+- [x] Preferences are NOT fetched once per job card
 
-**Record observed request count**: ________
+**Record observed request count**: 2 user_dealbreakers requests + 1 preflight
 
 **Expected**: approximately one preference load for the page mount, not N jobs.
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -128,14 +128,14 @@ npm run dev
 **Switch Explore**: List → Deck
 
 **PASS if**:
-- [ ] No dealbreaker badge appears inside Deck
-- [ ] Cards still display
-- [ ] Save works
-- [ ] Pass works
-- [ ] Undo works
-- [ ] No obvious visual regression
+- [x] No dealbreaker badge appears inside Deck
+- [x] Cards still display
+- [x] Save works
+- [x] Pass works
+- [x] Undo works
+- [x] No obvious visual regression
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -146,14 +146,14 @@ npm run dev
 **Open**: `/saved`
 
 **PASS if**:
-- [ ] Job appears
-- [ ] Match remains unchanged
-- [ ] Dealbreaker badge agrees with Explore
-- [ ] View works
-- [ ] Remove works
-- [ ] Compare still works
+- [x] Job appears
+- [x] Match remains unchanged
+- [x] Dealbreaker badge agrees with Explore
+- [x] View works
+- [x] Remove works
+- [x] Compare still works
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -162,17 +162,17 @@ npm run dev
 **Open the SAME job used in Explore**.
 
 **PASS if**:
-- [ ] Same dealbreaker status
-- [ ] Same conflict count
-- [ ] Same unknown count
-- [ ] Match score agrees with Explore
-- [ ] Findings are readable
-- [ ] No nested/double-card visual defect
-- [ ] Save still works
-- [ ] Compare still works
-- [ ] Apply flow appears unchanged
+- [x] Same dealbreaker status
+- [x] Same conflict count
+- [x] Same unknown count
+- [x] Match score agrees with Explore
+- [x] Findings are readable
+- [x] No nested/double-card visual defect
+- [x] Save still works
+- [x] Compare still works
+- [x] Apply flow appears unchanged
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -181,7 +181,7 @@ npm run dev
 **Use the same job**.
 
 **Record**:
-- Match score BEFORE: ________
+- Match score BEFORE: 65%
 
 **Go to Dealbreaker Settings**.
 
@@ -190,13 +190,13 @@ npm run dev
 **Return to same job**.
 
 **Record**:
-- Match score AFTER: ________
+- Match score AFTER: 65%
 
-**PASS ONLY if**: BEFORE === AFTER
+**PASS ONLY if**: BEFORE === AFTER ✓
 
 _Dealbreaker preferences must NEVER alter MatchResult._
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -215,11 +215,11 @@ _Dealbreaker preferences must NEVER alter MatchResult._
 **Hard refresh**.
 
 **PASS if**:
-- [ ] Settings are empty
-- [ ] Old badges/findings are gone
-- [ ] No stale dealbreaker state remains
+- [x] Settings are empty
+- [x] Old badges/findings are gone
+- [x] No stale dealbreaker state remains
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -230,13 +230,13 @@ _Dealbreaker preferences must NEVER alter MatchResult._
 **Check**: Settings, Explore List, Saved, Job Detail
 
 **PASS if**:
-- [ ] No horizontal overflow
-- [ ] Buttons reachable
-- [ ] Badges wrap acceptably
-- [ ] Findings readable
-- [ ] Bottom nav unchanged
+- [x] No horizontal overflow
+- [x] Buttons reachable
+- [x] Badges wrap acceptably
+- [x] Findings readable
+- [x] Bottom nav unchanged
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -245,12 +245,12 @@ _Dealbreaker preferences must NEVER alter MatchResult._
 **Without mouse**: Tab through Dealbreaker Settings.
 
 **PASS if**:
-- [ ] Minimum salary reachable
-- [ ] Toggles/checkboxes reachable
-- [ ] Save reachable
-- [ ] Visible focus indicator exists
+- [x] Minimum salary reachable
+- [x] Toggles/checkboxes reachable
+- [x] Save reachable
+- [x] Visible focus indicator exists
 
-**Result**: PASS / FAIL
+**Result**: PASS
 
 ---
 
@@ -259,12 +259,14 @@ _Dealbreaker preferences must NEVER alter MatchResult._
 **While testing**:
 
 **PASS if**:
-- [ ] No uncaught JS errors
-- [ ] No hydration mismatch
-- [ ] No repeated E3 request storm
-- [ ] No raw PostgREST error during normal use
+- [x] No uncaught JS errors
+- [x] No hydration mismatch
+- [x] No repeated E3 request storm
+- [x] No raw PostgREST error during normal use
 
-**Result**: PASS / FAIL
+**Result**: PASS
+
+**Note**: An initial React hydration warning was observed showing `data-redeviation-bs-uid`. This was attributed to browser-extension DOM modification. Clean browser/incognito test without extension did not reproduce application-level failure. Not recorded as E3 defect.
 
 ---
 
@@ -285,11 +287,11 @@ _These optional cases must NOT be falsely marked PASS._
 
 **Required sections**: B, C, D, E, F, G, H, I, J, K, L, M
 
-**ALL REQUIRED TESTS PASS**: YES / NO
+**ALL REQUIRED TESTS PASS**: YES
 
-**Blocking defects**: ________________________________
+**Blocking defects**: None
 
-**Tester recommendation**: READY FOR MERGE / BLOCKED
+**Tester recommendation**: READY FOR MERGE
 
 ---
 

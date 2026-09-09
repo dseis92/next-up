@@ -11,7 +11,11 @@
 
 **Programmatic Verification**: PASS
 
-**Manual Browser Execution**: PENDING
+**Manual Browser Execution**: PARTIAL (required merge-gate tests only)
+
+**Tester**: Human tester
+**Date**: 2026-09-09
+**Runtime**: LOCAL FEATURE BRANCH + REMOTE SUPABASE
 
 ---
 

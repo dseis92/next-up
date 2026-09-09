@@ -1,6 +1,6 @@
 # NextUp — Current Project State
 
-**Last Updated**: 2026-09-08
+**Last Updated**: 2026-09-09
 
 **Repository**: dseis92/next-up
 
@@ -100,13 +100,15 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 **Programmatic/Database CRUD**: PASS
 
-**Manual Browser QA**: PENDING HUMAN EXECUTION
+**Manual Browser QA**: REQUIRED MERGE-GATE TESTS PASS (2026-09-09)
+
+**Match Immutability Verification**: 65% → 65% PASS
 
 **Cross-User RLS Runtime**: NOT EXECUTED
 
-**Production Approval**: PENDING
+**Merge Status**: READY FOR MERGE
 
-**Merge**: PENDING
+**Production Verification**: PENDING
 
 **Deliverable**: User-defined non-negotiable preferences with conflict detection
 
