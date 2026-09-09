@@ -114,7 +114,16 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 **Deliverable**: User-defined non-negotiable preferences with independent conflict detection that does not alter deterministic MatchResult
 
-### E4–E35
+### E4 — Opportunity Radar
+**Status**: SPECIFICATION PHASE AUTHORIZED
+
+**Specification**: DRAFTED — PENDING INDEPENDENT REVIEW
+
+**Implementation**: NOT AUTHORIZED
+
+**Deliverable** (Proposed): Purpose-driven job categories using deterministic evidence-backed rules
+
+### E5–E35
 **Status**: PLANNING ONLY — NOT IMPLEMENTATION AUTHORIZED
 
 ---
@@ -147,13 +156,16 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 ## CURRENT AUTHORIZATION
 
-**No new product-expansion implementation is currently authorized.**
+**E4 Specification Phase**: AUTHORIZED
+
+**E4 Implementation**: NOT AUTHORIZED
 
 - E1/E2 are **FROZEN**
 - E3 is **CLOSED + FROZEN**
+- E4 is **SPECIFICATION PHASE / IMPLEMENTATION NOT AUTHORIZED**
 - Phase 9/10/11 are **FROZEN**
 - Phase 12 is **LOCKED**
-- E4+ are **PLANNING ONLY / NOT IMPLEMENTATION AUTHORIZED**
+- E5+ are **PLANNING ONLY / NOT IMPLEMENTATION AUTHORIZED**
 
 ---
 
