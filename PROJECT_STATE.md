@@ -115,11 +115,13 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 **Deliverable**: User-defined non-negotiable preferences with independent conflict detection that does not alter deterministic MatchResult
 
 ### E4 — Opportunity Radar
-**Status**: SPECIFICATION PHASE AUTHORIZED
+**Status**: SPECIFICATION APPROVED + MERGED TO MAIN
 
-**Specification**: DRAFTED — PENDING INDEPENDENT REVIEW
+**Approved Specification SHA**: `738c3378df712dd5da25bc894616d987c764f5ff`
 
-**Implementation**: NOT AUTHORIZED
+**Approved Specification Merge SHA**: `2f3eab0cab17f8daa2854efe8a1a878f99283dda`
+
+**Implementation**: NOT STARTED
 
 **Deliverable** (Proposed): Purpose-driven job categories using deterministic evidence-backed rules
 
