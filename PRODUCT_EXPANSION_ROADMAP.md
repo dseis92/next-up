@@ -155,16 +155,26 @@ Specification: E3_DEALBREAKER_ENGINE_SPEC.md
 
 ### E4 — Opportunity Radar
 
-**Status**: PLANNING ONLY — NOT IMPLEMENTATION AUTHORIZED
+**Status**: SPECIFICATION PHASE AUTHORIZED
 
-Personalized categories:
-- Best Matches
-- New
-- High Salary
-- Stretch Opportunities
-- Career Changers
-- Fast-Growing Roles
-- Worth Relocating For
+**Specification**: DRAFTED — PENDING INDEPENDENT REVIEW
+
+**Implementation**: NOT AUTHORIZED
+
+Purpose-driven job categories using deterministic evidence-backed rules.
+
+**Proposed E4 V1 Categories** (per spec):
+- Best Matches (score ≥ 80)
+- New Opportunities (posted within 7 days)
+- High Compensation (disclosed high salaries)
+- Stretch Opportunities (qualification 60-85 with missing skills)
+
+**Deferred to E5+**:
+- Career Changers (requires expanded career taxonomy)
+- Fast-Growing Roles (requires external labor market data)
+- Worth Relocating For (requires COL/geocoding integration)
+
+**Specification**: E4_OPPORTUNITY_RADAR_SPEC.md
 
 ---
 
