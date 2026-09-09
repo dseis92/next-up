@@ -193,7 +193,7 @@ Use this hierarchy when documentation conflicts arise:
 2. **PROJECT_STATE.md** (this file)
 3. **PROJECT_GUARDRAILS.md**
 4. **CLAUDE.md**
-5. **Active feature spec** (currently `E3_DEALBREAKER_ENGINE_SPEC.md`)
+5. **Active feature spec** (currently `E4_OPPORTUNITY_RADAR_SPEC.md`)
 6. **PRODUCT_EXPANSION_ROADMAP.md**
 7. **Historical reports/manual test documents**
 

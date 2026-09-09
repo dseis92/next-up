@@ -199,11 +199,14 @@ Based on inspection of the current NextUp repository, the following data is reli
 ### INCLUDED CATEGORIES (4)
 
 #### 1. Best Matches
-**Purpose**: Quickly surface the user's strongest overall fits
-**Eligibility**: MatchResult.overallScore ≥ 80
-**Ranking**: Descending by overallScore
+**Purpose**: Quickly surface the user's strongest available matches
+**Eligibility**:
+- Valid scored opportunity (MatchResult.status = 'scored')
+- Passes active Explore filters
+- Not passed
+**Ranking**: Descending by overallScore, then posted_date DESC, then job.id ASC
 **Max Displayed**: Top 20 opportunities
-**Explanation Template**: "Strong overall match"
+**Explanation Template**: "Your strongest available matches"
 
 #### 2. New Opportunities
 **Purpose**: Highlight recently posted jobs so users can act quickly
@@ -217,20 +220,21 @@ Based on inspection of the current NextUp repository, the following data is reli
 **Eligibility**:
 - Job.salary_min IS NOT NULL
 - Job.salary_is_estimated = false
-- Job.salary_min ≥ top 25th percentile of all disclosed salaries in dataset
-**Ranking**: Descending by salary_min
+- Job.salary_period = 'yearly'
+- Job.salary_min ≥ 75th percentile (top quartile) of eligible yearly disclosed salaries in active filtered dataset
+**Ranking**: Descending by salary_min, then posted_date DESC, then job.id ASC
 **Max Displayed**: Top 20 opportunities
 **Explanation Template**: "Among the highest disclosed salaries" OR "Salary: $X - $Y/year"
-**Note**: Percentile threshold computed from current dataset at runtime
+**Note**: Hourly jobs excluded from V1. Percentile threshold computed from eligible yearly salaries at runtime using deterministic algorithm (see below).
 
 #### 4. Stretch Opportunities
-**Purpose**: Identify roles that could accelerate career growth
+**Purpose**: Surface roles that are a manageable qualification stretch
 **Eligibility**:
 - MatchResult.qualificationScore between 60-85 (inclusive)
 - MatchResult.missingSkills.length > 0
-**Ranking**: Descending by overallScore (users want the best stretch opportunities)
+**Ranking**: Descending by overallScore, then posted_date DESC, then job.id ASC
 **Max Displayed**: Top 15 opportunities
-**Explanation Template**: "Growth opportunity with [N] new skills to develop"
+**Explanation Template**: "[N] required skills aren't currently matched" OR "Qualification stretch with [N] unmatched skills"
 
 ### DEFERRED CATEGORIES (3)
 
@@ -253,29 +257,30 @@ For each job, evaluate eligibility for each category independently. A job MAY ap
 **State Interaction**:
 - **Saved jobs**: Include in categories (users may want to revisit saved opportunities through different lenses)
 - **Passed jobs**: Exclude from categories (user explicitly rejected)
-- **Applied jobs**: Exclude from categories (already in Applications funnel)
+- **Applied jobs**: Include in categories (E4 V1 preserves zero-query architecture; applied-state exclusion deferred to future if Explore later provides application state without Radar-specific query cost)
 
 ### Exclusion Rules
 
 Global exclusions (apply to ALL categories):
 1. Job is passed (exists in passed_jobs table)
-2. Job is applied (exists in applications table)
-3. Job fails existing Explore filters (search query, work arrangement filter, minimum match filter)
-4. MatchResult.status = 'incomplete_profile'
+2. Job fails existing Explore filters (search query, work arrangement filter, minimum match filter)
+3. MatchResult.status = 'incomplete_profile'
+
+**Note**: Applied jobs are NOT excluded in E4 V1 to preserve zero-query architecture. Explore currently does not load application IDs. Future enhancement may add applied-state exclusion if Explore integration provides this data without Radar-specific cost.
 
 ### Ranking Rules
 
-**Best Matches**: Sort by MatchResult.overallScore DESC
-**New Opportunities**: Sort by Job.posted_date DESC, then MatchResult.overallScore DESC
-**High Compensation**: Sort by Job.salary_min DESC
-**Stretch Opportunities**: Sort by MatchResult.overallScore DESC
+**Best Matches**: Sort by overallScore DESC, then posted_date DESC, then job.id ASC
+**New Opportunities**: Sort by posted_date DESC, then overallScore DESC, then job.id ASC
+**High Compensation**: Sort by salary_min DESC, then posted_date DESC, then job.id ASC
+**Stretch Opportunities**: Sort by overallScore DESC, then posted_date DESC, then job.id ASC
 
 ### Tie-Breaking Rules
 
-When primary sort produces ties:
-1. Secondary sort by MatchResult.overallScore DESC (if not already primary)
-2. Tertiary sort by Job.posted_date DESC (newest first)
-3. Final tie-break by Job.id ASC (stable deterministic ordering)
+All categories use consistent three-level deterministic ordering:
+1. Primary sort (category-specific: score, date, or salary)
+2. Secondary sort (if not already used)
+3. Final tie-break by job.id ASC (stable deterministic ordering)
 
 ### Handling Missing Evidence
 
@@ -283,7 +288,7 @@ When primary sort produces ties:
 |----------|---------------|----------|
 | Best Matches | overallScore null | Exclude (incomplete profile) |
 | New Opportunities | posted_date null | Exclude (cannot determine recency) |
-| High Compensation | salary_min null OR salary_is_estimated = true | Exclude (no reliable salary data) |
+| High Compensation | salary_min null OR salary_is_estimated = true OR salary_period != 'yearly' | Exclude (no reliable comparable salary data; hourly excluded from V1) |
 | Stretch Opportunities | qualificationScore null OR missingSkills empty | Exclude (cannot determine stretch status) |
 
 **Critical Rule**: NEVER estimate, infer, or fabricate missing data to qualify a job for a category.
@@ -302,12 +307,54 @@ Limits per category:
 
 If a category has zero eligible jobs:
 - **Show category heading with explanation**
-- **Message**: "No [category name] right now" with category-specific guidance
+- **Message**: Context-accurate empty state (not generic)
 - Examples:
-  - Best Matches: "Complete your profile to see your best matches"
+  - Best Matches (incomplete profile): Use existing incomplete-profile messaging
+  - Best Matches (no filtered opportunities): "No matching opportunities with your current filters"
+  - Best Matches (no available jobs): "No opportunities available right now"
   - New Opportunities: "Check back soon for newly posted jobs"
   - High Compensation: "Jobs with disclosed high salaries will appear here"
-  - Stretch Opportunities: "Growth opportunities will appear as you explore"
+  - Stretch Opportunities: "Qualification stretch opportunities will appear as you explore"
+
+### High Compensation Percentile Algorithm
+
+**Deterministic 75th Percentile Calculation**:
+
+```
+1. Collect eligible yearly disclosed salaries:
+   - salary_min IS NOT NULL
+   - salary_is_estimated = false
+   - salary_period = 'yearly'
+
+2. Sort collected values ascending numerically
+
+3. Let n = number of eligible values
+
+4. If n = 0:
+   - Category is empty (no eligible salaries)
+   - Return empty category
+
+5. Calculate threshold index:
+   - thresholdIndex = max(0, ceil(0.75 * n) - 1)
+
+6. Determine threshold value:
+   - threshold = sortedValues[thresholdIndex]
+
+7. Filter jobs:
+   - Include jobs where salary_min >= threshold
+
+8. Sort qualifying jobs:
+   - By salary_min DESC, then posted_date DESC, then job.id ASC
+
+9. Apply max limit (top 20)
+```
+
+**Edge Cases**:
+- n = 1: threshold = sortedValues[0], only that job qualifies
+- n = 4: thresholdIndex = 2, top 2 values (50th percentile due to small sample)
+- Ties at threshold: All jobs with salary_min = threshold qualify (before limit)
+
+**Hourly Jobs**: Excluded from V1. Do NOT annualize hourly rates. Do NOT assume work hours. Future enhancement may add hourly compensation category with separate percentile logic.
 
 ### Category Computation Performance
 
@@ -316,11 +363,11 @@ If a category has zero eligible jobs:
 Preferred architecture:
 1. Load jobs ONCE (existing Explore behavior)
 2. Calculate MatchResults ONCE (existing Phase 10 behavior)
-3. Load saved/passed/applied state ONCE
+3. Load saved/passed state ONCE (existing Explore behavior)
 4. Compute category membership locally via pure selectors
 5. Total category computation: O(N) single pass over jobs
 
-Do NOT query database per category. Do NOT recalculate matches per category.
+Do NOT query database per category. Do NOT recalculate matches per category. Do NOT load application state (preserves zero-query architecture).
 
 ---
 
@@ -576,10 +623,15 @@ Reuse existing Explore List card design with minor adaptations for horizontal la
 
 ### Salary Display Behavior
 
-- If salary_min and salary_max exist: "$120k–$160k/year"
-- If only salary_min exists: "$120k+/year"
-- If salary_is_estimated = true: Do NOT display salary in Radar
+**Category Eligibility vs Card Display**: Estimated salaries are excluded from High Compensation category eligibility, but displayed on cards with clear labeling.
+
+**Card Display Rules**:
+- If salary_min and salary_max exist (non-estimated): "$120k–$160k/year"
+- If only salary_min exists (non-estimated): "$120k+/year"
+- If salary_is_estimated = true: Display value with "Estimated" label (e.g., "~$120k–$160k/year (Estimated)")
 - If salary is missing: Display "Salary not disclosed"
+
+**Critical**: Do NOT represent estimated salary as disclosed salary. Do NOT use estimated values in High Compensation percentile logic. Estimated salaries excluded from category eligibility but not suppressed in card display.
 
 ### Location/Work Arrangement Display
 
@@ -631,10 +683,10 @@ Categories themselves stack vertically on both desktop and mobile.
 
 ### Duplicate Jobs Across Categories
 
-**Allowed**: A 92% match with $150k salary posted yesterday may appear in:
-- Best Matches (92% ≥ 80)
+**Allowed**: A 92% match with $150k yearly disclosed salary posted yesterday may appear in:
+- Best Matches (top available matches)
 - New Opportunities (posted within 7 days)
-- High Compensation (high disclosed salary)
+- High Compensation (≥75th percentile yearly disclosed salary)
 
 **Rationale**: Categories represent different discovery lenses. Seeing the same strong opportunity through multiple lenses reinforces its value and provides navigation flexibility.
 
@@ -646,7 +698,7 @@ Categories themselves stack vertically on both desktop and mobile.
 
 ### Best Matches
 **Heading**: "Best Matches"
-**Description**: "Your strongest overall fits"
+**Description**: "Your strongest available matches"
 **Per-Job Explanation**: None needed (match percentage is self-explanatory)
 
 ### New Opportunities
@@ -661,8 +713,8 @@ Categories themselves stack vertically on both desktop and mobile.
 
 ### Stretch Opportunities
 **Heading**: "Stretch Opportunities"
-**Description**: "Roles that could accelerate your growth"
-**Per-Job Explanation**: "[N] new skills to develop" (e.g., "3 new skills to develop")
+**Description**: "Qualification stretch roles"
+**Per-Job Explanation**: "[N] required skills aren't currently matched" (e.g., "3 required skills aren't currently matched")
 
 ### Explanation Requirements
 
@@ -816,23 +868,41 @@ lib/radar/
     └── selectors.test.ts # Domain tests
 ```
 
+### Radar Domain Input Contract
+
+**Explicit Pure Input Type** (specification-only, NOT a repository type change):
+
+```typescript
+interface RadarJobInput {
+  job: Job;                           // Complete job data
+  overallScore: number;               // MatchResult.overallScore (camelCase)
+  qualificationScore: number;         // MatchResult.qualificationScore
+  missingSkills: readonly string[];   // MatchResult.missingSkills
+}
+```
+
+**Integration Adapter**: Explore should adapt existing `JobMatch` (snake_case fields) → `RadarJobInput` (camelCase domain contract) at the boundary. Radar domain logic operates on clean camelCase inputs.
+
+**CRITICAL**: Do NOT modify `lib/matching/` types. Do NOT change existing `JobMatch` structure. Do NOT modify Phase 9/10 semantics. Adapter pattern preserves separation.
+
 ### Domain Responsibilities
 
 **lib/radar/types.ts**:
 - `RadarCategory` enum
 - `CategoryBucket` interface
+- `RadarJobInput` interface (domain contract)
 - `CategoryEligibility` rules type
 
 **lib/radar/selectors.ts**:
-- `selectBestMatches(jobs: JobMatch[]): JobMatch[]`
-- `selectNewOpportunities(jobs: JobMatch[]): JobMatch[]`
-- `selectHighCompensation(jobs: JobMatch[]): JobMatch[]`
-- `selectStretchOpportunities(jobs: JobMatch[]): JobMatch[]`
-- `computeAllCategories(jobs: JobMatch[]): Map<RadarCategory, JobMatch[]>`
+- `selectBestMatches(jobs: RadarJobInput[]): RadarJobInput[]`
+- `selectNewOpportunities(jobs: RadarJobInput[], asOfMs: number): RadarJobInput[]`
+- `selectHighCompensation(jobs: RadarJobInput[]): RadarJobInput[]`
+- `selectStretchOpportunities(jobs: RadarJobInput[]): RadarJobInput[]`
+- `computeAllCategories(jobs: RadarJobInput[], asOfMs: number): Map<RadarCategory, RadarJobInput[]>`
 
 **lib/radar/explanations.ts**:
 - `getBestMatchesDescription(): string`
-- `getNewOpportunityExplanation(job: Job): string`
+- `getNewOpportunityExplanation(postedDate: Date, asOfMs: number): string`
 - `getStretchExplanation(missingSkillsCount: number): string`
 
 ### Purity Requirements
@@ -843,9 +913,10 @@ Domain selectors MUST:
 - NOT access React state/context
 - NOT call Supabase
 - NOT call AI APIs
-- NOT use browser APIs
+- NOT use browser APIs (including Date.now(), new Date() implicit current time)
 - NOT use randomness
-- Be testable in isolation
+- Accept explicit reference time (asOfMs) for time-based logic
+- Be testable in isolation with fixed inputs
 
 Domain selectors MAY:
 - Read MatchResult fields
@@ -868,6 +939,7 @@ Domain selectors MAY:
 | posted_date = null | Exclude from New Opportunities |
 | salary_min = null | Exclude from High Compensation |
 | salary_is_estimated = true | Exclude from High Compensation |
+| salary_period != 'yearly' | Exclude from High Compensation (hourly excluded from V1) |
 | missingSkills = [] | Exclude from Stretch Opportunities |
 
 ### Never Estimate
@@ -903,28 +975,35 @@ Better to show an honest empty category than fabricate eligibility.
 **Location**: `lib/radar/__tests__/selectors.test.ts`
 
 **Coverage**:
-- Best Matches selector returns jobs with score ≥ 80
-- Best Matches sorted by overallScore DESC
+- Best Matches selector returns all scored jobs passing filters
+- Best Matches sorted by overallScore DESC, then posted_date DESC, then job.id ASC
 - Best Matches limited to 20
 - Best Matches excludes incomplete profiles
-- New Opportunities selector returns jobs posted within 7 days
-- New Opportunities sorted by posted_date DESC, then overallScore DESC
+- Best Matches includes 79% match if it's among top available
+- New Opportunities uses explicit asOfMs parameter
+- New Opportunities returns jobs posted within 7 days of asOfMs
+- New Opportunities excludes future-dated jobs (posted_date > asOfMs)
+- New Opportunities excludes invalid/null posted_date
+- New Opportunities sorted by posted_date DESC, then overallScore DESC, then job.id ASC
 - New Opportunities limited to 30
-- New Opportunities excludes jobs with null posted_date
-- High Compensation selector returns non-estimated disclosed salaries
-- High Compensation sorted by salary_min DESC
-- High Compensation limited to 20
+- New Opportunities deterministic with same asOfMs
+- High Compensation requires yearly period
+- High Compensation excludes hourly jobs
 - High Compensation excludes estimated salaries
 - High Compensation excludes missing salaries
-- Stretch Opportunities selector returns qualification 60-85 with missing skills
-- Stretch Opportunities sorted by overallScore DESC
+- High Compensation 75th percentile algorithm correct
+- High Compensation edge cases (n=0, n=1, n=4, ties at threshold)
+- High Compensation sorted by salary_min DESC, then posted_date DESC, then job.id ASC
+- High Compensation limited to 20
+- Stretch Opportunities returns qualification 60-85 with missing skills
+- Stretch Opportunities sorted by overallScore DESC, then posted_date DESC, then job.id ASC
 - Stretch Opportunities limited to 15
 - Stretch Opportunities excludes jobs with empty missingSkills
 - Same job can appear in multiple categories
 - No duplicates within a category
 - Passed jobs excluded from all categories
-- Applied jobs excluded from all categories
-- Deterministic ordering (same inputs → same outputs)
+- Applied jobs NOT excluded (V1 preserves zero-query architecture)
+- Deterministic ordering (same inputs + same asOfMs → same outputs)
 - No mutation of input arrays
 - Tie-breaking rules applied correctly
 
@@ -1003,10 +1082,17 @@ Better to show an honest empty category than fabricate eligibility.
 - No per-category database queries
 - Profile loaded once
 - MatchResults calculated once
+- Application state NOT loaded (zero-query architecture preserved)
+- No N+1 request patterns
+- No repeated Match calculation
+- No unnecessary recomputation
+- Rendering does not block main thread
+
+**Performance Goals** (manual benchmark targets, not mandatory CI assertions):
 - Category computation <100ms for 100 jobs
 - Category computation <200ms for 500 jobs
-- No N+1 request patterns
-- Rendering does not block main thread
+
+**Note**: Wall-clock timing assertions should not be CI merge gates unless deterministic benchmark mechanism exists. Focus merge gates on request count and algorithmic behavior.
 
 ### Regression Tests
 
@@ -1070,19 +1156,17 @@ If category computation fails:
 
 ### Keyboard Navigation
 
-**Tab order**:
+**Standard Tab Navigation**: Use native browser tab order through interactive elements:
 1. View mode selector (List/Deck/Radar buttons)
 2. Search input
 3. Filter controls
-4. Category 1 heading
-5. Category 1 cards (left/right arrows to scroll)
-6. Category 2 heading
-7. Category 2 cards
-8. (Repeat for all categories)
+4. Job cards within categories (standard tab order)
+5. Compare toggles
+6. Detail buttons
 
-**Arrow keys**:
-- Left/Right: Navigate within category card horizontal scroll
-- Up/Down: Navigate between categories
+**Horizontal Scroll**: Horizontal card regions should use native keyboard-accessible scroll behavior (focus card, use arrow keys if natively supported by scroll container).
+
+**Avoid Unnecessary Custom Navigation**: Do NOT invent custom roving-focus or arrow-key navigation unless there is a clear accessibility need. Prefer standard semantic HTML and native browser behavior.
 
 ### Visible Focus States
 
@@ -1090,7 +1174,7 @@ All interactive elements MUST have visible focus ring:
 - View mode buttons
 - Job cards
 - Compare toggles
-- Category headings (if clickable)
+- Category headings only if interactive (headings should NOT be focusable unless they perform an action)
 
 ### Semantic Headings
 
@@ -1254,7 +1338,7 @@ All interactive elements ≥44px × 44px (WCAG 2.1 AA).
 3. ✓ Jobs can appear in multiple categories
 4. ✓ No duplicates within a category
 5. ✓ Passed jobs excluded from all categories
-6. ✓ Applied jobs excluded from all categories
+6. ✓ Applied jobs NOT excluded (V1 preserves zero-query architecture)
 7. ✓ Existing Explore filters honored
 8. ✓ Search affects Radar categories
 9. ✓ Empty categories show appropriate messaging
@@ -1272,54 +1356,64 @@ All interactive elements ≥44px × 44px (WCAG 2.1 AA).
 ### Missing Data Handling
 
 17. ✓ Missing salary → excluded from High Compensation
-18. ✓ Estimated salary → excluded from High Compensation
-19. ✓ Missing posted_date → excluded from New Opportunities
-20. ✓ No fabricated or estimated data
+18. ✓ Estimated salary → excluded from High Compensation eligibility (but displayed with label)
+19. ✓ Hourly period → excluded from High Compensation
+20. ✓ Missing posted_date → excluded from New Opportunities
+21. ✓ Future-dated jobs → excluded from New Opportunities
+22. ✓ No fabricated or estimated data
 
 ### Performance
 
-21. ✓ Zero additional database queries beyond Explore
-22. ✓ Profile loaded once
-23. ✓ MatchResults calculated once
-24. ✓ Category computation <100ms for 100 jobs
-25. ✓ No N+1 request patterns
+23. ✓ Zero additional database queries beyond Explore
+24. ✓ Profile loaded once
+25. ✓ MatchResults calculated once
+26. ✓ Application state NOT loaded (preserves zero-query architecture)
+27. ✓ No N+1 request patterns
+28. ✓ No repeated Match calculation
+29. ✓ Category computation goals: <100ms for 100 jobs, <200ms for 500 jobs (manual benchmarks, not CI assertions)
 
 ### UI/UX
 
-26. ✓ Radar accessible via Explore view mode selector
-27. ✓ Horizontal scrolling job cards
-28. ✓ Mobile responsive
-29. ✓ Bottom nav remains accessible
-30. ✓ Radar failure does not break Explore List/Deck
-31. ✓ Job Detail navigation works
-32. ✓ Compare integration works
-33. ✓ DealbreakerBadge displays on cards
+30. ✓ Radar accessible via Explore view mode selector
+31. ✓ Horizontal scrolling job cards
+32. ✓ Mobile responsive
+33. ✓ Bottom nav remains accessible
+34. ✓ Radar failure does not break Explore List/Deck
+35. ✓ Job Detail navigation works
+36. ✓ Compare integration works
+37. ✓ DealbreakerBadge displays on cards
+38. ✓ Best Matches shows top available (no fixed 80% threshold)
+39. ✓ New Opportunities uses explicit asOfMs parameter (deterministic time handling)
 
 ### Accessibility
 
-34. ✓ Keyboard navigation functional
-35. ✓ Visible focus states
-36. ✓ Screen reader labels present
-37. ✓ Semantic headings
-38. ✓ Touch targets ≥44px on mobile
-39. ✓ Horizontal scroll keyboard-accessible
+40. ✓ Keyboard navigation functional (standard tab order, no unnecessary custom navigation)
+41. ✓ Visible focus states
+42. ✓ Screen reader labels present
+43. ✓ Semantic headings (non-interactive headings not focusable)
+44. ✓ Touch targets ≥44px on mobile
+45. ✓ Horizontal scroll keyboard-accessible (native behavior)
 
 ### Testing
 
-40. ✓ Pure domain tests cover all selectors
-41. ✓ Match trust tests verify no MatchResult mutation
-42. ✓ E3 trust tests verify dealbreaker independence
-43. ✓ Filter tests verify Explore filter integration
-44. ✓ Regression tests verify frozen systems unchanged
-45. ✓ All quality gates pass (typecheck, lint, tests, build)
+46. ✓ Pure domain tests cover all selectors (including asOfMs handling)
+47. ✓ High Compensation percentile algorithm tested (edge cases: n=0, n=1, ties)
+48. ✓ Hourly salary exclusion tested
+49. ✓ Match trust tests verify no MatchResult mutation
+50. ✓ E3 trust tests verify dealbreaker independence
+51. ✓ Filter tests verify Explore filter integration
+52. ✓ Regression tests verify frozen systems unchanged
+53. ✓ All quality gates pass (typecheck, lint, tests, build)
 
 ### Non-Functional
 
-46. ✓ No new database migration
-47. ✓ No new AI usage
-48. ✓ No new external API integrations
-49. ✓ No modifications to Phase 9/10/11
-50. ✓ No modifications to E1/E2/E3
+54. ✓ No new database migration
+55. ✓ No new AI usage
+56. ✓ No new external API integrations
+57. ✓ No modifications to Phase 9/10/11
+58. ✓ No modifications to E1/E2/E3
+59. ✓ Radar domain input contract explicit (RadarJobInput)
+60. ✓ No modification to existing JobMatch or MatchResult types
 
 ---
 
@@ -1332,10 +1426,10 @@ All interactive elements ≥44px × 44px (WCAG 2.1 AA).
 ### NON-BLOCKING / FUTURE CONSIDERATIONS
 
 1. **High Compensation Percentile Threshold**:
-   - Current spec uses "top 25th percentile"
+   - Spec uses 75th percentile (top quartile)
    - Should this be configurable or fixed?
    - **Recommendation**: Fixed at 75th percentile for V1, make configurable in future if needed
-   - **Status**: Non-blocking, spec provides clear initial value
+   - **Status**: Non-blocking, spec provides clear deterministic algorithm
 
 2. **New Opportunities Time Window**:
    - Current spec uses 7 days
