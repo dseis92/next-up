@@ -617,6 +617,106 @@ describe("selectStretchOpportunities", () => {
   });
 });
 
+describe("within-category uniqueness", () => {
+  it("selectBestMatches should deduplicate by job.id", () => {
+    const job1 = createRadarInput({ id: "job-1" }, { overall: 90 });
+    const job1Duplicate = createRadarInput({ id: "job-1" }, { overall: 85 });
+    const job2 = createRadarInput({ id: "job-2" }, { overall: 80 });
+
+    const result = selectBestMatches([job1, job1Duplicate, job2]);
+
+    expect(result.jobs).toHaveLength(2);
+    expect(result.jobs.map((j) => j.job.id)).toEqual(["job-1", "job-2"]);
+    // First occurrence preserved
+    expect(result.jobs[0].overallScore).toBe(90);
+  });
+
+  it("selectNewOpportunities should deduplicate by job.id", () => {
+    const nowMs = Date.now();
+    const recentDate = new Date(nowMs - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    const job1 = createRadarInput({ id: "job-1", posted_date: recentDate }, { overall: 90 });
+    const job1Duplicate = createRadarInput({ id: "job-1", posted_date: recentDate }, { overall: 85 });
+    const job2 = createRadarInput({ id: "job-2", posted_date: recentDate }, { overall: 80 });
+
+    const result = selectNewOpportunities([job1, job1Duplicate, job2], nowMs);
+
+    expect(result.jobs).toHaveLength(2);
+    expect(result.jobs.map((j) => j.job.id)).toContain("job-1");
+    expect(result.jobs.map((j) => j.job.id)).toContain("job-2");
+  });
+
+  it("selectHighCompensation should deduplicate by job.id", () => {
+    // Create multiple high-salary jobs to ensure 75th percentile includes multiple results
+    const job1 = createRadarInput(
+      {
+        id: "job-1",
+        salary_min: 150000,
+        salary_period: "yearly",
+        salary_is_estimated: false,
+      },
+      { overall: 90 }
+    );
+    const job1Duplicate = createRadarInput(
+      {
+        id: "job-1",
+        salary_min: 150000,
+        salary_period: "yearly",
+        salary_is_estimated: false,
+      },
+      { overall: 85 }
+    );
+    const job2 = createRadarInput(
+      {
+        id: "job-2",
+        salary_min: 148000,
+        salary_period: "yearly",
+        salary_is_estimated: false,
+      },
+      { overall: 88 }
+    );
+    const job3 = createRadarInput(
+      {
+        id: "job-3",
+        salary_min: 145000,
+        salary_period: "yearly",
+        salary_is_estimated: false,
+      },
+      { overall: 85 }
+    );
+    const job4 = createRadarInput(
+      {
+        id: "job-4",
+        salary_min: 100000,
+        salary_period: "yearly",
+        salary_is_estimated: false,
+      },
+      { overall: 80 }
+    );
+
+    const result = selectHighCompensation([job1, job1Duplicate, job2, job3, job4]);
+
+    // Should deduplicate job-1 (keeping first occurrence)
+    expect(result.jobs.map((j) => j.job.id)).toContain("job-1");
+    // Should not contain duplicate
+    const job1Count = result.jobs.filter((j) => j.job.id === "job-1").length;
+    expect(job1Count).toBe(1);
+  });
+
+  it("selectStretchOpportunities should deduplicate by job.id", () => {
+    const job1 = createRadarInput({ id: "job-1" }, { qualification: 70, missingSkills: ["TypeScript"] });
+    const job1Duplicate = createRadarInput({ id: "job-1" }, { qualification: 75, missingSkills: ["React"] });
+    const job2 = createRadarInput({ id: "job-2" }, { qualification: 65, missingSkills: ["Node.js"] });
+
+    const result = selectStretchOpportunities([job1, job1Duplicate, job2]);
+
+    expect(result.jobs).toHaveLength(2);
+    expect(result.jobs.map((j) => j.job.id)).toEqual(["job-1", "job-2"]);
+    // First occurrence preserved
+    expect(result.jobs[0].qualificationScore).toBe(70);
+  });
+});
+
 describe("category overlap", () => {
   it("should allow jobs to appear in multiple categories", () => {
     // Job with: 90% overall, 75% qualification, missing skills, high salary, posted recently

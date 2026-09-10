@@ -40,6 +40,11 @@ export function OpportunityRadar({
     return generateRadarResults(radarInputs, asOfMs);
   }, [allMatches, asOfMs]);
 
+  // Build matched skills lookup for card evidence (UI-only)
+  const matchedSkillsByJobId = useMemo(() => {
+    return new Map(allMatches.map((m) => [m.job.id, m.matched_skills]));
+  }, [allMatches]);
+
   return (
     <div className="space-y-8">
       {/* Best Matches */}
@@ -51,6 +56,7 @@ export function OpportunityRadar({
         emptyMessage="No matching opportunities with your current filters"
         asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
+        matchedSkillsByJobId={matchedSkillsByJobId}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
 
@@ -63,6 +69,7 @@ export function OpportunityRadar({
         emptyMessage="Check back soon for newly posted jobs"
         asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
+        matchedSkillsByJobId={matchedSkillsByJobId}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
 
@@ -75,6 +82,7 @@ export function OpportunityRadar({
         emptyMessage="Jobs with disclosed high salaries will appear here"
         asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
+        matchedSkillsByJobId={matchedSkillsByJobId}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
 
@@ -87,6 +95,7 @@ export function OpportunityRadar({
         emptyMessage="Qualification stretch opportunities will appear as you explore"
         asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
+        matchedSkillsByJobId={matchedSkillsByJobId}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
     </div>
@@ -101,6 +110,7 @@ interface RadarCategorySectionProps {
   emptyMessage: string;
   asOfMs: number;
   dealbreakerEvaluations: Map<string, DealbreakerEvaluation>;
+  matchedSkillsByJobId: Map<string, string[]>;
   onJobClick: (jobId: string) => void;
 }
 
@@ -112,6 +122,7 @@ function RadarCategorySection({
   emptyMessage,
   asOfMs,
   dealbreakerEvaluations,
+  matchedSkillsByJobId,
   onJobClick,
 }: RadarCategorySectionProps) {
   // Generate stable heading ID
@@ -240,6 +251,38 @@ function RadarCategorySection({
                     {formatRadarSalary(job)}
                   </p>
 
+                  {/* Matched Skills (top 3) */}
+                  {(() => {
+                    const matchedSkills = matchedSkillsByJobId.get(job.id) || [];
+                    const displaySkills = matchedSkills.slice(0, 3);
+                    const remainingCount = matchedSkills.length - 3;
+
+                    if (displaySkills.length > 0) {
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {displaySkills.map((skill) => (
+                            <Badge
+                              key={skill}
+                              variant="muted"
+                              size="sm"
+                            >
+                              {skill}
+                            </Badge>
+                          ))}
+                          {remainingCount > 0 && (
+                            <Badge
+                              variant="muted"
+                              size="sm"
+                            >
+                              +{remainingCount}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
                   {/* Category-specific explanation */}
                   {categoryExplanation && (
                     <p className="text-xs text-foreground-secondary italic">
@@ -252,7 +295,7 @@ function RadarCategorySection({
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center justify-between gap-2 pt-1"
                   >
-                    <CompareToggle jobId={job.id} className="gap-2" />
+                    <CompareToggle jobId={job.id} className="gap-2 min-h-[44px]" />
                     <Button
                       variant="ghost"
                       size="sm"

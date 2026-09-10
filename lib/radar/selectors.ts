@@ -28,8 +28,16 @@ import {
 export function selectBestMatches(
   jobs: readonly RadarJobInput[]
 ): RadarCategoryResult {
+  // Deduplicate by job.id (keep first occurrence)
+  const seen = new Set<string>();
+  const unique = jobs.filter((input) => {
+    if (seen.has(input.job.id)) return false;
+    seen.add(input.job.id);
+    return true;
+  });
+
   // Sort: score DESC, date DESC, id ASC
-  const sorted = [...jobs].sort((a, b) => {
+  const sorted = [...unique].sort((a, b) => {
     const scoreComp = compareByOverallScore(a, b);
     if (scoreComp !== 0) return scoreComp;
 
@@ -42,7 +50,7 @@ export function selectBestMatches(
   return {
     category: "bestMatches",
     jobs: sorted.slice(0, 20),
-    totalEligible: jobs.length,
+    totalEligible: unique.length,
   };
 }
 
@@ -69,7 +77,15 @@ export function selectNewOpportunities(
 ): RadarCategoryResult {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-  const eligible = jobs.filter((input) => {
+  // Deduplicate by job.id (keep first occurrence)
+  const seen = new Set<string>();
+  const unique = jobs.filter((input) => {
+    if (seen.has(input.job.id)) return false;
+    seen.add(input.job.id);
+    return true;
+  });
+
+  const eligible = unique.filter((input) => {
     const postedDate = input.job.posted_date;
 
     // Missing/invalid date: exclude
@@ -139,8 +155,16 @@ export function selectNewOpportunities(
 export function selectHighCompensation(
   jobs: readonly RadarJobInput[]
 ): RadarCategoryResult {
+  // Deduplicate by job.id (keep first occurrence)
+  const seen = new Set<string>();
+  const unique = jobs.filter((input) => {
+    if (seen.has(input.job.id)) return false;
+    seen.add(input.job.id);
+    return true;
+  });
+
   // Filter eligible jobs
-  const eligible = jobs.filter((input) => {
+  const eligible = unique.filter((input) => {
     const { salary_min, salary_is_estimated, salary_period } = input.job;
 
     // Must have salary_min
@@ -211,7 +235,15 @@ export function selectHighCompensation(
 export function selectStretchOpportunities(
   jobs: readonly RadarJobInput[]
 ): RadarCategoryResult {
-  const eligible = jobs.filter((input) => {
+  // Deduplicate by job.id (keep first occurrence)
+  const seen = new Set<string>();
+  const unique = jobs.filter((input) => {
+    if (seen.has(input.job.id)) return false;
+    seen.add(input.job.id);
+    return true;
+  });
+
+  const eligible = unique.filter((input) => {
     // Qualification score must be 60-85 inclusive
     if (input.qualificationScore < 60 || input.qualificationScore > 85) {
       return false;

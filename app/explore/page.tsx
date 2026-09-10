@@ -25,8 +25,13 @@ import type { JobMatch } from "@/types";
 import { useDealbreakerPreferences, evaluateJobsDealbreakers } from "@/hooks/use-dealbreaker-preferences";
 import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
 import type { DealbreakerEvaluation } from "@/lib/dealbreakers/types";
-
-type ViewMode = "list" | "deck" | "radar";
+import {
+  type ExploreViewMode,
+  parseExploreView,
+  buildExploreViewUrl,
+  shouldShowCompareTray,
+  filterRadarCandidates,
+} from "@/lib/radar/view-logic";
 
 // Force dynamic rendering since we use searchParams
 export const dynamic = "force-dynamic";
@@ -36,10 +41,8 @@ function ExplorePageContent() {
   const searchParams = useSearchParams();
 
   // Derive view mode from URL parameter
-  const viewMode: ViewMode = useMemo(() => {
-    const view = searchParams.get("view");
-    if (view === "radar" || view === "deck") return view;
-    return "list";
+  const viewMode: ExploreViewMode = useMemo(() => {
+    return parseExploreView(searchParams.get("view"));
   }, [searchParams]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArrangement, setSelectedArrangement] = useState<string | null>(
@@ -73,14 +76,8 @@ function ExplorePageContent() {
 
   // Update URL when view mode button is clicked
   // Use push to create browser history entries for explicit user navigation
-  const handleViewModeChange = (newMode: ViewMode) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newMode === "list") {
-      params.delete("view");
-    } else {
-      params.set("view", newMode);
-    }
-    const newUrl = params.toString() ? `/explore?${params}` : "/explore";
+  const handleViewModeChange = (newMode: ExploreViewMode) => {
+    const newUrl = buildExploreViewUrl(searchParams.toString(), newMode);
     router.push(newUrl, { scroll: false });
   };
 
@@ -229,7 +226,7 @@ function ExplorePageContent() {
 
   // Radar candidates: filtered jobs excluding passed jobs
   const radarMatches = useMemo(() => {
-    return filteredJobs.filter((match) => !passedJobIds.has(match.job.id));
+    return filterRadarCandidates(filteredJobs, passedJobIds);
   }, [filteredJobs, passedJobIds]);
 
   const arrangements = [
@@ -581,7 +578,7 @@ function ExplorePageContent() {
       </div>
 
       {/* Compare Tray (List and Radar modes) */}
-      {(viewMode === "list" || viewMode === "radar") && <CompareTray />}
+      {shouldShowCompareTray(viewMode) && <CompareTray />}
     </AppShell>
   );
 }
