@@ -10,10 +10,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
 import { CompareToggle } from "@/components/compare/compare-toggle";
 import { MapPin, ChevronRight, Layers } from "lucide-react";
-import { formatSalary } from "@/lib/utils";
 import { adaptJobMatchesForRadar } from "@/lib/radar/job-match-adapter";
 import { generateRadarResults } from "@/lib/radar";
 import { formatPostedDaysAgo, formatMissingSkillsCount } from "@/lib/radar/explanations";
+import { formatRadarSalary } from "@/lib/radar/salary-format";
 import type { JobMatch } from "@/types";
 import type { DealbreakerEvaluation } from "@/lib/dealbreakers/types";
 import type { RadarCategoryResult, RadarCategory } from "@/lib/radar/types";
@@ -114,11 +114,16 @@ function RadarCategorySection({
   dealbreakerEvaluations,
   onJobClick,
 }: RadarCategorySectionProps) {
+  // Generate stable heading ID
+  const headingId = `radar-${category}-heading`;
+
   if (result.jobs.length === 0) {
     return (
-      <div>
+      <section aria-labelledby={headingId}>
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-foreground mb-1">{title}</h2>
+          <h2 id={headingId} className="text-xl font-semibold text-foreground mb-1">
+            {title}
+          </h2>
           <p className="text-sm text-foreground-secondary">{description}</p>
         </div>
         <EmptyState
@@ -126,15 +131,17 @@ function RadarCategorySection({
           title={emptyMessage}
           description=""
         />
-      </div>
+      </section>
     );
   }
 
   return (
-    <div>
+    <section aria-labelledby={headingId}>
       <div className="mb-4 flex items-baseline justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground mb-1">{title}</h2>
+          <h2 id={headingId} className="text-xl font-semibold text-foreground mb-1">
+            {title}
+          </h2>
           <p className="text-sm text-foreground-secondary">{description}</p>
         </div>
         <span className="text-sm text-foreground-muted">
@@ -145,7 +152,7 @@ function RadarCategorySection({
       {/* Horizontal scrollable job cards */}
       <div className="relative -mx-4 px-4">
         <div
-          className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin"
+          className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           role="list"
           aria-label={`${title} jobs`}
           tabIndex={0}
@@ -166,12 +173,16 @@ function RadarCategorySection({
               <Card
                 key={job.id}
                 variant="elevated"
-                className="min-w-[280px] max-w-[280px] shrink-0 cursor-pointer p-4 transition-all hover:shadow-lg md:min-w-[320px] md:max-w-[320px]"
+                className="min-w-[280px] max-w-[280px] shrink-0 cursor-pointer p-4 transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 md:min-w-[320px] md:max-w-[320px]"
                 onClick={() => onJobClick(job.id)}
                 role="listitem"
                 aria-label={`${job.title} at ${job.company.name}, ${overallScore}% match`}
                 tabIndex={0}
                 onKeyDown={(e) => {
+                  // Only handle keyboard events when Card itself is the target
+                  // Prevents bubbled events from nested controls
+                  if (e.target !== e.currentTarget) return;
+
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     onJobClick(job.id);
@@ -208,7 +219,7 @@ function RadarCategorySection({
                     </div>
                   </div>
 
-                  {/* Location & Work Arrangement */}
+                  {/* Location, Work Arrangement & Employment Type */}
                   <div className="flex flex-wrap items-center gap-1.5 text-xs text-foreground-muted">
                     <div className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
@@ -218,18 +229,16 @@ function RadarCategorySection({
                     <span className="capitalize">
                       {job.work_arrangement.replace("_", " ")}
                     </span>
+                    <span>•</span>
+                    <span className="capitalize">
+                      {job.employment_type.replace("_", " ")}
+                    </span>
                   </div>
 
                   {/* Salary */}
-                  {job.salary_min && (
-                    <p className="text-base font-bold text-foreground truncate">
-                      {formatSalary(
-                        job.salary_min,
-                        job.salary_max,
-                        job.salary_period
-                      )}
-                    </p>
-                  )}
+                  <p className="text-base font-bold text-foreground truncate">
+                    {formatRadarSalary(job)}
+                  </p>
 
                   {/* Category-specific explanation */}
                   {categoryExplanation && (
@@ -247,14 +256,15 @@ function RadarCategorySection({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-1"
+                      className="gap-1 min-h-[44px]"
                       onClick={(e) => {
                         e.stopPropagation();
                         onJobClick(job.id);
                       }}
+                      aria-label={`View details for ${job.title} at ${job.company.name}`}
                     >
                       View
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -263,6 +273,6 @@ function RadarCategorySection({
           })}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

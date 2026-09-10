@@ -294,7 +294,7 @@ function ExplorePageContent() {
               size="sm"
               onClick={() => handleViewModeChange("list")}
               disabled={deckPending}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
               aria-label="Switch to List view"
               aria-pressed={viewMode === "list"}
             >
@@ -306,7 +306,7 @@ function ExplorePageContent() {
               size="sm"
               onClick={() => handleViewModeChange("deck")}
               disabled={deckPending}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
               aria-label="Switch to Deck view"
               aria-pressed={viewMode === "deck"}
             >
@@ -318,7 +318,7 @@ function ExplorePageContent() {
               size="sm"
               onClick={() => handleViewModeChange("radar")}
               disabled={deckPending}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
               aria-label="Switch to Radar view"
               aria-pressed={viewMode === "radar"}
             >

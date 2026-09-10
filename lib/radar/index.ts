@@ -34,9 +34,9 @@ export function generateRadarResults(
   };
 }
 
-// Re-export types and adapters
+// Re-export types and canonical adapter
 export type { RadarJobInput, RadarCategory, RadarCategoryResult, RadarResults } from "./types";
-export { adaptJobForRadar, adaptJobsForRadar } from "./adapters";
+export { adaptJobMatchForRadar, adaptJobMatchesForRadar } from "./job-match-adapter";
 export {
   selectBestMatches,
   selectNewOpportunities,
