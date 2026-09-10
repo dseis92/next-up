@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { OpportunityDeck } from "@/components/explore/opportunity-deck";
 import { OpportunityRadar } from "@/components/radar/opportunity-radar";
+import { RadarErrorBoundary } from "@/components/radar/radar-error-boundary";
 import { CompareToggle } from "@/components/compare/compare-toggle";
 import { CompareTray } from "@/components/compare/compare-tray";
 import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid, Layers } from "lucide-react";
@@ -71,6 +72,7 @@ function ExplorePageContent() {
   }, [dealbreakerPreferences, allMatches]);
 
   // Update URL when view mode button is clicked
+  // Use push to create browser history entries for explicit user navigation
   const handleViewModeChange = (newMode: ViewMode) => {
     const params = new URLSearchParams(searchParams.toString());
     if (newMode === "list") {
@@ -79,7 +81,7 @@ function ExplorePageContent() {
       params.set("view", newMode);
     }
     const newUrl = params.toString() ? `/explore?${params}` : "/explore";
-    router.replace(newUrl, { scroll: false });
+    router.push(newUrl, { scroll: false });
   };
 
   useEffect(() => {
@@ -225,6 +227,11 @@ function ExplorePageContent() {
     });
   }, [allMatches, searchQuery, selectedArrangement, minMatch]);
 
+  // Radar candidates: filtered jobs excluding passed jobs
+  const radarMatches = useMemo(() => {
+    return filteredJobs.filter((match) => !passedJobIds.has(match.job.id));
+  }, [filteredJobs, passedJobIds]);
+
   const arrangements = [
     { value: "remote", label: "Remote" },
     { value: "hybrid", label: "Hybrid" },
@@ -281,15 +288,17 @@ function ExplorePageContent() {
           </div>
 
           {/* View Mode Selector */}
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="group" aria-label="View mode selection">
             <Button
               variant={viewMode === "list" ? "primary" : "secondary"}
               size="sm"
               onClick={() => handleViewModeChange("list")}
               disabled={deckPending}
               className="gap-2"
+              aria-label="Switch to List view"
+              aria-pressed={viewMode === "list"}
             >
-              <List className="h-4 w-4" />
+              <List className="h-4 w-4" aria-hidden="true" />
               List
             </Button>
             <Button
@@ -298,8 +307,10 @@ function ExplorePageContent() {
               onClick={() => handleViewModeChange("deck")}
               disabled={deckPending}
               className="gap-2"
+              aria-label="Switch to Deck view"
+              aria-pressed={viewMode === "deck"}
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
               Deck
             </Button>
             <Button
@@ -308,8 +319,10 @@ function ExplorePageContent() {
               onClick={() => handleViewModeChange("radar")}
               disabled={deckPending}
               className="gap-2"
+              aria-label="Switch to Radar view"
+              aria-pressed={viewMode === "radar"}
             >
-              <Layers className="h-4 w-4" />
+              <Layers className="h-4 w-4" aria-hidden="true" />
               Radar
             </Button>
           </div>
@@ -544,26 +557,31 @@ function ExplorePageContent() {
         {/* Radar Mode */}
         {viewMode === "radar" && (
           <>
-            {hasIncompleteProfile && allMatches.length === 0 ? (
+            {deckStateError ? (
+              <div className="rounded-[var(--radius-lg)] bg-surface p-12 text-center">
+                <p className="text-foreground mb-4">
+                  Unable to load Opportunity Radar right now.
+                </p>
+                <Button variant="primary" onClick={() => handleViewModeChange("list")}>
+                  Return to List
+                </Button>
+              </div>
+            ) : hasIncompleteProfile && allMatches.length === 0 ? (
               <IncompleteProfileMessage />
-            ) : filteredJobs.length === 0 ? (
-              <EmptyState
-                icon={<Search className="h-6 w-6" />}
-                title="No jobs found"
-                description="Try adjusting your filters or search terms"
-              />
             ) : (
-              <OpportunityRadar
-                allMatches={filteredJobs}
-                dealbreakerEvaluations={dealbreakerEvaluations}
-              />
+              <RadarErrorBoundary onReturnToList={() => handleViewModeChange("list")}>
+                <OpportunityRadar
+                  allMatches={radarMatches}
+                  dealbreakerEvaluations={dealbreakerEvaluations}
+                />
+              </RadarErrorBoundary>
             )}
           </>
         )}
       </div>
 
-      {/* Compare Tray (only in List mode) */}
-      {viewMode === "list" && <CompareTray />}
+      {/* Compare Tray (List and Radar modes) */}
+      {(viewMode === "list" || viewMode === "radar") && <CompareTray />}
     </AppShell>
   );
 }

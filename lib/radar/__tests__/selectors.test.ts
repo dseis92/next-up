@@ -190,7 +190,7 @@ describe("selectNewOpportunities", () => {
 
   it("should exclude jobs with missing posted_date", () => {
     const jobs: RadarJobInput[] = [
-      createRadarInput({ id: "job-1", posted_date: "invalid-date" }),
+      createRadarInput({ id: "job-1", posted_date: undefined }),
     ];
 
     const result = selectNewOpportunities(jobs, NOW_MS);

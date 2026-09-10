@@ -11,11 +11,12 @@ import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
 import { CompareToggle } from "@/components/compare/compare-toggle";
 import { MapPin, ChevronRight, Layers } from "lucide-react";
 import { formatSalary } from "@/lib/utils";
-import { adaptJobsForRadar } from "@/lib/radar/adapters";
+import { adaptJobMatchesForRadar } from "@/lib/radar/job-match-adapter";
 import { generateRadarResults } from "@/lib/radar";
+import { formatPostedDaysAgo, formatMissingSkillsCount } from "@/lib/radar/explanations";
 import type { JobMatch } from "@/types";
 import type { DealbreakerEvaluation } from "@/lib/dealbreakers/types";
-import type { RadarCategoryResult } from "@/lib/radar/types";
+import type { RadarCategoryResult, RadarCategory } from "@/lib/radar/types";
 
 interface OpportunityRadarProps {
   allMatches: JobMatch[];
@@ -33,31 +34,8 @@ export function OpportunityRadar({
 
   // Generate Radar categories from matches
   const radarResults = useMemo(() => {
-    // Transform JobMatch[] to RadarJobInput[]
-    const jobs = allMatches.map((m) => m.job);
-    const matchResults = allMatches.map((m) => ({
-      status: "scored" as const,
-      overallScore: m.overall_score,
-      qualificationScore: m.qualification_score,
-      lifestyleScore: m.lifestyle_score,
-      breakdown: {
-        skills: { score: m.breakdown.skills, weight: 25, confidence: "high" as const },
-        experience: { score: m.breakdown.experience, weight: 20, confidence: "high" as const },
-        salary: { score: m.breakdown.salary, weight: 15, confidence: "high" as const },
-        location: { score: m.breakdown.location, weight: 10, confidence: "high" as const },
-        workArrangement: { score: m.breakdown.work_arrangement, weight: 10, confidence: "high" as const },
-        careerGoals: { score: m.breakdown.career_goals, weight: 10, confidence: "high" as const },
-        seniority: { score: 0, weight: 5, confidence: "unknown" as const },
-        userPriorities: { score: 0, weight: 5, confidence: "unknown" as const },
-      },
-      matchedSkills: m.matched_skills,
-      missingSkills: m.missing_skills,
-      hardFailures: [],
-      reasonsFit: m.reasons_fit.map((text) => ({ text, component: "skills", priority: 1 })),
-      reasonsConcern: m.reasons_concern.map((text) => ({ text, component: "skills", priority: 1 })),
-    }));
-
-    const radarInputs = adaptJobsForRadar(jobs, matchResults);
+    // Transform JobMatch[] directly to RadarJobInput[]
+    const radarInputs = adaptJobMatchesForRadar(allMatches);
 
     return generateRadarResults(radarInputs, asOfMs);
   }, [allMatches, asOfMs]);
@@ -67,9 +45,11 @@ export function OpportunityRadar({
       {/* Best Matches */}
       <RadarCategorySection
         result={radarResults.bestMatches}
+        category="bestMatches"
         title="Best Matches"
-        description="Your top-scoring opportunities"
-        emptyMessage="No jobs match your criteria yet"
+        description="Your strongest available matches"
+        emptyMessage="No matching opportunities with your current filters"
+        asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
@@ -77,9 +57,11 @@ export function OpportunityRadar({
       {/* New Opportunities */}
       <RadarCategorySection
         result={radarResults.newOpportunities}
+        category="newOpportunities"
         title="New Opportunities"
-        description="Posted within the last 7 days"
-        emptyMessage="No new jobs posted recently"
+        description="Recently posted jobs"
+        emptyMessage="Check back soon for newly posted jobs"
+        asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
@@ -87,9 +69,11 @@ export function OpportunityRadar({
       {/* High Compensation */}
       <RadarCategorySection
         result={radarResults.highCompensation}
+        category="highCompensation"
         title="High Compensation"
-        description="Top 25% disclosed salaries"
-        emptyMessage="No high-compensation jobs with disclosed salaries"
+        description="Among the highest disclosed salaries"
+        emptyMessage="Jobs with disclosed high salaries will appear here"
+        asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
@@ -97,9 +81,11 @@ export function OpportunityRadar({
       {/* Stretch Opportunities */}
       <RadarCategorySection
         result={radarResults.stretchOpportunities}
+        category="stretchOpportunities"
         title="Stretch Opportunities"
-        description="Roles to grow into"
-        emptyMessage="No stretch opportunities available"
+        description="Qualification stretch roles"
+        emptyMessage="Qualification stretch opportunities will appear as you explore"
+        asOfMs={asOfMs}
         dealbreakerEvaluations={dealbreakerEvaluations}
         onJobClick={(jobId) => router.push(`/jobs/${jobId}`)}
       />
@@ -109,18 +95,22 @@ export function OpportunityRadar({
 
 interface RadarCategorySectionProps {
   result: RadarCategoryResult;
+  category: RadarCategory;
   title: string;
   description: string;
   emptyMessage: string;
+  asOfMs: number;
   dealbreakerEvaluations: Map<string, DealbreakerEvaluation>;
   onJobClick: (jobId: string) => void;
 }
 
 function RadarCategorySection({
   result,
+  category,
   title,
   description,
   emptyMessage,
+  asOfMs,
   dealbreakerEvaluations,
   onJobClick,
 }: RadarCategorySectionProps) {
@@ -154,10 +144,23 @@ function RadarCategorySection({
 
       {/* Horizontal scrollable job cards */}
       <div className="relative -mx-4 px-4">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+        <div
+          className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin"
+          role="list"
+          aria-label={`${title} jobs`}
+          tabIndex={0}
+        >
           {result.jobs.map((input) => {
-            const { job, overallScore } = input;
+            const { job, overallScore, missingSkills } = input;
             const dealbreakerEval = dealbreakerEvaluations.get(job.id);
+
+            // Generate category-specific explanation
+            let categoryExplanation: string | null = null;
+            if (category === "newOpportunities") {
+              categoryExplanation = formatPostedDaysAgo(job.posted_date, asOfMs);
+            } else if (category === "stretchOpportunities") {
+              categoryExplanation = formatMissingSkillsCount(missingSkills.length);
+            }
 
             return (
               <Card
@@ -165,6 +168,15 @@ function RadarCategorySection({
                 variant="elevated"
                 className="min-w-[280px] max-w-[280px] shrink-0 cursor-pointer p-4 transition-all hover:shadow-lg md:min-w-[320px] md:max-w-[320px]"
                 onClick={() => onJobClick(job.id)}
+                role="listitem"
+                aria-label={`${job.title} at ${job.company.name}, ${overallScore}% match`}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onJobClick(job.id);
+                  }
+                }}
               >
                 <div className="flex flex-col gap-3">
                   {/* Header */}
@@ -186,6 +198,7 @@ function RadarCategorySection({
                       <Badge
                         variant={overallScore >= 90 ? "success" : "brand"}
                         size="sm"
+                        aria-label={`${overallScore}% job match`}
                       >
                         {overallScore}%
                       </Badge>
@@ -215,6 +228,13 @@ function RadarCategorySection({
                         job.salary_max,
                         job.salary_period
                       )}
+                    </p>
+                  )}
+
+                  {/* Category-specific explanation */}
+                  {categoryExplanation && (
+                    <p className="text-xs text-foreground-secondary italic">
+                      {categoryExplanation}
                     </p>
                   )}
 
