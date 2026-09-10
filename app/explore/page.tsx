@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { OpportunityDeck } from "@/components/explore/opportunity-deck";
+import { OpportunityRadar } from "@/components/radar/opportunity-radar";
 import { CompareToggle } from "@/components/compare/compare-toggle";
 import { CompareTray } from "@/components/compare/compare-tray";
-import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid } from "lucide-react";
+import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid, Layers } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
 import { getSavedJobs, getPassedJobIds } from "@/lib/storage/job-actions";
@@ -24,11 +25,21 @@ import { useDealbreakerPreferences, evaluateJobsDealbreakers } from "@/hooks/use
 import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
 import type { DealbreakerEvaluation } from "@/lib/dealbreakers/types";
 
-type ViewMode = "list" | "deck";
+type ViewMode = "list" | "deck" | "radar";
 
-export default function ExplorePage() {
+// Force dynamic rendering since we use searchParams
+export const dynamic = "force-dynamic";
+
+function ExplorePageContent() {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const searchParams = useSearchParams();
+
+  // Derive view mode from URL parameter
+  const viewMode: ViewMode = useMemo(() => {
+    const view = searchParams.get("view");
+    if (view === "radar" || view === "deck") return view;
+    return "list";
+  }, [searchParams]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArrangement, setSelectedArrangement] = useState<string | null>(
     null
@@ -58,6 +69,18 @@ export default function ExplorePage() {
     const jobs = allMatches.map(m => m.job);
     return evaluateJobsDealbreakers(dealbreakerPreferences, jobs);
   }, [dealbreakerPreferences, allMatches]);
+
+  // Update URL when view mode button is clicked
+  const handleViewModeChange = (newMode: ViewMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newMode === "list") {
+      params.delete("view");
+    } else {
+      params.set("view", newMode);
+    }
+    const newUrl = params.toString() ? `/explore?${params}` : "/explore";
+    router.replace(newUrl, { scroll: false });
+  };
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -251,7 +274,9 @@ export default function ExplorePage() {
             <p className="text-foreground-secondary">
               {viewMode === "list"
                 ? "Search and filter through all opportunities"
-                : "Swipe to review opportunities"}
+                : viewMode === "deck"
+                ? "Swipe to review opportunities"
+                : "Browse opportunities by category"}
             </p>
           </div>
 
@@ -260,7 +285,7 @@ export default function ExplorePage() {
             <Button
               variant={viewMode === "list" ? "primary" : "secondary"}
               size="sm"
-              onClick={() => setViewMode("list")}
+              onClick={() => handleViewModeChange("list")}
               disabled={deckPending}
               className="gap-2"
             >
@@ -270,12 +295,22 @@ export default function ExplorePage() {
             <Button
               variant={viewMode === "deck" ? "primary" : "secondary"}
               size="sm"
-              onClick={() => setViewMode("deck")}
+              onClick={() => handleViewModeChange("deck")}
               disabled={deckPending}
               className="gap-2"
             >
               <LayoutGrid className="h-4 w-4" />
               Deck
+            </Button>
+            <Button
+              variant={viewMode === "radar" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => handleViewModeChange("radar")}
+              disabled={deckPending}
+              className="gap-2"
+            >
+              <Layers className="h-4 w-4" />
+              Radar
             </Button>
           </div>
         </div>
@@ -478,7 +513,7 @@ export default function ExplorePage() {
                 <p className="text-foreground mb-4">
                   Unable to load your Opportunity Deck right now.
                 </p>
-                <Button variant="primary" onClick={() => setViewMode("list")}>
+                <Button variant="primary" onClick={() => handleViewModeChange("list")}>
                   Return to List
                 </Button>
               </div>
@@ -495,7 +530,7 @@ export default function ExplorePage() {
                 filteredMatches={filteredJobs}
                 savedJobIds={savedJobIds}
                 passedJobIds={passedJobIds}
-                onSwitchToList={() => setViewMode("list")}
+                onSwitchToList={() => handleViewModeChange("list")}
                 onSaved={handleSaved}
                 onPassed={handlePassed}
                 onUndoSaved={handleUndoSaved}
@@ -505,10 +540,46 @@ export default function ExplorePage() {
             )}
           </>
         )}
+
+        {/* Radar Mode */}
+        {viewMode === "radar" && (
+          <>
+            {hasIncompleteProfile && allMatches.length === 0 ? (
+              <IncompleteProfileMessage />
+            ) : filteredJobs.length === 0 ? (
+              <EmptyState
+                icon={<Search className="h-6 w-6" />}
+                title="No jobs found"
+                description="Try adjusting your filters or search terms"
+              />
+            ) : (
+              <OpportunityRadar
+                allMatches={filteredJobs}
+                dealbreakerEvaluations={dealbreakerEvaluations}
+              />
+            )}
+          </>
+        )}
       </div>
 
       {/* Compare Tray (only in List mode) */}
       {viewMode === "list" && <CompareTray />}
     </AppShell>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="flex h-full items-center justify-center p-4">
+            <p className="text-foreground-secondary">Loading...</p>
+          </div>
+        </AppShell>
+      }
+    >
+      <ExplorePageContent />
+    </Suspense>
   );
 }
