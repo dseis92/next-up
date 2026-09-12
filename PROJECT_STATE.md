@@ -1,6 +1,6 @@
 # NextUp — Current Project State
 
-**Last Updated**: 2026-09-09
+**Last Updated**: 2026-09-12
 
 **Repository**: dseis92/next-up
 
@@ -10,13 +10,17 @@
 
 ## LAST INDEPENDENTLY APPROVED CODE BASELINE
 
-**Commit**: `8f4ba113c02adddbc014c44510ea1142ba5f3328`
+**Commit**: `5857e635929988719e965624e4fb3b38b31acb3d`
 
-**Message**: fix: correct missing salary dealbreaker evidence
+**Message**: fix(E4): preserve Explore filters across view navigation
 
 **Important Distinction**:
 
-This is the approved **CODE** rollback anchor.
+This SHA (`5857e635...`) is the approved **E4 product-code checkpoint**.
+
+The protected merged / production-tested runtime checkpoint is:
+
+`3df3751a98ab66838e39737434beaa503c76c1d1`
 
 A later docs-only authorization commit may exist on main.
 
@@ -123,15 +127,29 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 **Deliverable**: User-defined non-negotiable preferences with independent conflict detection that does not alter deterministic MatchResult
 
 ### E4 — Opportunity Radar
-**Status**: SPECIFICATION APPROVED + MERGED TO MAIN
+**Status**: COMPLETE + INDEPENDENTLY APPROVED + PRODUCTION APPROVED + FROZEN
 
 **Approved Specification SHA**: `738c3378df712dd5da25bc894616d987c764f5ff`
 
 **Approved Specification Merge SHA**: `2f3eab0cab17f8daa2854efe8a1a878f99283dda`
 
-**Implementation**: AUTHORIZED — NOT STARTED
+**Approved Implementation SHA**: `5857e635929988719e965624e4fb3b38b31acb3d`
 
-**Deliverable** (Proposed): Purpose-driven job categories using deterministic evidence-backed rules
+**Protected Merge / Production Runtime SHA**: `3df3751a98ab66838e39737434beaa503c76c1d1`
+
+**Human Browser QA**: 16/16 PASS
+
+**Production Browser Smoke**: PASS
+
+**Exact Merge-SHA Vercel**: SUCCESS
+
+**Database**: UNCHANGED
+
+**Migrations**: UNCHANGED
+
+**Dependencies**: UNCHANGED
+
+**Deliverable**: Purpose-driven deterministic Explore Radar with Best Matches, New Opportunities, High Compensation, and Stretch Opportunities
 
 ### E5–E35
 **Status**: PLANNING ONLY — NOT IMPLEMENTATION AUTHORIZED
@@ -140,15 +158,18 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 
 ## CURRENT QUALITY CHECKPOINT
 
-**At Approved E3 Code Baseline** (`8f4ba113c02adddbc014c44510ea1142ba5f3328`):
+**At Approved E4 Implementation** (`5857e635929988719e965624e4fb3b38b31acb3d`):
 
-- **Test Files**: 27
-- **Tests**: 440 PASS
+- **Test Files**: 31
+- **Tests**: 531 PASS
+- **Radar Tests**: 91 PASS
 - **Typecheck**: PASS
 - **Build**: PASS
 - **Vercel**: SUCCESS
 - **Lint Errors**: 0
 - **Lint Warnings**: 24
+- **Human Browser QA**: 16/16 PASS
+- **Production Smoke**: PASS
 
 ---
 
@@ -159,6 +180,8 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 - **Application Mutation Browser QA**: PENDING
 - **E3 Required Browser Merge-Gate**: PASS
 - **E3 Production Smoke**: PASS
+- **E4 Human Browser QA**: PASS — 16/16
+- **E4 Production Smoke**: PASS
 
 **Do not falsely mark incomplete QA as complete.**
 
@@ -172,8 +195,10 @@ Do not confuse a docs commit with a newly approved product-code baseline.
 - Phase 12 is **LOCKED**
 - E1/E2 are **FROZEN**
 - E3 is **CLOSED + FROZEN**
-- E4 is **SPECIFICATION APPROVED + MERGED TO MAIN / IMPLEMENTATION AUTHORIZED — NOT STARTED**
+- E4 is **CLOSED + PRODUCTION APPROVED + FROZEN**
 - E5+ are **PLANNING ONLY / NOT IMPLEMENTATION AUTHORIZED**
+
+**CURRENT PRODUCT IMPLEMENTATION AUTHORIZATION**: NONE
 
 ---
 
@@ -201,9 +226,11 @@ Use this hierarchy when documentation conflicts arise:
 2. **PROJECT_STATE.md** (this file)
 3. **PROJECT_GUARDRAILS.md**
 4. **CLAUDE.md**
-5. **Active feature spec** (currently `E4_OPPORTUNITY_RADAR_SPEC.md`)
+5. **Active feature specification** (if an implementation is explicitly authorized)
 6. **PRODUCT_EXPANSION_ROADMAP.md**
 7. **Historical reports/manual test documents**
+
+Currently no product implementation feature is authorized.
 
 Repository code always wins over stale prose.
 
