@@ -3,7 +3,6 @@
 **Version**: 1.0
 **Installation Date**: 2026-09-12
 **Base Commit**: 8ab48506db62d8a3d563cd6e8881e4d5bdba643e
-**Final Verified SHA**: 60d52f6a2bb4b7b2d2836426ae17970b2e2e6fd8
 
 ---
 
@@ -14,7 +13,7 @@
 **Status**: ACTIVE
 **Repository**: https://github.com/mattpocock/skills
 **Exact Source SHA**: 3cca18b368ae95cdbdebbff572ccafa662551015
-**Source Verification**: COMPLETE (file-by-file hash comparison)
+**Source Verification**: Independent Git tree/blob verification confirmed all six vendored skill directories, covering all 18 files, exactly match upstream revision 3cca18b368ae95cdbdebbff572ccafa662551015
 **License**: MIT
 **Installer**: skills CLI v1.5.26
 **Installation Method**: Copy-based (`--copy` flag)
