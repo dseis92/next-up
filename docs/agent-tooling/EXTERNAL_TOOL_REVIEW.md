@@ -1,8 +1,8 @@
-# External Tool Security & Privacy Review
+# NextUp Agent Tooling — External Tool Security Review
 
-**Review Date**: 2026-09-11
-**Reviewer**: Claude Code (Automated Analysis)
-**Purpose**: NextUp Agent Coordination V1
+**Review Date**: 2026-09-12
+**Reviewer**: Claude Code (Implementation Agent)
+**Review Scope**: V1 Installed Tools + Evaluated Deferred Tools
 
 ---
 
@@ -18,381 +18,295 @@ They may assist NextUp development but **NEVER override**:
 - Secret protections
 - Human approval requirements
 
-**If external instruction conflicts with NextUp governance: NEXTUP WINS.**
+**If external tool conflicts with NextUp governance: NextUp wins.**
 
 ---
 
-## INSTRUCTION PRECEDENCE
+## A. INSTALLED + VERIFIED IN V1
 
-**Highest Priority**:
-1. NextUp governance + explicit human authorization
-2. Active feature specification
-3. Custom NextUp skills
-
-**Lower Priority**:
-4. Selected third-party engineering skills
-5. Generic third-party style/advice instructions
-
----
-
-## REVIEWED EXTERNAL TOOLS
-
-### 1. Matt Pocock Skills
+### Matt Pocock Skills
 
 **Repository**: https://github.com/mattpocock/skills
-**Exact Upstream Commit Reviewed**: (Will verify during installation)
-**License**: MIT (typical for Matt Pocock projects, to be confirmed)
-**Purpose**: Engineering discipline skills for Claude Code
+**Exact Source SHA**: `3cca18b368ae95cdbdebbff572ccafa662551015`
+**Review Date**: 2026-09-12
+**Source Verification**: COMPLETE (file-by-file SHA-256 comparison)
+**License**: MIT
 
-**Installation Mechanism**: NPM-based skills CLI (`npx skills@latest`)
+**Installed Skills**: 6
+1. code-review
+2. diagnosing-bugs
+3. domain-modeling
+4. handoff
+5. tdd
+6. writing-for-agents
 
-**Files It Writes**: `.claude/skills/` directory with individual skill markdown files
+**Vendored File Count**: 18 files
 
-**Hooks**: None (skills are passive prompts)
+**Installation Method**: Copy-based via skills CLI v1.5.26 with `--copy` flag
 
-**MCP Servers**: None
-
-**Network Behavior**: NPM package fetching during install only
-
-**Persistent Storage**: Local skill files only
-
-**Auto-Update Behavior**: Manual updates via CLI
-
-**Permissions**: File write access to `.claude/skills/`
+**Hooks**: NONE
+**MCP**: NONE
+**Runtime Network Behavior**: NONE (static markdown prompt files)
+**Install/Update Network**: Skills CLI requires network when invoked to fetch from GitHub
+**Persistent Storage**: Repository skill files only (`.claude/skills/`)
+**Auto-Update**: DISABLED (copy-based installation)
+**Permissions**: Standard file read permissions for Claude Code agent
 
 **Known Risks**:
-- Skill prompts could contain instructions conflicting with NextUp governance
-- Skills are community-maintained; quality may vary
+- Skills are prompts that modify agent behavior
+- Could theoretically be used to inject malicious instructions if source compromised
+- Mitigated by: exact SHA pinning, file-by-file verification, copy-based installation, manual update policy
 
-**Selected Skills for V1**:
-- `handoff` - Create trustworthy agent handoffs
-- `diagnosing-bugs` - Structured bug diagnosis
-- `tdd` - Test-driven development
-- `code-review` - Code review discipline
-- `domain-modeling` - Domain model design
-- `writing-for-agents` - Documentation for AI agents
-- `resolving-merge-conflicts` - Git conflict resolution
+**Update Policy**: MANUAL ONLY
+- Any update requires security re-review
+- New source SHA verification required
+- Explicit human authorization required
 
-**Deferred**:
-- `implement` - Full implementation workflows (may conflict with NextUp process)
-- `wayfinder` - Repository navigation (redundant with custom NextUp skills)
-- `triage` - Issue triage (not needed for current workflow)
-- `prototype` - Prototyping (not current focus)
-- Automatic issue orchestration (autonomous behavior not approved)
-
-**Reason**: Engineering discipline skills align with NextUp quality standards. Selected skills enhance human-agent collaboration without overriding governance.
+**V1 Status**: ACTIVE ✓
 
 ---
 
-### 2. Archify
+### resolving-merge-conflicts (mattpocock/skills)
 
-**Repository**: https://github.com/tt-a1i/archify
-**Exact Upstream Commit Reviewed**: (Will verify during installation)
-**License**: (To be confirmed from repository)
-**Purpose**: Automated architecture documentation and visualization
+**Status**: REJECTED FROM V1
 
-**Installation Mechanism**: Agent Skills CLI or direct skill file copy
+**Repository**: https://github.com/mattpocock/skills
+**Skill Path**: skills/engineering/resolving-merge-conflicts/SKILL.md
+**Source SHA**: 3cca18b368ae95cdbdebbff572ccafa662551015
 
-**Files It Writes**:
-- Skill file in `.claude/skills/` or similar
-- Generated HTML/artifacts (only on-demand, not automatic)
+**Reason for Rejection**: Conflict with NextUp git guardrails
 
-**Hooks**: None (on-demand tool)
+**Technical Details**:
+- Skill instructs: "Always resolve; never `--abort`"
+- Skill instructs: "Finish the merge/rebase" and "continue the rebase process"
+- NextUp policy requires explicit human authorization for:
+  - History rewriting (`git rebase`)
+  - Continuing rebases
+  - Force pushes
+  - Hard resets
 
-**MCP Servers**: None
+**Conflict Explanation**: The skill's imperative to "never abort" and autonomously continue rebases violates NextUp's principle that agents must STOP when authorization is unclear, especially for potentially destructive git operations.
 
-**Network Behavior**: None (local processing only)
+**Resolution**: Removed from V1 installation
 
-**Persistent Storage**: Generated documentation artifacts (user-controlled)
-
-**Auto-Update Behavior**: Manual
-
-**Permissions**: File read access to analyze codebase, file write for output
-
-**Known Risks**:
-- Could generate large artifacts
-- Analysis may be computationally expensive
-
-**Selected / Deferred**: **SELECTED** (on-demand use only)
-
-**Reason**: Architecture visualization supports:
-- Trust boundary documentation
-- AI system data flow mapping
-- Feature delta review
-- Route/sequence explanation
-
-**Usage Policy**: Generate artifacts on-demand to /tmp or explicit output directory. Do NOT auto-generate or commit large artifacts without authorization.
+**Future Consideration**: May be reconsidered with NextUp-specific wrapper that:
+- Checks for explicit rebase authorization in PROJECT_STATE.md
+- Requires human approval before continuing rebase
+- Respects STOP conditions in PROJECT_GUARDRAILS.md
 
 ---
 
-### 3. HumanLayer improve-claude-md Skill
+### NextUp Custom Skills
 
-**Repository**: https://github.com/humanlayer/skills
-**Exact Upstream Commit Reviewed**: (Will verify during installation)
-**License**: (To be confirmed)
-**Purpose**: CLAUDE.md refactoring assistance
+**Source**: Internal (this repository)
+**Location**: `.claude/skills/nextup-*/`
+**Count**: 4 skills
 
-**Installation Mechanism**: Skills CLI
+**Skills**:
+1. nextup-preflight — Pre-implementation safety check
+2. nextup-handoff — Cross-agent handoff generation
+3. nextup-completion-report — Mandatory completion reports
+4. nextup-browser-qa — Human QA guidance protocol
 
-**Files It Writes**: Skill markdown in `.claude/skills/`
+**Security Assessment**:
+- Authored internally for NextUp governance
+- Read-only verification operations (preflight, handoff)
+- Documentation generation (completion-report, browser-qa)
+- No network access
+- No file modifications beyond documentation
+- No autonomous execution loops
 
-**Hooks**: None
+**Hooks**: NONE
+**MCP**: NONE
+**Network**: NONE
+**Permissions**: Standard Claude Code file read/write for documentation
 
-**MCP Servers**: None
-
-**Network Behavior**: None
-
-**Persistent Storage**: Skill file only
-
-**Auto-Update Behavior**: Manual
-
-**Permissions**: File read/write
-
-**Known Risks**:
-- Skill might suggest restructuring that conflicts with NextUp conventions
-- Could recommend removing important governance content
-
-**Selected / Deferred**: **SELECTED** (analysis only, NOT execution)
-
-**Reason**: Will use skill to ANALYZE and PROPOSE CLAUDE.md refactoring, but NOT execute changes in V1.
-
-**Usage Policy**:
-- Create `docs/agent-tooling/CLAUDE_MD_REFACTOR_PLAN.md` proposal
-- Do NOT modify canonical CLAUDE.md in V1
-- Analysis helps identify duplication between CLAUDE.md, PROJECT_STATE.md, CONTEXT.md, AGENTS.md
+**V1 Status**: ACTIVE ✓
 
 ---
 
-### 4. Ponytail Review/Audit Skills
+## B. NOT INSTALLED IN V1
 
-**Repository**: https://github.com/DietrichGebert/ponytail
-**Exact Upstream Commit Reviewed**: (Will verify during installation)
-**License**: (To be confirmed)
-**Purpose**: Code minimalism and overengineering detection
-
-**Installation Mechanism**: Skills CLI (selective skill installation)
-
-**Files It Writes**: Skill files
-
-**Hooks**: None (when installed selectively)
-
-**MCP Servers**: None
-
-**Network Behavior**: None
-
-**Persistent Storage**: Skill files
-
-**Auto-Update Behavior**: Manual
-
-**Permissions**: File read/write
-
-**Known Risks**:
-- "Minimal code" philosophy may conflict with NextUp safety/explainability requirements
-- Could suggest removing important defensive code or explicit error handling
-
-**Selected Skills**:
-- `ponytail-review` (if available)
-- `ponytail-audit` (if available)
-- `ponytail-debt` (optional)
-
-**NOT Selected**:
-- Ponytail "full", "lite", "ultra" always-on modes
-- Ponytail core plugin/lifecycle hooks
-
-**Reason**: Post-implementation detection of unnecessary code is valuable, but NextUp specifications and safety requirements ALWAYS override "minimal code" suggestions.
-
-**Usage Policy**: Use AFTER implementation to identify potential simplifications. Never auto-apply Ponytail suggestions that conflict with:
-- Explicit specifications
-- Error handling requirements
-- Test coverage requirements
-- Trust boundary safety
-
----
-
-### 5. Context Mode (mksglu/context-mode)
+### Context Mode
 
 **Repository**: https://github.com/mksglu/context-mode
-**Exact Upstream Commit Reviewed**: (Will verify during installation)
-**License**: (To be confirmed)
-**Purpose**: Local codebase indexing and context enhancement for Claude Code
+**Status**: DEFERRED TO V1.1
+**Reason**: Privacy/security review incomplete
 
-**Installation Mechanism**: Official Claude Code plugin
+**Evaluated Concerns** (requires further investigation before installation):
+- Local SQLite indexing of codebase
+- NOT VERIFIED IN V1: which events/inputs/outputs are persisted
+- NOT VERIFIED IN V1: file exclusion controls for secrets (.env, credentials, etc.)
+- NOT VERIFIED IN V1: telemetry/Insight dashboard behavior
+- NOT VERIFIED IN V1: outbound network behavior
+- NOT VERIFIED IN V1: purge/data retention behavior
 
-**Files It Writes**:
-- SQLite database (location to be verified)
-- Plugin configuration
-
-**Hooks**: YES (potentially on tool events)
-
-**MCP Servers**: YES (Context Mode MCP tools)
-
-**Network Behavior**: To be verified (Insight hosted service?)
-
-**Persistent Storage**: YES (SQLite index, potentially tool inputs/outputs)
-
-**Auto-Update Behavior**: To be verified
-
-**Permissions**: File read access, database write
-
-**Known Risks**:
-- **CRITICAL**: May index sensitive files (.env, credentials)
-- **CRITICAL**: May persist tool inputs/outputs containing secrets
-- **CRITICAL**: May send data to hosted Insight service
-- Persistent indexing across sessions
-
-**Privacy/Security Requirements**:
-- MUST confirm exclusion controls for .env, .env.local, secrets
-- MUST confirm local-only operation or explicit telemetry opt-out
-- MUST confirm credentials are never indexed or persisted
-- MUST verify purge/reset capabilities
-
-**Selected / Deferred**: **CONDITIONAL**
-
-**Installation Decision**:
-- IF privacy controls are documented and acceptable: INSTALL
-- IF privacy cannot be confidently established: DEFER
-
-**Reason**: Context Mode could significantly improve agent awareness BUT ONLY if sensitive data is provably excluded.
-
-**Review Status**: **PENDING DETAILED PRIVACY REVIEW**
+**V1 Decision**: NOT INSTALLED until privacy controls confidently verified
 
 ---
 
-### 6. i-have-adhd (Reference Only)
+### Archify
 
-**Repository**: https://github.com/ayghri/i-have-adhd
-**Status**: **REFERENCE ONLY - NOT INSTALLED**
+**Repository**: https://github.com/tt-a1i/archify
+**Status**: DEFERRED TO V1.1
+**Reason**: On-demand architecture visualization not critical for V1
 
-**Selected Principles** (adopted into AGENTS.md protocol):
-- Action first, explanation after
-- Concise interactive steps
-- One concrete next action
-- Suppress unrelated tangents
-- Make current state visible
-- Matter-of-fact failure language
+**Purpose**: AI-powered architecture diagram generation
 
-**Exception**: Brevity NEVER overrides required governance reports (provenance, completion, security, QA, merge-gate, frozen-system audits).
+**V1 Decision**: NOT NEEDED FOR V1 SCOPE
+- V1 focuses on agent coordination, not visualization
+- Manual architecture documentation sufficient for initial release
+- May install in V1.1 if stakeholder/onboarding documentation needed
 
-**Reason**: Useful interaction patterns without installing plugin.
+**Installation Notes (for future)**:
+- Would require global npm install or on-demand npx invocation
+- Generates diagrams (mermaid/SVG)
+- Usage guide created: `ARCHIFY_USAGE.md` (reference only)
+
+**Security Notes**: NOT VERIFIED IN V1 — NOT INSTALLED
 
 ---
 
-### 7. ECC (Evals, Critiques, Code)
+### HumanLayer improve-claude-md
+
+**Repository**: https://github.com/humanlayer/skills
+**Status**: DEFERRED TO V1.1
+**Reason**: CLAUDE.md analysis performed manually
+
+**Purpose**: Automated CLAUDE.md refactoring proposal generation
+
+**V1 Decision**: NOT NEEDED FOR V1
+- CLAUDE.md manual refactor plan created: `CLAUDE_MD_REFACTOR_PLAN.md`
+- Tool provides similar analysis but not critical for V1 release
+- May install in V1.1 if automated refactoring assistance desired
+
+**Security Notes**: NOT VERIFIED IN V1 — NOT INSTALLED
+
+---
+
+### Ponytail Review/Audit
+
+**Repository**: https://github.com/DietrichGebert/ponytail
+**Status**: DEFERRED TO V1.1
+**Reason**: Post-implementation minimalism detection not needed for V1
+
+**Purpose**: Overengineering/complexity detection
+
+**V1 Decision**: NOT NEEDED FOR V1
+- V1 establishes coordination framework
+- Minimalism review more valuable after multiple implementations
+- May install selective copied skills (ponytail-review, ponytail-audit) in V1.1
+
+**Security Notes**: NOT VERIFIED IN V1 — NOT INSTALLED
+
+---
+
+### ECC (Evals, Critiques, Code)
 
 **Repository**: https://github.com/affaan-m/ECC
-**Status**: **NOT APPROVED FOR V1**
+**Status**: NOT APPROVED FOR V1
+**Reason**: Full autonomous test harness exceeds V1 scope
 
-**Reason**: Full autonomous agent harness exceeds V1 scope. May be evaluated in V2.
+**Purpose**: Autonomous evaluation, critique, and code generation loop
+
+**V1 Decision**: OUT OF SCOPE
+- V1 requires human authorization for implementation
+- Autonomous eval-critique-code loops conflict with governed workflow
+- Not compatible with NextUp self-approval prohibition
+
+**Security Notes**: NOT VERIFIED IN V1 — NOT INSTALLED
 
 ---
 
-### 8. Humanizer
+### Humanizer
 
 **Repository**: https://github.com/blader/humanizer
-**Status**: **NOT APPROVED FOR V1**
+**Status**: NOT APPROVED FOR V1
+**Reason**: Not needed for current workflow
 
-**Reason**: Not needed for current NextUp workflow.
+**V1 Decision**: NOT REQUIRED
+
+**Security Notes**: NOT VERIFIED IN V1 — NOT INSTALLED
 
 ---
 
-### 9. OpenAI Plugins
+### i-have-adhd Plugin
+
+**Repository**: https://github.com/ayghri/i-have-adhd
+**Status**: REFERENCE ONLY
+
+**V1 Decision**: PRINCIPLES ADOPTED, PLUGIN NOT INSTALLED
+
+**Integration Approach**:
+- Reviewed interaction principles (one test at a time, wait for human, stop on failure)
+- Adopted principles into `AGENTS.md` protocol and `nextup-browser-qa` skill
+- Did NOT install plugin itself
+- Plugin functionality achieved through custom NextUp skills
+
+**Security Notes**: NOT INSTALLED IN V1
+
+---
+
+### OpenAI Plugins
 
 **Repository**: https://github.com/openai/plugins
-**Status**: **REFERENCE ONLY**
+**Status**: REFERENCE ONLY
 
-**Reason**: OpenAI ecosystem reference, not Claude Code plugins.
+**Purpose**: Current OpenAI plugin/examples repository
 
----
+**V1 Decision**: REFERENCE ONLY
+- Reviewed for potential future integration patterns
+- NOT INSTALLED IN V1
+- V1 uses custom NextUp skills instead of OpenAI plugins
 
-### 10. OpenAI Skills (Deprecated)
-
-**Repository**: https://github.com/openai/skills
-**Status**: **PROHIBITED**
-
-**Reason**: Repository declares itself deprecated in favor of openai/plugins. Do not use deprecated tooling.
+**Security Notes**: NOT VERIFIED IN V1 — NOT INSTALLED
 
 ---
 
-## NOT APPROVED FOR V1
+### OpenAI Skills
 
-The following are explicitly **NOT APPROVED** for installation in Agent Tooling V1:
+**Repository**: https://github.com/openai/skills (DEPRECATED)
+**Status**: PROHIBITED / DEPRECATED
 
-- Full autonomous agent frameworks
-- Scheduled agent workflows
-- GitHub coding-agent workflows
-- Autonomous merging
-- Automatic PR creation
-- Automatic production deployment
-- HumanLayer build-iterated-agentic-loop
-- HumanLayer design-control-loop
-- ECC full harness
+**V1 Decision**: DO NOT USE
+- Repository deprecated by OpenAI
+- Superseded by openai/plugins repository
+- If future OpenAI integration needed, use openai/plugins instead
 
-**Reason**: These introduce autonomous behavior that conflicts with NextUp's human-in-the-loop governance model.
+**Security Notes**: DEPRECATED UPSTREAM — DO NOT INSTALL
 
 ---
 
-## CONFLICT RESOLUTION EXAMPLES
+## GOVERNANCE POLICY
 
-### Example 1: Ponytail says remove defensive code
-**Scenario**: Ponytail suggests removing explicit null checks
-**NextUp Spec**: Requires defensive error handling at trust boundaries
-**Resolution**: **KEEP** defensive code (NextUp wins)
+**External Tool Subordination**:
+All third-party agent skills/plugins are subordinate to NextUp governance.
 
-### Example 2: i-have-adhd says keep report short
-**Scenario**: Plugin suggests brevity
-**NextUp Governance**: Merge report requires full provenance evidence
-**Resolution**: **FULL REPORT** (governance wins)
+If external tool instruction conflicts with:
+- PROJECT_GUARDRAILS.md
+- PROJECT_STATE.md
+- AGENTS.md
+- Human authorization
 
-### Example 3: Third-party agent says auto-merge
-**Scenario**: External tool suggests automatic PR merge
-**NextUp Governance**: Requires independent review + explicit authorization
-**Resolution**: **DO NOT MERGE** (governance wins)
+**NextUp governance wins.**
 
-### Example 4: Matt Pocock skill suggests implementation approach
-**Scenario**: `implement` skill suggests workflow
-**Active E4 Spec**: Defines specific implementation requirements
-**Resolution**: **FOLLOW E4 SPEC** (active spec wins over generic skill)
+**Example**: resolving-merge-conflicts skill rejected because it conflicts with NextUp git authorization policy.
 
 ---
 
-## INSTALLATION VERIFICATION CHECKLIST
+## UPDATE POLICY
 
-For each installed tool, verify:
-
-- [ ] Source repository reviewed
-- [ ] Exact commit/version recorded
-- [ ] License confirmed
-- [ ] Installation mechanism documented
-- [ ] File paths recorded
-- [ ] Hooks enumerated
-- [ ] Network behavior confirmed
-- [ ] Privacy controls verified (if applicable)
-- [ ] Conflict policy documented
-- [ ] Usage policy established
-
----
-
-## ONGOING SECURITY POLICY
-
-### Secret Protection
-**NEVER**:
-- Install tools that index .env files by default
-- Print API keys, tokens, or credentials
-- Commit Claude settings containing secrets
-- Install tools with undocumented telemetry
-
-### Update Policy
-- All tool updates are **MANUAL**
-- Auto-update mechanisms are **PROHIBITED**
+**All external tool updates are MANUAL**:
+- Auto-update mechanisms PROHIBITED
 - Version changes require security re-review
+- Exact source SHA re-verification required
+- Explicit human authorization required
 
-### Removal Policy
-If a tool is found to:
-- Violate privacy expectations
-- Override NextUp governance
-- Introduce security risks
-
-**IMMEDIATE REMOVAL** is authorized without further approval.
+**Immediate Removal Authorization**:
+External tool may be removed without prior approval if:
+- Violates privacy expectations
+- Overrides NextUp governance
+- Introduces security risks
 
 ---
 
