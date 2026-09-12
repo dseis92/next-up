@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { IncompleteProfileMessage } from "@/components/jobs/incomplete-profile-message";
 import { OpportunityDeck } from "@/components/explore/opportunity-deck";
+import { OpportunityRadar } from "@/components/radar/opportunity-radar";
+import { RadarErrorBoundary } from "@/components/radar/radar-error-boundary";
 import { CompareToggle } from "@/components/compare/compare-toggle";
 import { CompareTray } from "@/components/compare/compare-tray";
-import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid } from "lucide-react";
+import { Search, MapPin, ArrowRight, SlidersHorizontal, List, LayoutGrid, Layers } from "lucide-react";
 import { getJobs } from "@/lib/storage/jobs";
 import { calculatePersonalizedMatches } from "@/lib/matching/integration";
 import { getSavedJobs, getPassedJobIds } from "@/lib/storage/job-actions";
@@ -23,12 +25,25 @@ import type { JobMatch } from "@/types";
 import { useDealbreakerPreferences, evaluateJobsDealbreakers } from "@/hooks/use-dealbreaker-preferences";
 import { DealbreakerBadge } from "@/components/dealbreakers/dealbreaker-badge";
 import type { DealbreakerEvaluation } from "@/lib/dealbreakers/types";
+import {
+  type ExploreViewMode,
+  parseExploreView,
+  buildExploreViewUrl,
+  shouldShowCompareTray,
+  filterRadarCandidates,
+} from "@/lib/radar/view-logic";
 
-type ViewMode = "list" | "deck";
+// Force dynamic rendering since we use searchParams
+export const dynamic = "force-dynamic";
 
-export default function ExplorePage() {
+function ExplorePageContent() {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const searchParams = useSearchParams();
+
+  // Derive view mode from URL parameter
+  const viewMode: ExploreViewMode = useMemo(() => {
+    return parseExploreView(searchParams.get("view"));
+  }, [searchParams]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArrangement, setSelectedArrangement] = useState<string | null>(
     null
@@ -58,6 +73,13 @@ export default function ExplorePage() {
     const jobs = allMatches.map(m => m.job);
     return evaluateJobsDealbreakers(dealbreakerPreferences, jobs);
   }, [dealbreakerPreferences, allMatches]);
+
+  // Update URL when view mode button is clicked
+  // Use native History API to preserve React filter state while updating URL
+  const handleViewModeChange = (newMode: ExploreViewMode) => {
+    const newUrl = buildExploreViewUrl(searchParams.toString(), newMode);
+    window.history.pushState(null, "", newUrl);
+  };
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -202,6 +224,11 @@ export default function ExplorePage() {
     });
   }, [allMatches, searchQuery, selectedArrangement, minMatch]);
 
+  // Radar candidates: filtered jobs excluding passed jobs
+  const radarMatches = useMemo(() => {
+    return filterRadarCandidates(filteredJobs, passedJobIds);
+  }, [filteredJobs, passedJobIds]);
+
   const arrangements = [
     { value: "remote", label: "Remote" },
     { value: "hybrid", label: "Hybrid" },
@@ -251,31 +278,49 @@ export default function ExplorePage() {
             <p className="text-foreground-secondary">
               {viewMode === "list"
                 ? "Search and filter through all opportunities"
-                : "Swipe to review opportunities"}
+                : viewMode === "deck"
+                ? "Swipe to review opportunities"
+                : "Browse opportunities by category"}
             </p>
           </div>
 
           {/* View Mode Selector */}
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="group" aria-label="View mode selection">
             <Button
               variant={viewMode === "list" ? "primary" : "secondary"}
               size="sm"
-              onClick={() => setViewMode("list")}
+              onClick={() => handleViewModeChange("list")}
               disabled={deckPending}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
+              aria-label="Switch to List view"
+              aria-pressed={viewMode === "list"}
             >
-              <List className="h-4 w-4" />
+              <List className="h-4 w-4" aria-hidden="true" />
               List
             </Button>
             <Button
               variant={viewMode === "deck" ? "primary" : "secondary"}
               size="sm"
-              onClick={() => setViewMode("deck")}
+              onClick={() => handleViewModeChange("deck")}
               disabled={deckPending}
-              className="gap-2"
+              className="gap-2 min-h-[44px]"
+              aria-label="Switch to Deck view"
+              aria-pressed={viewMode === "deck"}
             >
-              <LayoutGrid className="h-4 w-4" />
+              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
               Deck
+            </Button>
+            <Button
+              variant={viewMode === "radar" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => handleViewModeChange("radar")}
+              disabled={deckPending}
+              className="gap-2 min-h-[44px]"
+              aria-label="Switch to Radar view"
+              aria-pressed={viewMode === "radar"}
+            >
+              <Layers className="h-4 w-4" aria-hidden="true" />
+              Radar
             </Button>
           </div>
         </div>
@@ -478,7 +523,7 @@ export default function ExplorePage() {
                 <p className="text-foreground mb-4">
                   Unable to load your Opportunity Deck right now.
                 </p>
-                <Button variant="primary" onClick={() => setViewMode("list")}>
+                <Button variant="primary" onClick={() => handleViewModeChange("list")}>
                   Return to List
                 </Button>
               </div>
@@ -495,7 +540,7 @@ export default function ExplorePage() {
                 filteredMatches={filteredJobs}
                 savedJobIds={savedJobIds}
                 passedJobIds={passedJobIds}
-                onSwitchToList={() => setViewMode("list")}
+                onSwitchToList={() => handleViewModeChange("list")}
                 onSaved={handleSaved}
                 onPassed={handlePassed}
                 onUndoSaved={handleUndoSaved}
@@ -505,10 +550,51 @@ export default function ExplorePage() {
             )}
           </>
         )}
+
+        {/* Radar Mode */}
+        {viewMode === "radar" && (
+          <>
+            {deckStateError ? (
+              <div className="rounded-[var(--radius-lg)] bg-surface p-12 text-center">
+                <p className="text-foreground mb-4">
+                  Unable to load Opportunity Radar right now.
+                </p>
+                <Button variant="primary" onClick={() => handleViewModeChange("list")}>
+                  Return to List
+                </Button>
+              </div>
+            ) : hasIncompleteProfile && allMatches.length === 0 ? (
+              <IncompleteProfileMessage />
+            ) : (
+              <RadarErrorBoundary onReturnToList={() => handleViewModeChange("list")}>
+                <OpportunityRadar
+                  allMatches={radarMatches}
+                  dealbreakerEvaluations={dealbreakerEvaluations}
+                />
+              </RadarErrorBoundary>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Compare Tray (only in List mode) */}
-      {viewMode === "list" && <CompareTray />}
+      {/* Compare Tray (List and Radar modes) */}
+      {shouldShowCompareTray(viewMode) && <CompareTray />}
     </AppShell>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="flex h-full items-center justify-center p-4">
+            <p className="text-foreground-secondary">Loading...</p>
+          </div>
+        </AppShell>
+      }
+    >
+      <ExplorePageContent />
+    </Suspense>
   );
 }
