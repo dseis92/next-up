@@ -16,7 +16,28 @@ NextUp governance requires FULL DETAILED REPORTS. Never finish with only "done",
 
 ## REQUIRED SECTIONS
 
-### 1. PROVENANCE
+### 1. CANDIDATE EXECUTION CONTEXT
+
+**MANDATORY FIRST**: Before any quality gates, record the exact execution context:
+
+```bash
+pwd
+git branch --show-current
+git rev-parse HEAD
+```
+
+Record all three in the report. Every quality gate result must come from:
+- The SAME worktree
+- The SAME branch
+- The SAME HEAD SHA
+
+being reported.
+
+**If tests/build/lint/typecheck ran from another checkout or SHA**: Report as "NOT CHECKED FOR THIS CANDIDATE"
+
+Do NOT reuse results from another workspace.
+
+### 2. PROVENANCE
 - Base SHA (origin/main at start)
 - Branch name
 - Final local HEAD SHA
@@ -46,13 +67,17 @@ Verify each frozen system was NOT modified:
 State: UNCHANGED / CHANGED for each
 
 ### 4. QUALITY GATES (ACTUAL RESULTS)
-- Tests: [count]/[count] PASS or "NOT RUN"
-- TypeScript: PASS/FAIL or "NOT CHECKED"
-- Lint: [X] errors, [Y] warnings or "NOT CHECKED"
-- Build: PASS/FAIL or "NOT CHECKED"
+- Tests: [count]/[count] PASS or "NOT RUN" or "NOT CHECKED FOR THIS CANDIDATE"
+- TypeScript: PASS/FAIL or "NOT CHECKED" or "NOT CHECKED FOR THIS CANDIDATE"
+- Lint: [X] errors, [Y] warnings or "NOT CHECKED" or "NOT CHECKED FOR THIS CANDIDATE"
+- Build: PASS/FAIL or "NOT CHECKED" or "NOT CHECKED FOR THIS CANDIDATE"
 - Vercel: SUCCESS/FAIL/PENDING or "NOT CHECKED"
 
-**CRITICAL**: Never claim something was checked if it wasn't.
+**CRITICAL RULES**:
+- Never claim something was checked if it wasn't
+- **npm run build is a standard NextUp quality gate** - an agent may NOT waive build merely because work appears "docs-only" or "tooling-only"
+- Only explicit human authorization may waive a normal quality gate
+- If results came from foreign worktree/branch/SHA: report as "NOT CHECKED FOR THIS CANDIDATE"
 
 ### 5. MANUAL QA
 - Human browser QA: PASS/FAIL/PENDING/NOT APPLICABLE
@@ -72,13 +97,19 @@ Distinguish:
 - Dependencies changed: YES/NO (if yes, list changes)
 
 ### 7. KNOWN ISSUES
-List:
-- Blockers
-- Unresolved items
-- Deferred work
-- Known limitations
 
-Or state: "NONE"
+**NEVER report "KNOWN ISSUES: NONE" when there are deferred/unverified items.**
+
+Use separate sections:
+
+**BLOCKERS**:
+[List items that prevent merge/approval, or state "NONE"]
+
+**DEFERRED ITEMS**:
+[List work deferred to future versions, or state "NONE"]
+
+**UNRESOLVED RISKS**:
+[List items with incomplete investigation, or state "NONE"]
 
 ### 8. FINAL STATUS
 Choose ONE:
