@@ -78,15 +78,24 @@ User marked as applied in Applications. Has application record with stage, notes
 ## DEALBREAKERS (E3)
 
 ### Dealbreaker
-User-defined non-negotiable preference. Three types:
-- Salary (minimum acceptable)
-- Work arrangement (exclusive preference)
-- Location/relocation (conservative relocation)
+User-defined non-negotiable preference. E3 V1 supports four types:
+- **Minimum Compensation**: Salary floor
+- **Salary Disclosure**: Require disclosed compensation
+- **Allowed Work Arrangements**: Remote, hybrid, onsite preferences
+- **Allowed Employment Types**: Full-time, part-time, contract, temporary
 
-### Evaluation Statuses
+### Evaluation Outcomes
 - **PASS**: Job meets dealbreaker requirement
-- **CONFLICT**: Job violates dealbreaker
-- **UNKNOWN**: Insufficient data to evaluate (treated as potential conflict with warning)
+- **CONFLICT**: Job violates dealbreaker requirement
+- **UNKNOWN**: Insufficient data to evaluate
+
+**UNKNOWN IS NOT A CONFLICT.** If trusted job data is missing, outcome is UNKNOWN. Do not assume worst or best.
+
+### Overall Evaluation Status
+- **inactive**: No active rules configured
+- **clear**: All active rules pass
+- **conflict**: At least one conflict
+- **unknown**: No conflicts and at least one unknown
 
 **Critical Rule**: Dealbreaker conflicts do NOT modify MatchResult. Conflict detection is independent from scoring.
 
@@ -171,7 +180,7 @@ Up to 30 jobs posted within last 7 days, ordered newest first.
 Top 20 jobs with disclosed yearly salaries ≥ 75th percentile.
 
 ### Stretch Opportunities
-Up to 15 jobs with qualification 60-85% + missing skills. Growth-oriented roles.
+Up to 15 jobs with qualification 60-85% + missing skills. Qualification stretch roles.
 
 ---
 
