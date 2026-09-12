@@ -75,10 +75,10 @@ function ExplorePageContent() {
   }, [dealbreakerPreferences, allMatches]);
 
   // Update URL when view mode button is clicked
-  // Use push to create browser history entries for explicit user navigation
+  // Use native History API to preserve React filter state while updating URL
   const handleViewModeChange = (newMode: ExploreViewMode) => {
     const newUrl = buildExploreViewUrl(searchParams.toString(), newMode);
-    router.push(newUrl, { scroll: false });
+    window.history.pushState(null, "", newUrl);
   };
 
   useEffect(() => {
