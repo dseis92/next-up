@@ -717,17 +717,29 @@ openai.responses.parse(...)
 with:
 
 ```typescript
-{
+response = await openai.responses.parse({
   model: process.env.OPENAI_MODEL || "gpt-5.6-luna",
-  input: {
-    system: systemPromptContent,
-    user: userQueryContent,
-  },
+
+  input: [
+    {
+      role: "system",
+      content: systemInstructions,
+    },
+    {
+      role: "user",
+      content: userPrompt,
+    },
+  ],
+
   text: {
-    format: zodTextFormat(CareerCoachModelResponseSchema),
+    format: zodTextFormat(
+      CareerCoachModelResponseSchema,
+      "career_coach"
+    ),
   },
+
   store: false,
-}
+})
 ```
 
 **Do NOT** say "or latest production-stable model" — model changes occur through explicit environment configuration.
@@ -1306,6 +1318,18 @@ Do not fabricate PASS.
 
 ### Rollout Plan
 
+**V1 Alpha / Beta / Production are deployment/governance stages only.**
+
+They do NOT authorize:
+
+- New feature-flag subsystem
+- New invite-management subsystem
+- New analytics subsystem
+- New telemetry dependency
+- New database tables
+
+Existing deployment/account controls may be used operationally outside the E27 product implementation.
+
 **V1 Alpha**:
 
 - Internal testing only
@@ -1314,8 +1338,8 @@ Do not fabricate PASS.
 
 **V1 Beta**:
 
-- Invite-only user group
-- Monitor usage patterns
+- Invite-only user group (using existing operational controls)
+- Monitor usage patterns (existing logs only)
 - Collect feedback
 - Cost analysis
 
@@ -1333,8 +1357,11 @@ Do not fabricate PASS.
 - Bounded output schema
 - User-initiated requests only
 - Fixed default model (`gpt-5.6-luna`)
-- `store: false`
 - No background AI generation
+
+**Privacy control**:
+
+- `store: false`
 
 **Before PRODUCTION approval**, the human owner should define an **OpenAI account budget/alert threshold**.
 
@@ -1387,10 +1414,12 @@ Implementation may be authorized only after:
 
 E27 implementation requires:
 
-1. Independent specification review
-2. Security/privacy approval (included in spec review)
-3. Cost budget approval
-4. Explicit implementation authorization
+1. Independent specification review (includes security/privacy)
+2. Explicit implementation authorization
+
+**Before PRODUCTION approval** (not implementation authorization):
+
+- OpenAI account budget/alert threshold must be defined
 
 **Do not begin E27 implementation without approval.**
 
